@@ -1,0 +1,84 @@
+<style>
+	$color = rgba(255,255,255,255);
+	
+	@font-face {
+		font-family: "Roboto";
+		font-weight: bold;
+		src: "../examples/Roboto-light.ttf";
+	}
+	@font-face {
+		font-family: "Entypo";
+		src: "../examples/entypo.ttf";
+	}
+
+	.icon-search {
+		font-family: "Entypo";
+		font-size: 28px;
+		content: 0x1F50D;
+	}
+	.icon-circled-cross {
+		font-family: "Entypo";
+		font-size: 28px;
+		content: 0x2716;
+	}
+	.icon-plus {
+		font-family: "Entypo";
+		font-size: 28px;
+		content: "\2796";
+	}
+
+	.search-box {
+		padding: 5px;
+	}
+
+	.footer-buttons {
+		padding: 5px;
+	}
+
+	/* default style */
+	header {
+		height: 30px;
+		/*font-size: 26px;*/
+	}
+
+	input {
+		height: ;
+		font-size: 26px;
+	}
+
+</style>
+
+<template id="material-window">
+	<win width="300px" height="500px" align="justify">
+		<col align="justify">
+			<header>Materials</header>
+			<row height="auto" style="search-box">
+				<input id="search" grow="1">
+					<icon style="icon-search" />
+					<field grow="1" />
+					<icon style="icon-circled-cross" />
+				</input>
+			</row>
+			<col id="materials" grow="1" height="10px" align="justify" />
+			<row height="auto" style="footer-buttons">
+				<spacer grow="1" />
+				<button id="add-item"><icon style="icon-plus"/>Add</button>
+				<button id="remove">Remove</button>
+			</row>
+		</col>
+	</win>
+</template>
+
+<template id="material-item">
+	<item padding="4px" align="center">
+		<img id="thumbnail" width="25px" height="25px" />
+		<label id="name" grow="1" />
+	</item>
+</template>
+
+<template id="material-noitems">
+	<col padding="4px" pack="center" align="center">
+		<icon src="sad-face" />
+		<label>Sorry, no items found.</label>
+	</col>
+</template>
