@@ -262,6 +262,38 @@ unsigned int nvgLerpRGBA(unsigned int c0, unsigned int c1, float u)
 	return nvgRGBA(r,g,b,a);
 }
 
+unsigned int nvgHSL(float h, float s, float l)
+{
+	return nvgHSLA(h,s,l,255);
+}
+
+static float nvg__hue(float h, float m1, float m2)
+{
+	if (h < 0) h += 1;
+	if (h > 1) h -= 1;
+	if (h < 1.0f/6.0f)
+		return m1 + (m2 - m1) * h * 6.0f;
+	else if (h < 3.0f/6.0f)
+		return m2;
+	else if (h < 4.0f/6.0f)
+		return m1 + (m2 - m1) * (2.0f/3.0f - h) * 6.0f;
+	return m1;
+}
+
+unsigned int nvgHSLA(float h, float s, float l, unsigned char a)
+{
+	h = fmod(h, 1.0f);
+	if (h < 0.0f) h += 1.0f;
+	s = nvg__clampf(s, 0.0f, 1.0f);
+	l = nvg__clampf(l, 0.0f, 1.0f);
+	float m2 = l <= 0.5f ? (l * (1 + s)) : (l + s - l * s);
+	float m1 = 2 * l - m2;
+	unsigned char r = (unsigned char)nvg__clampf(nvg__hue(h + 1.0f/3.0f, m1, m2) * 255.0f, 0, 255);
+	unsigned char g = (unsigned char)nvg__clampf(nvg__hue(h, m1, m2) * 255.0f, 0, 255);
+	unsigned char b = (unsigned char)nvg__clampf(nvg__hue(h - 1.0f/3.0f, m1, m2) * 255.0f, 0, 255);
+	return nvgRGBA(r,g,b,a);
+}
+
 
 static struct NVGstate* nvg__getState(struct NVGcontext* ctx)
 {
@@ -1311,7 +1343,7 @@ void nvgArc(struct NVGcontext* ctx, float cx, float cy, float r, float a0, float
 	}
 
 	// Split arc into max 90 degree segments.
-	ndivs = nvg__mini((int)(nvg__absf(da) / (NVG_PI*0.5f) + 0.5f), 5);
+	ndivs = nvg__maxi(1, nvg__mini((int)(nvg__absf(da) / (NVG_PI*0.5f) + 0.5f), 5));
 	hda = (da / (float)ndivs) / 2.0f;
 	kappa = nvg__absf(4.0f / 3.0f * (1.0f - cosf(hda)) / sinf(hda));
 

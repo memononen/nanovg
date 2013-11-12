@@ -109,6 +109,8 @@ void nvgDeleteInternal(struct NVGcontext* ctx);
 unsigned int nvgRGB(unsigned char r, unsigned char g, unsigned char b);
 unsigned int nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 unsigned int nvgLerpRGBA(unsigned int c0, unsigned int c1, float u);
+unsigned int nvgHSL(float h, float s, float l);
+unsigned int nvgHSLA(float h, float s, float l, unsigned char a);
 
 // State handling
 void nvgSave(struct NVGcontext* ctx);
