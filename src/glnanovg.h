@@ -195,6 +195,20 @@ static void glnvg__deleteShader(struct GLNVGshader* shader)
 		glDeleteShader(shader->frag);
 }
 
+static void glnvg__getUniforms(struct GLNVGshader* shader)
+{
+	shader->loc[GLNVG_LOC_SCISSORMAT] = glGetUniformLocation(shader->prog, "scissorMat");
+	shader->loc[GLNVG_LOC_SCISSOREXT] = glGetUniformLocation(shader->prog, "scissorExt");
+	shader->loc[GLNVG_LOC_PAINTMAT] = glGetUniformLocation(shader->prog, "paintMat");
+	shader->loc[GLNVG_LOC_EXTENT] = glGetUniformLocation(shader->prog, "extent");
+	shader->loc[GLNVG_LOC_RADIUS] = glGetUniformLocation(shader->prog, "radius");
+	shader->loc[GLNVG_LOC_FEATHER] = glGetUniformLocation(shader->prog, "feather");
+	shader->loc[GLNVG_LOC_INNERCOL] = glGetUniformLocation(shader->prog, "innerCol");
+	shader->loc[GLNVG_LOC_OUTERCOL] = glGetUniformLocation(shader->prog, "outerCol");
+	shader->loc[GLNVG_LOC_STROKEMULT] = glGetUniformLocation(shader->prog, "strokeMult");
+	shader->loc[GLNVG_LOC_TEX] = glGetUniformLocation(shader->prog, "tex");
+}
+
 static int glnvg__renderCreate(void* uptr)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
@@ -273,38 +287,14 @@ static int glnvg__renderCreate(void* uptr)
 
 	if (glnvg__createShader(&gl->gradShader, "grad", fillVertShader, fillFragGradShader) == 0)
 		return 0;
-
-	glnvg__checkError("grad");
-
-	gl->gradShader.loc[GLNVG_LOC_SCISSORMAT] = glGetUniformLocation(gl->gradShader.prog, "scissorMat");
-	gl->gradShader.loc[GLNVG_LOC_SCISSOREXT] = glGetUniformLocation(gl->gradShader.prog, "scissorExt");
-	gl->gradShader.loc[GLNVG_LOC_PAINTMAT] = glGetUniformLocation(gl->gradShader.prog, "paintMat");
-	gl->gradShader.loc[GLNVG_LOC_EXTENT] = glGetUniformLocation(gl->gradShader.prog, "extent");
-	gl->gradShader.loc[GLNVG_LOC_RADIUS] = glGetUniformLocation(gl->gradShader.prog, "radius");
-	gl->gradShader.loc[GLNVG_LOC_FEATHER] = glGetUniformLocation(gl->gradShader.prog, "feather");
-	gl->gradShader.loc[GLNVG_LOC_INNERCOL] = glGetUniformLocation(gl->gradShader.prog, "innerCol");
-	gl->gradShader.loc[GLNVG_LOC_OUTERCOL] = glGetUniformLocation(gl->gradShader.prog, "outerCol");
-	gl->gradShader.loc[GLNVG_LOC_STROKEMULT] = glGetUniformLocation(gl->gradShader.prog, "strokeMult");
-
-	glnvg__checkError("grad loc");
-
 	if (glnvg__createShader(&gl->imgShader, "image", fillVertShader, fillFragImgShader) == 0)
 		return 0;
 
-	glnvg__checkError("image");
+	glnvg__checkError("uniform locations");
+	glnvg__getUniforms(&gl->gradShader);
+	glnvg__getUniforms(&gl->imgShader);
 
-	gl->imgShader.loc[GLNVG_LOC_SCISSORMAT] = glGetUniformLocation(gl->imgShader.prog, "scissorMat");
-	gl->imgShader.loc[GLNVG_LOC_SCISSOREXT] = glGetUniformLocation(gl->imgShader.prog, "scissorExt");
-	gl->imgShader.loc[GLNVG_LOC_PAINTMAT] = glGetUniformLocation(gl->imgShader.prog, "paintMat");
-	gl->imgShader.loc[GLNVG_LOC_EXTENT] = glGetUniformLocation(gl->imgShader.prog, "extent");
-//	gl->gradShader.loc[GLNVG_LOC_RADIUS] = glGetUniformLocation(gl->gradShader.prog, "radius");
-//	gl->gradShader.loc[GLNVG_LOC_FEATHER] = glGetUniformLocation(gl->gradShader.prog, "feather");
-//	gl->gradShader.loc[GLNVG_LOC_INNERCOL] = glGetUniformLocation(gl->gradShader.prog, "innerCol");
-//	gl->gradShader.loc[GLNVG_LOC_OUTERCOL] = glGetUniformLocation(gl->gradShader.prog, "outerCol");
-	gl->imgShader.loc[GLNVG_LOC_STROKEMULT] = glGetUniformLocation(gl->imgShader.prog, "strokeMult");
-	gl->imgShader.loc[GLNVG_LOC_TEX] = glGetUniformLocation(gl->imgShader.prog, "tex");
-
-	glnvg__checkError("image loc");
+	glnvg__checkError("done");
 
 	return 1;
 }
@@ -453,14 +443,10 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		glUniform2f(gl->imgShader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
 		glUniform1f(gl->imgShader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + aasize*0.5f);
 		glUniform1i(gl->imgShader.loc[GLNVG_LOC_TEX], 0);
-
-	glnvg__checkError("tex paint loc");
-
+		glnvg__checkError("tex paint loc");
 		glBindTexture(GL_TEXTURE_2D, tex->tex);
 		glEnable(GL_TEXTURE_2D);
-
-	glnvg__checkError("tex paint tex");
-
+		glnvg__checkError("tex paint tex");
 	} else {
 		glUseProgram(gl->gradShader.prog);
 		glUniformMatrix3fv(gl->gradShader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
@@ -472,8 +458,7 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		glUniform4fv(gl->gradShader.loc[GLNVG_LOC_INNERCOL], 1, innerCol);
 		glUniform4fv(gl->gradShader.loc[GLNVG_LOC_OUTERCOL], 1, outerCol);
 		glUniform1f(gl->gradShader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + aasize*0.5f);
-
-	glnvg__checkError("grad paint loc");
+		glnvg__checkError("grad paint loc");
 	}
 	return 1;
 }
@@ -554,9 +539,6 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 	// Draw fill
 	glStencilFunc(GL_NOTEQUAL, 0x0, 0xff);
 	glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
-
-//	glUseProgram(0);
-//	glColor4ub(255,0,0,128);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.5f,1.0f);

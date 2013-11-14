@@ -97,11 +97,11 @@ void drawWindow(struct NVGcontext* vg, const char* title, float x, float y, floa
 
 	nvgFontBlur(vg,2);
 	nvgFillColor(vg, nvgRGBA(0,0,0,128));
-	nvgText(vg, x+w/2,y+16+1, title);
+	nvgText(vg, x+w/2,y+16+1, title, NULL);
 
 	nvgFontBlur(vg,0);
 	nvgFillColor(vg, nvgRGBA(220,220,220,160));
-	nvgText(vg, x+w/2,y+16, title);
+	nvgText(vg, x+w/2,y+16, title, NULL);
 
 	nvgRestore(vg);
 }
@@ -128,20 +128,20 @@ void drawSearchBox(struct NVGcontext* vg, const char* text, float x, float y, fl
 	nvgFontFace(vg, "icons");
 	nvgFillColor(vg, nvgRGBA(255,255,255,64));
 	nvgTextAlign(vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x+h*0.55f, y+h*0.55f, cpToUTF8(ICON_SEARCH,icon));
+	nvgText(vg, x+h*0.55f, y+h*0.55f, cpToUTF8(ICON_SEARCH,icon), NULL);
 
 	nvgFontSize(vg, 20.0f);
 	nvgFontFace(vg, "sans");
 	nvgFillColor(vg, nvgRGBA(255,255,255,32));
 
 	nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x+h*1.05f,y+h*0.5f,text);
+	nvgText(vg, x+h*1.05f,y+h*0.5f,text, NULL);
 
 	nvgFontSize(vg, h*1.3f);
 	nvgFontFace(vg, "icons");
 	nvgFillColor(vg, nvgRGBA(255,255,255,32));
 	nvgTextAlign(vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x+w-h*0.55f, y+h*0.55f, cpToUTF8(ICON_CIRCLED_CROSS,icon));
+	nvgText(vg, x+w-h*0.55f, y+h*0.55f, cpToUTF8(ICON_CIRCLED_CROSS,icon), NULL);
 }
 
 void drawDropDown(struct NVGcontext* vg, const char* text, float x, float y, float w, float h)
@@ -165,13 +165,13 @@ void drawDropDown(struct NVGcontext* vg, const char* text, float x, float y, flo
 	nvgFontFace(vg, "sans");
 	nvgFillColor(vg, nvgRGBA(255,255,255,160));
 	nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x+h*0.3f,y+h*0.5f,text);
+	nvgText(vg, x+h*0.3f,y+h*0.5f,text, NULL);
 
 	nvgFontSize(vg, h*1.3f);
 	nvgFontFace(vg, "icons");
 	nvgFillColor(vg, nvgRGBA(255,255,255,64));
 	nvgTextAlign(vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x+w-h*0.5f, y+h*0.5f, cpToUTF8(ICON_CHEVRON_RIGHT,icon));
+	nvgText(vg, x+w-h*0.5f, y+h*0.5f, cpToUTF8(ICON_CHEVRON_RIGHT,icon), NULL);
 }
 
 void drawLabel(struct NVGcontext* vg, const char* text, float x, float y, float w, float h)
@@ -181,7 +181,7 @@ void drawLabel(struct NVGcontext* vg, const char* text, float x, float y, float 
 	nvgFillColor(vg, nvgRGBA(255,255,255,128));
 
 	nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x,y+h*0.5f,text);
+	nvgText(vg, x,y+h*0.5f,text, NULL);
 }
 
 void drawEditBoxBase(struct NVGcontext* vg, float x, float y, float w, float h)
@@ -209,7 +209,7 @@ void drawEditBox(struct NVGcontext* vg, const char* text, float x, float y, floa
 	nvgFontFace(vg, "sans");
 	nvgFillColor(vg, nvgRGBA(255,255,255,64));
 	nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x+h*0.3f,y+h*0.5f,text);
+	nvgText(vg, x+h*0.3f,y+h*0.5f,text, NULL);
 }
 
 void drawEditBoxNum(struct NVGcontext* vg,
@@ -219,19 +219,19 @@ void drawEditBoxNum(struct NVGcontext* vg,
 
 	drawEditBoxBase(vg, x,y, w,h);
 
-	nvgTextBounds(vg, units, &uw, NULL);
+	uw = nvgTextBounds(vg, units, NULL, NULL);
 
 	nvgFontSize(vg, 18.0f);
 	nvgFontFace(vg, "sans");
 	nvgFillColor(vg, nvgRGBA(255,255,255,64));
 	nvgTextAlign(vg,NVG_ALIGN_RIGHT|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x+w-h*0.3f,y+h*0.5f,units);
+	nvgText(vg, x+w-h*0.3f,y+h*0.5f,units, NULL);
 
 	nvgFontSize(vg, 20.0f);
 	nvgFontFace(vg, "sans");
 	nvgFillColor(vg, nvgRGBA(255,255,255,128));
 	nvgTextAlign(vg,NVG_ALIGN_RIGHT|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x+w-uw-h*0.5f,y+h*0.5f,text);
+	nvgText(vg, x+w-uw-h*0.5f,y+h*0.5f,text, NULL);
 }
 
 void drawCheckBox(struct NVGcontext* vg, const char* text, float x, float y, float w, float h)
@@ -244,7 +244,7 @@ void drawCheckBox(struct NVGcontext* vg, const char* text, float x, float y, flo
 	nvgFillColor(vg, nvgRGBA(255,255,255,160));
 
 	nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x+28,y+h*0.5f,text);
+	nvgText(vg, x+28,y+h*0.5f,text, NULL);
 
 	bg = nvgBoxGradient(vg, x+1,y+(int)(h*0.5f)-9+1, 18,18, 3,3, nvgRGBA(0,0,0,32), nvgRGBA(0,0,0,92));
 	nvgBeginPath(vg);
@@ -256,7 +256,7 @@ void drawCheckBox(struct NVGcontext* vg, const char* text, float x, float y, flo
 	nvgFontFace(vg, "icons");
 	nvgFillColor(vg, nvgRGBA(255,255,255,128));
 	nvgTextAlign(vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x+9+2, y+h*0.5f, cpToUTF8(ICON_CHECK,icon));
+	nvgText(vg, x+9+2, y+h*0.5f, cpToUTF8(ICON_CHECK,icon), NULL);
 }
 
 void drawButton(struct NVGcontext* vg, int preicon, const char* text, float x, float y, float w, float h, unsigned int col)
@@ -283,11 +283,11 @@ void drawButton(struct NVGcontext* vg, int preicon, const char* text, float x, f
 
 	nvgFontSize(vg, 20.0f);
 	nvgFontFace(vg, "sans-bold");
-	nvgTextBounds(vg, text, &tw, NULL);
+	tw = nvgTextBounds(vg, text, NULL, NULL);
 	if (preicon != 0) {
 		nvgFontSize(vg, h*1.3f);
 		nvgFontFace(vg, "icons");
-		nvgTextBounds(vg, cpToUTF8(preicon,icon), &iw, NULL);
+		iw = nvgTextBounds(vg, cpToUTF8(preicon,icon), NULL, NULL);
 		iw += h*0.15f;
 	}
 
@@ -296,16 +296,16 @@ void drawButton(struct NVGcontext* vg, int preicon, const char* text, float x, f
 		nvgFontFace(vg, "icons");
 		nvgFillColor(vg, nvgRGBA(255,255,255,96));
 		nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_MIDDLE);
-		nvgText(vg, x+w*0.5f-tw*0.5f-iw*0.75f, y+h*0.5f, cpToUTF8(preicon,icon));
+		nvgText(vg, x+w*0.5f-tw*0.5f-iw*0.75f, y+h*0.5f, cpToUTF8(preicon,icon), NULL);
 	}
 
 	nvgFontSize(vg, 20.0f);
 	nvgFontFace(vg, "sans-bold");
 	nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_MIDDLE);
 	nvgFillColor(vg, nvgRGBA(0,0,0,160));
-	nvgText(vg, x+w*0.5f-tw*0.5f+iw*0.25f,y+h*0.5f-1,text);
+	nvgText(vg, x+w*0.5f-tw*0.5f+iw*0.25f,y+h*0.5f-1,text, NULL);
 	nvgFillColor(vg, nvgRGBA(255,255,255,160));
-	nvgText(vg, x+w*0.5f-tw*0.5f+iw*0.25f,y+h*0.5f,text);
+	nvgText(vg, x+w*0.5f-tw*0.5f+iw*0.25f,y+h*0.5f,text, NULL);
 }
 
 void drawSlider(struct NVGcontext* vg, float pos, float x, float y, float w, float h)

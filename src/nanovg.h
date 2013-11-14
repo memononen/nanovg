@@ -186,10 +186,10 @@ void nvgFontFaceId(struct NVGcontext* ctx, int font);
 void nvgFontFace(struct NVGcontext* ctx, const char* font);
 
 // Draw text
-void nvgText(struct NVGcontext* ctx, float x, float y, const char* string);
+float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, const char* end);
 
 // Measure text
-void nvgTextBounds(struct NVGcontext* ctx, const char* string, float* width, float* bounds);
+float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end, float* bounds);
 void nvgVertMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh);
 
 

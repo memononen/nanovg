@@ -109,6 +109,14 @@ struct NVGcontext {
 	int textTriCount;
 };
 
+static float nvg__sqrtf(float a) { return sqrtf(a); }
+static float nvg__modf(float a, float b) { return fmodf(a, b); }
+static float nvg__sinf(float a) { return sinf(a); }
+static float nvg__cosf(float a) { return cosf(a); }
+static float nvg__tanf(float a) { return tanf(a); }
+static float nvg__atan2f(float a,float b) { return atan2f(a, b); }
+static float nvg__acosf(float a) { return acosf(a); }
+
 static int nvg__mini(int a, int b) { return a < b ? a : b; }
 static int nvg__maxi(int a, int b) { return a > b ? a : b; }
 static float nvg__minf(float a, float b) { return a < b ? a : b; }
@@ -119,7 +127,7 @@ static float nvg__cross(float dx0, float dy0, float dx1, float dy1) { return dx1
 
 static float nvg__normalize(float *x, float* y)
 {
-	float d = sqrtf((*x)*(*x) + (*y)*(*y));
+	float d = nvg__sqrtf((*x)*(*x) + (*y)*(*y));
 	if (d > 1e-6f) {
 		d = 1.0f / d;
 		*x *= d;
@@ -201,7 +209,7 @@ struct NVGcontext* nvgCreateInternal(struct NVGparams* params)
 	fontParams.renderDraw = NULL;
 	fontParams.renderDelete = NULL;
 	fontParams.userPtr = NULL;
-	ctx->fs = fonsCreate(&fontParams);
+	ctx->fs = fonsCreateInternal(&fontParams);
 	if (ctx->fs == NULL) goto error;
 
 	// Create font texture
@@ -222,7 +230,7 @@ void nvgDeleteInternal(struct NVGcontext* ctx)
 	if (ctx->cache != NULL) nvg__deletePathCache(ctx->cache);
 
 	if (ctx->fs)
-		fonsDelete(ctx->fs);
+		fonsDeleteInternal(ctx->fs);
 
 	if (ctx->params.renderDelete != NULL)
 		ctx->params.renderDelete(ctx->params.userPtr);
@@ -282,7 +290,7 @@ static float nvg__hue(float h, float m1, float m2)
 
 unsigned int nvgHSLA(float h, float s, float l, unsigned char a)
 {
-	h = fmod(h, 1.0f);
+	h = nvg__modf(h, 1.0f);
 	if (h < 0.0f) h += 1.0f;
 	s = nvg__clampf(s, 0.0f, 1.0f);
 	l = nvg__clampf(l, 0.0f, 1.0f);
@@ -323,7 +331,7 @@ static void nvg__xformScale(float* t, float sx, float sy)
 
 static void nvg__xformRotate(float* t, float a)
 {
-	float cs = cosf(a), sn = sinf(a);
+	float cs = nvg__cosf(a), sn = nvg__sinf(a);
 	t[0] = cs; t[1] = sn;
 	t[2] = -sn; t[3] = cs;
 	t[4] = 0.0f; t[5] = 0.0f;
@@ -1280,8 +1288,8 @@ void nvgArcTo(struct NVGcontext* ctx, float x1, float y1, float x2, float y2, fl
 	dy1 = y2-y1;
 	nvg__normalize(&dx0,&dy0);
 	nvg__normalize(&dx1,&dy1);
-	a = acosf(dx0*dx1 + dy0*dy1);
-	d = radius / tanf(a/2.0f);
+	a = nvg__acosf(dx0*dx1 + dy0*dy1);
+	d = radius / nvg__tanf(a/2.0f);
 
 	if (d > 10000.0f) {
 		nvgLineTo(ctx, x1,y1);
@@ -1291,14 +1299,14 @@ void nvgArcTo(struct NVGcontext* ctx, float x1, float y1, float x2, float y2, fl
 	if (nvg__cross(dx0,dy0, dx1,dy1) > 0.0f) {
 		cx = x1 + dx0*d + dy0*radius;
 		cy = y1 + dy0*d + -dx0*radius;
-		a0 = atan2f(dx0, -dy0);
-		a1 = atan2f(-dx1, dy1);
+		a0 = nvg__atan2f(dx0, -dy0);
+		a1 = nvg__atan2f(-dx1, dy1);
 		dir = NVG_CW;
 	} else {
 		cx = x1 + dx0*d + -dy0*radius;
 		cy = y1 + dy0*d + dx0*radius;
-		a0 = atan2f(-dx0, dy0);
-		a1 = atan2f(dx1, -dy1);
+		a0 = nvg__atan2f(-dx0, dy0);
+		a1 = nvg__atan2f(dx1, -dy1);
 		dir = NVG_CCW;
 	}
 
@@ -1345,7 +1353,7 @@ void nvgArc(struct NVGcontext* ctx, float cx, float cy, float r, float a0, float
 	// Split arc into max 90 degree segments.
 	ndivs = nvg__maxi(1, nvg__mini((int)(nvg__absf(da) / (NVG_PI*0.5f) + 0.5f), 5));
 	hda = (da / (float)ndivs) / 2.0f;
-	kappa = nvg__absf(4.0f / 3.0f * (1.0f - cosf(hda)) / sinf(hda));
+	kappa = nvg__absf(4.0f / 3.0f * (1.0f - nvg__cosf(hda)) / nvg__sinf(hda));
 
 	if (dir == NVG_CCW)
 		kappa = -kappa;
@@ -1353,8 +1361,8 @@ void nvgArc(struct NVGcontext* ctx, float cx, float cy, float r, float a0, float
 	nvals = 0;
 	for (i = 0; i <= ndivs; i++) {
 		a = a0 + da * (i/(float)ndivs);
-		dx = cosf(a);
-		dy = sinf(a);
+		dx = nvg__cosf(a);
+		dy = nvg__sinf(a);
 		x = cx + dx*r;
 		y = cy + dy*r;
 		tanx = -dy*r*kappa;
@@ -1526,7 +1534,7 @@ void nvgFontFace(struct NVGcontext* ctx, const char* font)
 	state->fontId = fonsGetFontByName(ctx->fs, font);
 }
 
-void nvgText(struct NVGcontext* ctx, float x, float y, const char* string)
+float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, const char* end)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	struct FONStextIter iter;
@@ -1538,7 +1546,10 @@ void nvgText(struct NVGcontext* ctx, float x, float y, const char* string)
 	int cverts = 0;
 	int nverts = 0;
 
-	if (state->fontId == FONS_INVALID) return;
+	if (end == NULL)
+		end = string + strlen(string);
+
+	if (state->fontId == FONS_INVALID) return x;
 
 	fonsSetSize(ctx->fs, state->fontSize*scale);
 	fonsSetSpacing(ctx->fs, state->letterSpacing*scale);
@@ -1546,11 +1557,11 @@ void nvgText(struct NVGcontext* ctx, float x, float y, const char* string)
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 
-	cverts = nvg__maxi(2, strlen(string)) * 6; // conservative estimate.
+	cverts = nvg__maxi(2, (int)(end - string)) * 6; // conservative estimate.
 	verts = nvg__allocTempVerts(ctx, cverts);
-	if (verts == NULL) return;
+	if (verts == NULL) return x;
 
-	fonsTextIterInit(ctx->fs, &iter, x*scale, y*scale, string);
+	fonsTextIterInit(ctx->fs, &iter, x*scale, y*scale, string, end);
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
 		// Trasnform corners.
 		float c[4*2];
@@ -1587,12 +1598,14 @@ void nvgText(struct NVGcontext* ctx, float x, float y, const char* string)
 
 	ctx->drawCallCount++;
 	ctx->textTriCount += nverts/3;
+
+	return iter.x;
 }
 
-void nvgTextBounds(struct NVGcontext* ctx, const char* string, float* width, float* bounds)
+float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end, float* bounds)
 {
 	struct NVGstate* state = nvg__getState(ctx);
-	if (state->fontId == FONS_INVALID) return;
+	if (state->fontId == FONS_INVALID) return 0;
 
 	fonsSetSize(ctx->fs, state->fontSize);
 	fonsSetSpacing(ctx->fs, state->letterSpacing);
@@ -1600,7 +1613,7 @@ void nvgTextBounds(struct NVGcontext* ctx, const char* string, float* width, flo
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 
-	fonsTextBounds(ctx->fs, string, width, bounds);
+	return fonsTextBounds(ctx->fs, string, end, bounds);
 }
 
 void nvgVertMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh)
