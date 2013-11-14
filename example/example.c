@@ -744,7 +744,7 @@ int main()
 
 	glfwMakeContextCurrent(window);
 
-	vg = glnvgCreate();
+	vg = glnvgCreate(512,512);
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
 		return -1;

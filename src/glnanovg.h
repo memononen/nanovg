@@ -633,7 +633,7 @@ static void glnvg__renderDelete(void* uptr)
 }
 
 
-struct NVGcontext* glnvgCreate()
+struct NVGcontext* glnvgCreate(int atlasw, int atlash)
 {
 	struct NVGparams params;
 	struct NVGcontext* ctx = NULL;
@@ -652,6 +652,8 @@ struct NVGcontext* glnvgCreate()
 	params.renderTriangles = glnvg__renderTriangles;
 	params.renderDelete = glnvg__renderDelete;
 	params.userPtr = gl;
+	params.atlasWidth = atlasw;
+	params.atlasHeight = atlash;
 
 	ctx = nvgCreateInternal(&params);
 	if (ctx == NULL) goto error;

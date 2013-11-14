@@ -201,8 +201,8 @@ struct NVGcontext* nvgCreateInternal(struct NVGparams* params)
 
 	// Init font rendering
 	memset(&fontParams, 0, sizeof(fontParams));
-	fontParams.width = 512;
-	fontParams.height = 512;
+	fontParams.width = params->atlasWidth;
+	fontParams.height = params->atlasHeight;
 	fontParams.flags = FONS_ZERO_TOPLEFT;
 	fontParams.renderCreate = NULL;
 	fontParams.renderUpdate = NULL;
