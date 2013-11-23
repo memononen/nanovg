@@ -110,6 +110,7 @@ void nvgDeleteInternal(struct NVGcontext* ctx);
 unsigned int nvgRGB(unsigned char r, unsigned char g, unsigned char b);
 unsigned int nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 unsigned int nvgLerpRGBA(unsigned int c0, unsigned int c1, float u);
+unsigned int nvgTransRGBA(unsigned int c0, unsigned char a);
 unsigned int nvgHSL(float h, float s, float l);
 unsigned int nvgHSLA(float h, float s, float l, unsigned char a);
 
@@ -177,6 +178,7 @@ void nvgStroke(struct NVGcontext* ctx);
 // Add fonts
 int nvgCreateFont(struct NVGcontext* ctx, const char* name, const char* path);
 int nvgCreateFontMem(struct NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int freeData);
+int nvgFindFont(struct NVGcontext* ctx, const char* name);
 
 // State setting
 void nvgFontSize(struct NVGcontext* ctx, float size);

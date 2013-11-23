@@ -260,6 +260,14 @@ unsigned int nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned
 	return (r) | (g << 8) | (b << 16) | (a << 24);
 }
 
+unsigned int nvgTransRGBA(unsigned int c, unsigned char a)
+{
+	int r = (c) & 0xff;
+	int g = (c>>8) & 0xff;
+	int b = (c>>16) & 0xff;
+	return nvgRGBA(r,g,b,a);
+}
+
 unsigned int nvgLerpRGBA(unsigned int c0, unsigned int c1, float u)
 {
 	int iu = (float)(nvg__clampf(u, 0.0f, 1.0f) * 256.0f);
@@ -1264,7 +1272,7 @@ void nvgBezierTo(struct NVGcontext* ctx, float c1x, float c1y, float c2x, float 
 void nvgArcTo(struct NVGcontext* ctx, float x1, float y1, float x2, float y2, float radius)
 {
 	float x0 = ctx->commandx;
-	float y0 = ctx->commandx;
+	float y0 = ctx->commandy;
 	float dx0,dy0, dx1,dy1, a, d, cx,cy, a0,a1;
 	int dir;
 
@@ -1291,6 +1299,8 @@ void nvgArcTo(struct NVGcontext* ctx, float x1, float y1, float x2, float y2, fl
 	a = nvg__acosf(dx0*dx1 + dy0*dy1);
 	d = radius / nvg__tanf(a/2.0f);
 
+//	printf("a=%f° d=%f\n", a/NVG_PI*180.0f, d);
+
 	if (d > 10000.0f) {
 		nvgLineTo(ctx, x1,y1);
 		return;
@@ -1302,12 +1312,14 @@ void nvgArcTo(struct NVGcontext* ctx, float x1, float y1, float x2, float y2, fl
 		a0 = nvg__atan2f(dx0, -dy0);
 		a1 = nvg__atan2f(-dx1, dy1);
 		dir = NVG_CW;
+//		printf("CW c=(%f, %f) a0=%f° a1=%f°\n", cx, cy, a0/NVG_PI*180.0f, a1/NVG_PI*180.0f);
 	} else {
 		cx = x1 + dx0*d + -dy0*radius;
 		cy = y1 + dy0*d + dx0*radius;
 		a0 = nvg__atan2f(-dx0, dy0);
 		a1 = nvg__atan2f(dx1, -dy1);
 		dir = NVG_CCW;
+//		printf("CCW c=(%f, %f) a0=%f° a1=%f°\n", cx, cy, a0/NVG_PI*180.0f, a1/NVG_PI*180.0f);
 	}
 
 	nvgArc(ctx, cx, cy, radius, a0, a1, dir);
@@ -1495,6 +1507,12 @@ int nvgCreateFont(struct NVGcontext* ctx, const char* name, const char* path)
 int nvgCreateFontMem(struct NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int freeData)
 {
 	return fonsAddFontMem(ctx->fs, name, data, ndata, freeData);
+}
+
+int nvgFindFont(struct NVGcontext* ctx, const char* name)
+{
+	if (name == NULL) return -1;
+	return fonsGetFontByName(ctx->fs, name);
 }
 
 // State setting
