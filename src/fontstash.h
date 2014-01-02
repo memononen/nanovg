@@ -125,11 +125,11 @@ static void fons__tmpfree(void* ptr, void* up);
 #ifndef FONS_INIT_FONTS
 #	define FONS_INIT_FONTS 4
 #endif
-#ifndef FONS_INIT_ROWS
-#	define FONS_INIT_ROWS 64
-#endif
 #ifndef FONS_INIT_GLYPHS
 #	define FONS_INIT_GLYPHS 256
+#endif
+#ifndef FONS_INIT_ATLAS_NODES
+#	define FONS_INIT_ATLAS_NODES 256
 #endif
 #ifndef FONS_VERTEX_COUNT
 #	define FONS_VERTEX_COUNT 1024
@@ -195,17 +195,16 @@ struct FONSstate
 	float spacing;
 };
 
-struct FONSrow
-{
-	short x,y,h;
+struct FONSatlasNode {
+    short x, y, width;
 };
 
 struct FONSatlas
 {
 	int width, height;
-	struct FONSrow* rows;
-	int crows;
-	int nrows;
+	struct FONSatlasNode* nodes;
+	int nnodes;
+	int cnodes;
 };
 
 struct FONScontext
@@ -284,14 +283,16 @@ static unsigned int fons__decutf8(unsigned int* state, unsigned int* codep, unsi
 	return *state;
 }
 
+// Atlas based on Skyline Pin Packer by Jukka Jylänki
+
 static void fons__deleteAtlas(struct FONSatlas* atlas)
 {
 	if (atlas == NULL) return;
-	if (atlas->rows != NULL) free(atlas->rows);
+	if (atlas->nodes != NULL) free(atlas->nodes);
 	free(atlas);
 }
 
-static struct FONSatlas* fons__allocAtlas(int w, int h, int rows)
+static struct FONSatlas* fons__allocAtlas(int w, int h, int nnodes)
 {
 	struct FONSatlas* atlas = NULL;
 
@@ -303,12 +304,18 @@ static struct FONSatlas* fons__allocAtlas(int w, int h, int rows)
 	atlas->width = w;
 	atlas->height = h;
 
-	// Allocate space for rows
-	atlas->rows = (struct FONSrow*)malloc(sizeof(struct FONSrow) * rows);
-	if (atlas->rows == NULL) goto error;
-	memset(atlas->rows, 0, sizeof(struct FONSrow) * rows);
-	atlas->crows = rows;
-	atlas->nrows = 0;
+	// Allocate space for skyline nodes
+	atlas->nodes = (struct FONSatlasNode*)malloc(sizeof(struct FONSatlasNode) * nnodes);
+	if (atlas->nodes == NULL) goto error;
+	memset(atlas->nodes, 0, sizeof(struct FONSatlasNode) * nnodes);
+	atlas->nnodes = 0;
+	atlas->cnodes = nnodes;
+
+	// Init root node.
+	atlas->nodes[0].x = 0;
+	atlas->nodes[0].y = 0;
+	atlas->nodes[0].width = w;
+	atlas->nnodes++;
 
 	return atlas;
 
@@ -317,63 +324,120 @@ error:
 	return NULL;
 }
 
-static struct FONSrow* fons__atlasAllocRow(struct FONSatlas* atlas)
+static int fons__atlasInsertNode(struct FONSatlas* atlas, int idx, int x, int y, int w)
 {
-	struct FONSrow* rows = NULL;
-	if (atlas->nrows+1 > atlas->crows) {
-		atlas->crows *= 2;
-		rows = (struct FONSrow*)malloc(sizeof(struct FONSrow) * atlas->crows);
-		if (rows == NULL) return NULL;
-		memset(rows, 0, sizeof(struct FONSrow) * atlas->crows);
-		if (atlas->nrows > 0)
-			memcpy(rows, atlas->rows, sizeof(struct FONSrow) * atlas->nrows);
-		free(atlas->rows);
-		atlas->rows = rows;
+	int i;
+	// Insert node
+	if (atlas->nnodes+1 > atlas->cnodes) {
+		atlas->cnodes = atlas->cnodes == 0 ? 8 : atlas->cnodes * 2;
+		atlas->nodes = (struct FONSatlasNode*)realloc(atlas->nodes, sizeof(struct FONSatlasNode) * atlas->cnodes);
+		if (atlas->nodes == NULL)
+			return 0;
 	}
-	atlas->nrows++;
-	return &atlas->rows[atlas->nrows-1];
+	for (i = atlas->nnodes; i > idx; i--)
+		atlas->nodes[i] = atlas->nodes[i-1];
+	atlas->nodes[idx].x = x;
+	atlas->nodes[idx].y = y;
+	atlas->nodes[idx].width = w;
+	atlas->nnodes++;
+
+	return 1;
 }
 
-static int fons__atlasAddRect(struct FONSatlas* atlas, int rw, int rh, int* rx, int* ry)
+static void fons__atlasRemoveNode(struct FONSatlas* atlas, int idx)
 {
-	int i, py;
-	struct FONSrow* br = NULL;
+	int i;
+	if (atlas->nnodes == 0) return;
+	for (i = idx; i < atlas->nnodes-1; i++)
+		atlas->nodes[i] = atlas->nodes[i+1];
+	atlas->nnodes--;
+}
 
-	// Round row height
-	rh = (rh+7) & ~7;;
-	
-	// Find row where the glyph can be fit.
-	for (i = 0; i < atlas->nrows; ++i) {
-		int rmax = atlas->rows[i].h, rmin = rmax - rmax/4;
-		if (rh >= rmin && rh <= rmax && (atlas->rows[i].x+rw+1) <= atlas->width) {
-			br = &atlas->rows[i];
+static int fons__atlasAddSkylineLevel(struct FONSatlas* atlas, int idx, int x, int y, int w, int h)
+{
+	int i;
+
+	// Insert new node
+	if (fons__atlasInsertNode(atlas, idx, x, y+h, w) == 0)
+		return 0;
+
+	// Delete skyline segments that fall under the shaodw of the new segment.
+	for (i = idx+1; i < atlas->nnodes; i++) {
+		if (atlas->nodes[i].x < atlas->nodes[i-1].x + atlas->nodes[i-1].width) {
+			int shrink = atlas->nodes[i-1].x + atlas->nodes[i-1].width - atlas->nodes[i].x;
+			atlas->nodes[i].x += shrink;
+			atlas->nodes[i].width -= shrink;
+			if (atlas->nodes[i].width <= 0) {
+				fons__atlasRemoveNode(atlas, i);
+				i--;
+			} else {
+				break;
+			}
+		} else {
 			break;
 		}
 	}
 
-	// If no row found, add new.
-	if (br == NULL) {
-		py = 0;
-		// Check that there is enough space.
-		if (atlas->nrows > 0) {
-			py = atlas->rows[atlas->nrows-1].y + atlas->rows[atlas->nrows-1].h+1;
-			if (py+rh > atlas->height)
-				return 0;
+	// Merge same height skyline segments that are next to each other.
+	for (i = 0; i < atlas->nnodes-1; i++) {
+		if (atlas->nodes[i].y == atlas->nodes[i+1].y) {
+			atlas->nodes[i].width += atlas->nodes[i+1].width;
+			fons__atlasRemoveNode(atlas, i+1);
+			i--;
 		}
-		// Init and add row
-		br = fons__atlasAllocRow(atlas);
-		if (br == NULL)
-			return 0;
-		br->x = 0;
-		br->y = py;
-		br->h = rh;
 	}
 
-	*rx = br->x;
-	*ry = br->y;
+	return 1;
+}
 
-	// Advance row location.
-	br->x += rw+1;
+static int fons__atlasRectFits(struct FONSatlas* atlas, int i, int w, int h)
+{
+	// Checks if there is enough space at the location of skyline span 'i',
+	// and return the max height of all skyline spans under that at that location,
+	// (think tetris block being dropped at that position). Or -1 if no space found.
+	int x = atlas->nodes[i].x;
+	int y = atlas->nodes[i].y;
+	if (x + w > atlas->width)
+		return -1;
+	int spaceLeft = w;
+	while (spaceLeft > 0) {
+		if (i == atlas->nnodes) return -1;
+		y = fons__maxi(y, atlas->nodes[i].y);
+		if (y + h > atlas->height) return -1;
+		spaceLeft -= atlas->nodes[i].width;
+		++i;
+	}
+	return y;
+}
+
+static int fons__atlasAddRect(struct FONSatlas* atlas, int rw, int rh, int* rx, int* ry)
+{
+	int besth = atlas->height, bestw = atlas->width, besti = -1;
+	int bestx, besty, i;
+
+	// Bottom left fit heuristic.
+	for (i = 0; i < atlas->nnodes; i++) {
+		int y = fons__atlasRectFits(atlas, i, rw, rh);
+		if (y != -1) {
+			if (y + rh < besth || (y + rh == besth && atlas->nodes[i].width < bestw)) {
+				besti = i;
+				bestw = atlas->nodes[i].width;
+				besth = y + rh;
+				bestx = atlas->nodes[i].x;
+				besty = y;
+			}
+		}
+	}
+
+	if (besti == -1)
+		return 0;
+
+	// Perform the actual packing.
+	if (fons__atlasAddSkylineLevel(atlas, besti, bestx, besty, rw, rh) == 0)
+		return 0;
+
+	*rx = bestx;
+	*ry = besty;
 
 	return 1;
 }
@@ -395,7 +459,7 @@ struct FONScontext* fonsCreateInternal(struct FONSparams* params)
 			goto error;
 	}
 
-	stash->atlas = fons__allocAtlas(stash->params.width, stash->params.height, FONS_INIT_ROWS);
+	stash->atlas = fons__allocAtlas(stash->params.width, stash->params.height, FONS_INIT_ATLAS_NODES);
 	if (stash->atlas == NULL) goto error;
 
 	// Allocate space for fonts.
@@ -499,18 +563,12 @@ static void fons__freeFont(struct FONSfont* font)
 
 static int fons__allocFont(struct FONScontext* stash)
 {
-	struct FONSfont** fonts = NULL;
 	struct FONSfont* font = NULL;
 	if (stash->nfonts+1 > stash->cfonts) {
-		stash->cfonts *= 2;
-		fonts = (struct FONSfont**)malloc(sizeof(struct FONSfont*) * stash->cfonts);
-		if (fonts == NULL) goto error;
-		memset(fonts, 0, sizeof(struct FONSfont*) * stash->cfonts);
-		if (stash->nfonts > 0)
-			memcpy(fonts, stash->fonts, sizeof(struct FONSfont*));
-
-		free(stash->fonts);
-		stash->fonts = fonts;
+		stash->cfonts = stash->cfonts == 0 ? 8 : stash->cfonts * 2;
+		stash->fonts = (struct FONSfont**)realloc(stash->fonts, sizeof(struct FONSfont*) * stash->cfonts);
+		if (stash->fonts == NULL)
+			return -1;
 	}
 	font = (struct FONSfont*)malloc(sizeof(struct FONSfont));
 	if (font == NULL) goto error;
@@ -613,16 +671,10 @@ int fonsGetFontByName(struct FONScontext* s, const char* name)
 
 static struct FONSglyph* fons__allocGlyph(struct FONSfont* font)
 {
-	struct FONSglyph* glyphs = NULL;
 	if (font->nglyphs+1 > font->cglyphs) {
-		font->cglyphs *= 2;
-		glyphs = (struct FONSglyph*)malloc(sizeof(struct FONSglyph) * font->cglyphs);
-		if (glyphs == NULL) return NULL;
-		memset(glyphs, 0, sizeof(struct FONSglyph) * font->cglyphs);
-		if (font->nglyphs > 0)
-			memcpy(glyphs, font->glyphs, sizeof(struct FONSglyph) * font->nglyphs);
-		free(font->glyphs);
-		font->glyphs = glyphs;
+		font->cglyphs = font->cglyphs == 0 ? 8 : font->cglyphs * 2;
+		font->glyphs = (struct FONSglyph*)realloc(font->glyphs, sizeof(struct FONSglyph) * font->cglyphs);
+		if (font->glyphs == NULL) return NULL;
 	}
 	font->nglyphs++;
 	return &font->glyphs[font->nglyphs-1];
