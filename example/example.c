@@ -20,6 +20,9 @@
 #include <string.h>
 #include <iconv.h>
 #include <math.h>
+#ifdef NANOVG_GLEW
+#  include <GL/glew.h>
+#endif
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
 #define GLNANOVG_IMPLEMENTATION
@@ -743,6 +746,12 @@ int main()
 	glfwSetKeyCallback(window, key);
 
 	glfwMakeContextCurrent(window);
+#ifdef NANOVG_GLEW
+    if(glewInit() != GLEW_OK) {
+		printf("Could not init glew.\n");
+		return -1;
+	}
+#endif
 
 	vg = glnvgCreate(512,512);
 	if (vg == NULL) {
