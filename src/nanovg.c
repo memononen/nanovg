@@ -213,7 +213,7 @@ struct NVGcontext* nvgCreateInternal(struct NVGparams* params)
 	if (ctx->fs == NULL) goto error;
 
 	// Create font texture
-	ctx->fontImage = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, 512, 512, NULL);
+	ctx->fontImage = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, fontParams.width, fontParams.height, NULL);
 	if (ctx->fontImage == 0) goto error;
 
 	return ctx;
