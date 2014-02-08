@@ -1552,13 +1552,18 @@ void nvgFontFace(struct NVGcontext* ctx, const char* font)
 	state->fontId = fonsGetFontByName(ctx->fs, font);
 }
 
+static float nvg__quantize(float a, float d)
+{
+	return ((int)(a / d)) * d;
+}
+
 float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, const char* end)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	struct FONStextIter iter;
 	struct FONSquad q;
 	struct NVGvertex* verts;
-	float scale = nvg__minf(nvg__getAverageScale(state->xform), 4.0f);
+	float scale = nvg__minf(nvg__quantize(nvg__getAverageScale(state->xform), 0.01f), 4.0f);
 	float invscale = 1.0f / scale;
 	int dirty[4];
 	int cverts = 0;

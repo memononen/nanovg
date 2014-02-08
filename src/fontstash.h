@@ -819,18 +819,15 @@ static struct FONSglyph* fons__getGlyph(struct FONScontext* stash, struct FONSfo
 		dst[x + (gh-1)*stash->params.width] = 0;
 	}
 
-	/*
 	// Debug code to color the glyph background
-	int x,y;
-	unsigned char* fdst = &stash->texData[glyph->x0 + glyph->y0 * stash->params.width];
+/*	unsigned char* fdst = &stash->texData[glyph->x0 + glyph->y0 * stash->params.width];
 	for (y = 0; y < gh; y++) {
 		for (x = 0; x < gw; x++) {
 			int a = (int)fdst[x+y*stash->params.width] + 20;
 			if (a > 255) a = 255;
 			fdst[x+y*stash->params.width] = a;
 		}
-	}
-	*/
+	}*/
 
 	// Blur
 	if (iblur > 0) {
@@ -851,11 +848,11 @@ static void fons__getQuad(struct FONScontext* stash, struct FONSfont* font,
 						   struct FONSglyph* prevGlyph, struct FONSglyph* glyph,
 						   float scale, float spacing, float* x, float* y, struct FONSquad* q)
 {
-	int rx,ry,xoff,yoff,x0,y0,x1,y1;
+	float rx,ry,xoff,yoff,x0,y0,x1,y1;
 
 	if (prevGlyph) {
 		float adv = stbtt_GetGlyphKernAdvance(&font->font, prevGlyph->index, glyph->index) * scale;
-		*x += adv;
+		*x += (int)(adv + 0.5f);
 	}
 
 	// Each glyph has 2px border to allow good interpolation,
