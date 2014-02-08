@@ -18,7 +18,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <iconv.h>
 #include <math.h>
 #ifdef NANOVG_GLEW
 #  include <GL/glew.h>
@@ -27,6 +26,12 @@
 #include "nanovg.h"
 #define GLNANOVG_IMPLEMENTATION
 #include "glnanovg.h"
+
+#ifdef _MSC_VER
+#define snprintf _snprintf
+#else
+#include <iconv.h>
+#endif
 
 #define ICON_SEARCH 0x1F50D
 #define ICON_CIRCLED_CROSS 0x2716
