@@ -238,11 +238,13 @@ void nvgDeleteInternal(struct NVGcontext* ctx)
 	free(ctx);
 }
 
-void nvgBeginFrame(struct NVGcontext* ctx)
+void nvgBeginFrame(struct NVGcontext* ctx, int width, int height)
 {
 /*	printf("Tris: draws:%d  fill:%d  stroke:%d  text:%d  TOT:%d\n",
 		ctx->drawCallCount, ctx->fillTriCount, ctx->strokeTriCount, ctx->textTriCount,
 		ctx->fillTriCount+ctx->strokeTriCount+ctx->textTriCount);*/
+	
+	ctx->params.renderViewport(ctx->params.userPtr, width, height);
 
 	ctx->drawCallCount = 0;
 	ctx->fillTriCount = 0;

@@ -1,21 +1,4 @@
-//
-// Copyright (c) 2013 Mikko Mononen memon@inside.org
-//
-// This software is provided 'as-is', without any express or implied
-// warranty.  In no event will the authors be held liable for any damages
-// arising from the use of this software.
-// Permission is granted to anyone to use this software for any purpose,
-// including commercial applications, and to alter it and redistribute it
-// freely, subject to the following restrictions:
-// 1. The origin of this software must not be misrepresented; you must not
-//    claim that you wrote the original software. If you use this software
-//    in a product, an acknowledgment in the product documentation would be
-//    appreciated but is not required.
-// 2. Altered source versions must be plainly marked as such, and must not be
-//    misrepresented as being the original software.
-// 3. This notice may not be removed or altered from any source distribution.
-//
-
+#include "demo.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -24,8 +7,7 @@
 #endif
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
-#define GLNANOVG_IMPLEMENTATION
-#include "glnanovg.h"
+
 
 #ifdef _MSC_VER
 #define snprintf _snprintf
@@ -709,179 +691,156 @@ void drawColorwheel(struct NVGcontext* vg, float x, float y, float w, float h, f
 	nvgRestore(vg);
 }
 
-void errorcb(int error, const char* desc)
-{
-	printf("GLFW error: %s\n", desc);
-}
 
-int blowup = 0;
-
-static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
+int loadDemoData(struct NVGcontext* vg, struct DemoData* data)
 {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
-	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-		blowup = !blowup;
-}
-
-int main()
-{
-	GLFWwindow* window;
-	int fontNormal = -1, fontBold = -1, fontIcons = -1; 
-	struct NVGcontext* vg = NULL;
-	int images[12];
 	int i;
 
-	if (!glfwInit()) {
-		printf("Failed to init GLFW.");
+	if (vg == NULL)
 		return -1;
-	}
-
-	glfwSetErrorCallback(errorcb);
-
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-
-    window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
-	if (!window) {
-		glfwTerminate();
-		return -1;
-	}
-
-	glfwSetKeyCallback(window, key);
-
-	glfwMakeContextCurrent(window);
-#ifdef NANOVG_GLEW
-    if(glewInit() != GLEW_OK) {
-		printf("Could not init glew.\n");
-		return -1;
-	}
-#endif
-
-	vg = glnvgCreate(512,512);
-	if (vg == NULL) {
-		printf("Could not init nanovg.\n");
-		return -1;
-	}
 
 	for (i = 0; i < 12; i++) {
 		char file[128];
 		snprintf(file, 128, "../example/images/image%d.jpg", i+1);
-		images[i] = nvgCreateImage(vg, file);
-		if (images[i] == 0) {
+		data->images[i] = nvgCreateImage(vg, file);
+		if (data->images[i] == 0) {
 			printf("Could not load %s.\n", file);
 			return -1;
 		}
 	}
 
-	fontIcons = nvgCreateFont(vg, "icons", "../example/entypo.ttf");
-	if (fontIcons == -1) {
+	data->fontIcons = nvgCreateFont(vg, "icons", "../example/entypo.ttf");
+	if (data->fontIcons == -1) {
 		printf("Could not add font icons.\n");
 		return -1;
 	}
-	fontNormal = nvgCreateFont(vg, "sans", "../example/Roboto-Regular.ttf");
-//	fontNormal = nvgAddFont(vg, "sans", "../example/FiraSans-Regular.ttf");
-	if (fontNormal == -1) {
+	data->fontNormal = nvgCreateFont(vg, "sans", "../example/Roboto-Regular.ttf");
+	if (data->fontNormal == -1) {
 		printf("Could not add font italic.\n");
 		return -1;
 	}
-	fontBold = nvgCreateFont(vg, "sans-bold", "../example/Roboto-Bold.ttf");
-//	fontBold = nvgAddFont(vg, "sans-bold", "../example/FiraSans-Bold.ttf");
-	if (fontBold == -1) {
+	data->fontBold = nvgCreateFont(vg, "sans-bold", "../example/Roboto-Bold.ttf");
+	if (data->fontBold == -1) {
 		printf("Could not add font bold.\n");
 		return -1;
 	}
 
-
-	glfwSetTime(0);
-
-	while (!glfwWindowShouldClose(window))
-	{
-//		float sx, sy, dx, dy, lh = 0;
-		double mx, my;
-		int width, height;
-		glfwGetCursorPos(window, &mx, &my);
-		glfwGetFramebufferSize(window, &width, &height);
-		// Update and render
-		glViewport(0, 0, width, height);
-		glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_CULL_FACE);
-		glDisable(GL_TEXTURE_2D);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0,width,height,0,-1,1);
-
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glDisable(GL_DEPTH_TEST);
-		glColor4ub(255,255,255,255);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-
-		float t = glfwGetTime();
-		float x,y,popy;
-
-		nvgBeginFrame(vg);
-
-		drawEyes(vg, width - 250, 50, 150, 100, mx, my, t);
-		drawGraph(vg, 0, height/2, width, height/2, t);
-		drawColorwheel(vg, width - 300, height - 300, 250.0f, 250.0f, t);
-
-		nvgSave(vg);
-		if (blowup) {
-//			nvgRotate(vg, 3.0f/180.0f*NVG_PI);
-			nvgScale(vg, 2.0f, 2.0f);
-		}
-
-		// Widgets
-		drawWindow(vg, "Widgets `n Stuff", 50, 50, 300, 400);
-		x = 60; y = 95;
-		drawSearchBox(vg, "Search", x,y,280,25);
-		y += 40;
-		drawDropDown(vg, "Effects", x,y,280,28);
-		popy = y + 14;
-		y += 45;
-
-		// Form
-		drawLabel(vg, "Login", x,y, 280,20);
-		y += 25;
-		drawEditBox(vg, "Email",  x,y, 280,28);
-		y += 35;
-		drawEditBox(vg, "Password", x,y, 280,28);
-		y += 38;
-		drawCheckBox(vg, "Remember me", x,y, 140,28);
-		drawButton(vg, ICON_LOGIN, "Sign in", x+138, y, 140, 28, nvgRGBA(0,96,128,255));
-		y += 45;
-
-		// Slider
-		drawLabel(vg, "Diameter", x,y, 280,20);
-		y += 25;
-		drawEditBoxNum(vg, "123.00", "px", x+180,y, 100,28);
-		drawSlider(vg, 0.4f, x,y, 170,28);
-		y += 55;
-
-		drawButton(vg, ICON_TRASH, "Delete", x, y, 160, 28, nvgRGBA(128,16,8,255));
-		drawButton(vg, 0, "Cancel", x+170, y, 110, 28, nvgRGBA(0,0,0,0));
-
-		// Thumbnails box
-		drawThumbnails(vg, 365, popy-30, 160, 300, images, 12, t);
-
-		nvgRestore(vg);
-
-		glEnable(GL_DEPTH_TEST);
-
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
-
-	for (i = 0; i < 12; i++)
-		nvgDeleteImage(vg, images[i]);
-
-	glnvgDelete(vg);
-
-	glfwTerminate();
 	return 0;
 }
+
+void freeDemoData(struct NVGcontext* vg, struct DemoData* data)
+{
+	int i;
+
+	if (vg == NULL)
+		return;
+
+	for (i = 0; i < 12; i++)
+		nvgDeleteImage(vg, data->images[i]);
+}
+
+void renderDemo(struct NVGcontext* vg, float mx, float my, float width, float height,
+				float t, int blowup, struct DemoData* data)
+{
+	float x,y,popy;
+
+	drawEyes(vg, width - 250, 50, 150, 100, mx, my, t);
+	drawGraph(vg, 0, height/2, width, height/2, t);
+	drawColorwheel(vg, width - 300, height - 300, 250.0f, 250.0f, t);
+
+	nvgSave(vg);
+	if (blowup) {
+//			nvgRotate(vg, 3.0f/180.0f*NVG_PI);
+		nvgScale(vg, 2.0f, 2.0f);
+	}
+
+	// Widgets
+	drawWindow(vg, "Widgets `n Stuff", 50, 50, 300, 400);
+	x = 60; y = 95;
+	drawSearchBox(vg, "Search", x,y,280,25);
+	y += 40;
+	drawDropDown(vg, "Effects", x,y,280,28);
+	popy = y + 14;
+	y += 45;
+
+	// Form
+	drawLabel(vg, "Login", x,y, 280,20);
+	y += 25;
+	drawEditBox(vg, "Email",  x,y, 280,28);
+	y += 35;
+	drawEditBox(vg, "Password", x,y, 280,28);
+	y += 38;
+	drawCheckBox(vg, "Remember me", x,y, 140,28);
+	drawButton(vg, ICON_LOGIN, "Sign in", x+138, y, 140, 28, nvgRGBA(0,96,128,255));
+	y += 45;
+
+	// Slider
+	drawLabel(vg, "Diameter", x,y, 280,20);
+	y += 25;
+	drawEditBoxNum(vg, "123.00", "px", x+180,y, 100,28);
+	drawSlider(vg, 0.4f, x,y, 170,28);
+	y += 55;
+
+	drawButton(vg, ICON_TRASH, "Delete", x, y, 160, 28, nvgRGBA(128,16,8,255));
+	drawButton(vg, 0, "Cancel", x+170, y, 110, 28, nvgRGBA(0,0,0,0));
+
+	// Thumbnails box
+	drawThumbnails(vg, 365, popy-30, 160, 300, data->images, 12, t);
+
+	nvgRestore(vg);
+}
+
+void initFPS(struct FPScounter* fps)
+{
+	memset(fps, 0, sizeof(struct FPScounter));
+}
+
+void updateFPS(struct FPScounter* fps, float frameTime)
+{
+	fps->head = (fps->head+1) % FPS_HISTORY_COUNT;
+	fps->values[fps->head] = frameTime;
+}
+
+void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps)
+{
+	int i, head;
+	float avg, w, h;
+	char str[64];
+
+	avg = 0;
+	head = fps->head;
+	for (i = 0; i < 10; i++) {
+		avg += fps->values[head];
+		head = (head+FPS_HISTORY_COUNT-1) % FPS_HISTORY_COUNT;
+	}
+	avg /= 10.0f;
+
+	w = 200;
+	h = 30;
+
+	nvgBeginPath(vg);
+	nvgRect(vg, x,y, w,h);
+	nvgFillColor(vg, nvgRGBA(0,0,0,128));
+	nvgFill(vg);
+
+	nvgBeginPath(vg);
+	nvgMoveTo(vg, x, y+h);
+	for (i = 0; i < FPS_HISTORY_COUNT; i++) {
+		float v = 1.0f / (0.00001f + fps->values[(fps->head+i) % FPS_HISTORY_COUNT]);
+		if (v > 80.0f) v = 80.0f;
+		float vx = x + ((float)i/(FPS_HISTORY_COUNT-1)) * w;
+		float vy = y + h - ((v / 80.0f) * h);
+		nvgLineTo(vg, vx, vy);
+	}
+	nvgLineTo(vg, x+w, y+h);
+	nvgFillColor(vg, nvgRGBA(255,192,0,128));
+	nvgFill(vg);
+
+	nvgFontSize(vg, 18.0f);
+	nvgFontFace(vg, "sans");
+	nvgTextAlign(vg,NVG_ALIGN_RIGHT|NVG_ALIGN_MIDDLE);
+	nvgFillColor(vg, nvgRGBA(240,240,240,255));
+	sprintf(str, "%.2f FPS", 1.0f / avg);
+	nvgText(vg, x+w-5,y+h/2, str, NULL);
+}
+

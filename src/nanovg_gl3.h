@@ -15,20 +15,23 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 //
-#ifndef GLNANOVG_H
-#define GLNANOVG_H
+#ifndef NANOVG_GL3_H
+#define NANOVG_GL3_H
 
-struct NVGcontext* glnvgCreate();
-void glnvgDelete(struct NVGcontext* ctx);
+struct NVGcontext* nvgCreateGL3();
+void nvgDeleteGL3(struct NVGcontext* ctx);
 
 #endif
 
-#ifdef GLNANOVG_IMPLEMENTATION
+#ifdef NANOVG_GL3_IMPLEMENTATION
 
 #include <stdlib.h>
+#include <string.h>
 #include "nanovg.h"
 
 enum GLNVGuniformLoc {
+	GLNVG_LOC_VIEWPOS,
+	GLNVG_LOC_VIEWSIZE,
 	GLNVG_LOC_SCISSORMAT,
 	GLNVG_LOC_SCISSOREXT,
 	GLNVG_LOC_PAINTMAT,
@@ -39,6 +42,8 @@ enum GLNVGuniformLoc {
 	GLNVG_LOC_OUTERCOL,
 	GLNVG_LOC_STROKEMULT,
 	GLNVG_LOC_TEX,
+	GLNVG_LOC_TEXOFFSET,
+	GLNVG_LOC_TEXTYPE,
 	GLNVG_MAX_LOCS
 };
 
@@ -59,10 +64,16 @@ struct GLNVGtexture {
 struct GLNVGcontext {
 	struct GLNVGshader gradShader;
 	struct GLNVGshader imgShader;
+	struct GLNVGshader solidShader;
+	struct GLNVGshader solidImgShader;
 	struct GLNVGtexture* textures;
+	float viewWidth, viewHeight;
 	int ntextures;
 	int ctextures;
 	int textureId;
+	GLuint vertArr;
+	GLuint vertBuf;
+	int vertArrSize;
 };
 
 static struct GLNVGtexture* glnvg__allocTexture(struct GLNVGcontext* gl)
@@ -134,12 +145,14 @@ static void glnvg__dumpProgramError(GLuint prog, const char* name)
 	printf("Program %s error:\n%s\n", name, str);
 }
 
-static void glnvg__checkError(const char* str)
+static int glnvg__checkError(const char* str)
 {
 	GLenum err = glGetError();
 	if (err != GL_NO_ERROR) {
 		printf("Error %08x after %s\n", err, str);
+		return 1;
 	}
+	return 0;
 }
 
 static int glnvg__createShader(struct GLNVGshader* shader, const char* name, const char* vshader, const char* fshader)
@@ -171,6 +184,11 @@ static int glnvg__createShader(struct GLNVGshader* shader, const char* name, con
 
 	glAttachShader(prog, vert);
 	glAttachShader(prog, frag);
+
+    glBindAttribLocation(prog, 0, "vertex");
+    glBindAttribLocation(prog, 1, "tcoord");
+    glBindAttribLocation(prog, 2, "color");
+
 	glLinkProgram(prog);
 	glGetProgramiv(prog, GL_LINK_STATUS, &status);
 	if (status != GL_TRUE) {
@@ -197,6 +215,8 @@ static void glnvg__deleteShader(struct GLNVGshader* shader)
 
 static void glnvg__getUniforms(struct GLNVGshader* shader)
 {
+	shader->loc[GLNVG_LOC_VIEWPOS] = glGetUniformLocation(shader->prog, "viewPos");
+	shader->loc[GLNVG_LOC_VIEWSIZE] = glGetUniformLocation(shader->prog, "viewSize");
 	shader->loc[GLNVG_LOC_SCISSORMAT] = glGetUniformLocation(shader->prog, "scissorMat");
 	shader->loc[GLNVG_LOC_SCISSOREXT] = glGetUniformLocation(shader->prog, "scissorExt");
 	shader->loc[GLNVG_LOC_PAINTMAT] = glGetUniformLocation(shader->prog, "paintMat");
@@ -207,24 +227,63 @@ static void glnvg__getUniforms(struct GLNVGshader* shader)
 	shader->loc[GLNVG_LOC_OUTERCOL] = glGetUniformLocation(shader->prog, "outerCol");
 	shader->loc[GLNVG_LOC_STROKEMULT] = glGetUniformLocation(shader->prog, "strokeMult");
 	shader->loc[GLNVG_LOC_TEX] = glGetUniformLocation(shader->prog, "tex");
+	shader->loc[GLNVG_LOC_TEXOFFSET] = glGetUniformLocation(shader->prog, "texOffset");
+	shader->loc[GLNVG_LOC_TEXTYPE] = glGetUniformLocation(shader->prog, "texType");
+}
+
+
+static void glnvg__resizeVertexBuffer(struct GLNVGcontext* gl, int size)
+{
+    glBindVertexArray(gl->vertArr);
+	glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
+	glBufferData(GL_ARRAY_BUFFER, size * sizeof(struct NVGvertex), 0, GL_STREAM_DRAW);
+	gl->vertArrSize = size;
 }
 
 static int glnvg__renderCreate(void* uptr)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 
-	static const char* fillVertShader = 
-		"#version 120\n"
-		"varying vec2 pos;\n"
-		"varying vec2 alpha;\n"
+	static const char* fillVertShader =
+		"#version 150 core\n"
+		"uniform vec2 viewPos;\n"
+		"uniform vec2 viewSize;\n"
+		"in vec2 vertex;\n"
+		"in vec2 tcoord;\n"
+		"out vec2 pos;\n"
+		"out vec2 alpha;\n"
 		"void main(void) {\n"
-		"	alpha = gl_MultiTexCoord0.st;"
-		"	pos = gl_Vertex.xy;\n"
-		"	gl_Position = ftransform();\n"
+		"	alpha = tcoord.st;\n"
+		"	pos = vertex.xy;\n"
+		"	gl_Position = vec4(2.0*(vertex.x+viewPos.x-0.5)/viewSize.x - 1.0, 1.0 - 2.0*(vertex.y+viewPos.y-0.5)/viewSize.y, 0, 1);\n"
+		"}\n";
+
+	static const char* fillVertSolidShader =
+		"#version 150 core\n"
+		"uniform vec2 viewPos;\n"
+		"uniform vec2 viewSize;\n"
+		"in vec2 vertex;\n"
+		"void main(void) {\n"
+		"	gl_Position = vec4(2.0*(vertex.x+viewPos.x-0.5)/viewSize.x - 1.0, 1.0 - 2.0*(vertex.y+viewPos.y-0.5)/viewSize.y, 0, 1);\n"
+		"}\n";
+
+	static const char* fillVertSolidImgShader =
+		"#version 150 core\n"
+		"uniform vec2 viewPos;\n"
+		"uniform vec2 viewSize;\n"
+		"in vec2 vertex;\n"
+		"in vec2 tcoord;\n"
+		"in vec4 color;\n"
+		"out vec2 ftcoord;\n"
+		"out vec4 fcolor;\n"
+		"void main(void) {\n"
+		"	ftcoord = tcoord;\n"
+		"	fcolor = color;\n"
+		"	gl_Position = vec4(2.0*(vertex.x+viewPos.x-0.5)/viewSize.x - 1.0, 1.0 - 2.0*(vertex.y+viewPos.y-0.5)/viewSize.y, 0, 1);\n"
 		"}\n";
 
 	static const char* fillFragGradShader = 
-		"#version 120\n"
+		"#version 150 core\n"
 		"uniform mat3 scissorMat;\n"
 		"uniform vec2 scissorExt;\n"
 		"uniform mat3 paintMat;\n"
@@ -234,8 +293,9 @@ static int glnvg__renderCreate(void* uptr)
 		"uniform vec4 innerCol;\n"
 		"uniform vec4 outerCol;\n"
 		"uniform float strokeMult;\n"
-		"varying vec2 pos;\n"
-		"varying vec2 alpha;\n"
+		"in vec2 pos;\n"
+		"in vec2 alpha;\n"
+		"out vec4 outColor;\n"
 		"float sdroundrect(vec2 pt, vec2 ext, float rad) {\n"
 		"	vec2 ext2 = ext - vec2(rad,rad);\n"
 		"	vec2 d = abs(pt) - ext2;\n"
@@ -254,19 +314,22 @@ static int glnvg__renderCreate(void* uptr)
 		"	vec4 color = mix(innerCol,outerCol,d);\n"
 		"	// Combine alpha\n"
 		"	color.w *= strokeAlpha * scissor;\n"
-		"	gl_FragColor = color;\n"
+		"	outColor = color;\n"
 		"}\n";
 
 	static const char* fillFragImgShader = 
-		"#version 120\n"
+		"#version 150 core\n"
 		"uniform mat3 scissorMat;\n"
 		"uniform vec2 scissorExt;\n"
 		"uniform mat3 paintMat;\n"
 		"uniform vec2 extent;\n"
 		"uniform float strokeMult;\n"
 		"uniform sampler2D tex;\n"
-		"varying vec2 pos;\n"
-		"varying vec2 alpha;\n"
+		"uniform vec2 texOffset;\n"
+		"uniform int texType;\n"
+		"in vec2 pos;\n"
+		"in vec2 alpha;\n"
+		"out vec4 outColor;\n"
 		"void main(void) {\n"
 		"	// Scissoring\n"
 		"	vec2 sc = vec2(0.5,0.5) - (abs((scissorMat * vec3(pos,1.0)).xy) - scissorExt);\n"
@@ -277,10 +340,32 @@ static int glnvg__renderCreate(void* uptr)
 		"	// Calculate color fron texture\n"
 		"	vec2 pt = (paintMat * vec3(pos,1.0)).xy;\n"
 		"	pt /= extent;\n"
-		"	vec4 color = texture2D(tex, pt);\n"
+		"	vec4 color = texture(tex, pt + texOffset);\n"
+		"   color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
 		"	// Combine alpha\n"
 		"	color.w *= strokeAlpha * scissor;\n"
-		"	gl_FragColor = color;\n"
+		"	outColor = color;\n"
+		"}\n";
+
+	static const char* fillFragSolidShader = 
+		"#version 150 core\n"
+		"out vec4 outColor;\n"
+		"void main(void) {\n"
+		"	outColor = vec4(1,1,1,1);\n"
+		"}\n";
+
+	static const char* fillFragSolidImgShader = 
+		"#version 150 core\n"
+		"uniform sampler2D tex;\n"
+		"uniform vec2 texOffset;\n"
+		"uniform int texType;\n"
+		"in vec2 ftcoord;\n"
+		"in vec4 fcolor;\n"
+		"out vec4 outColor;\n"
+		"void main(void) {\n"
+		"	vec4 color = texture(tex, ftcoord + texOffset);\n"
+		"   color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
+		"	outColor = color * fcolor;\n"
 		"}\n";
 
 	glnvg__checkError("init");
@@ -289,10 +374,21 @@ static int glnvg__renderCreate(void* uptr)
 		return 0;
 	if (glnvg__createShader(&gl->imgShader, "image", fillVertShader, fillFragImgShader) == 0)
 		return 0;
+	if (glnvg__createShader(&gl->solidShader, "solid", fillVertSolidShader, fillFragSolidShader) == 0)
+		return 0;
+	if (glnvg__createShader(&gl->solidImgShader, "solid-img", fillVertSolidImgShader, fillFragSolidImgShader) == 0)
+		return 0;
 
 	glnvg__checkError("uniform locations");
 	glnvg__getUniforms(&gl->gradShader);
 	glnvg__getUniforms(&gl->imgShader);
+	glnvg__getUniforms(&gl->solidShader);
+	glnvg__getUniforms(&gl->solidImgShader);
+
+	// Create dynamic vertex array
+	glGenVertexArrays(1, &gl->vertArr);
+	glGenBuffers(1, &gl->vertBuf);
+	gl->vertArrSize = 0;
 
 	glnvg__checkError("done");
 
@@ -309,7 +405,7 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, const 
 	tex->height = h;
 	tex->type = type;
 	glBindTexture(GL_TEXTURE_2D, tex->tex);
-	
+
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->width);
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
@@ -318,12 +414,13 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, const 
 	if (type == NVG_TEXTURE_RGBA)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	else
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glnvg__checkError("create tex");
+	if (glnvg__checkError("create tex"))
+		return 0;
 
 	return tex->id;
 }
@@ -338,6 +435,7 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
+
 	if (tex == NULL) return 0;
 	glBindTexture(GL_TEXTURE_2D, tex->tex);
 
@@ -349,7 +447,7 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 	if (tex->type == NVG_TEXTURE_RGBA)
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	else
-		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RED, GL_UNSIGNED_BYTE, data);
 
 	return 1;
 }
@@ -437,18 +535,23 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		tex = glnvg__findTexture(gl, paint->image);
 		if (tex == NULL) return 0;
 		glUseProgram(gl->imgShader.prog);
+		glUniform2f(gl->imgShader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+		glUniform2f(gl->imgShader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 		glUniformMatrix3fv(gl->imgShader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
 		glUniform2f(gl->imgShader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
 		glUniformMatrix3fv(gl->imgShader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
 		glUniform2f(gl->imgShader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
 		glUniform1f(gl->imgShader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + aasize*0.5f);
 		glUniform1i(gl->imgShader.loc[GLNVG_LOC_TEX], 0);
+		glUniform2f(gl->imgShader.loc[GLNVG_LOC_TEXOFFSET], 0.5f / (float)tex->width, 0.5f / (float)tex->height);
+		glUniform1i(gl->imgShader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
 		glnvg__checkError("tex paint loc");
 		glBindTexture(GL_TEXTURE_2D, tex->tex);
-		glEnable(GL_TEXTURE_2D);
 		glnvg__checkError("tex paint tex");
 	} else {
 		glUseProgram(gl->gradShader.prog);
+		glUniform2f(gl->gradShader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+		glUniform2f(gl->gradShader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 		glUniformMatrix3fv(gl->gradShader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
 		glUniform2f(gl->gradShader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
 		glUniformMatrix3fv(gl->gradShader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
@@ -463,19 +566,41 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 	return 1;
 }
 
+static void glnvg__renderViewport(void* uptr, int width, int height)
+{
+	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
+	gl->viewWidth = width;
+	gl->viewHeight = height;
+}
+
+static int glnvg__maxVertCount(const struct NVGpath* paths, int npaths)
+{
+	int i, count = 0;
+	for (i = 0; i < npaths; i++) {
+		if (paths[i].nfill > count) count = paths[i].nfill;
+		if (paths[i].nstroke > count) count = paths[i].nstroke;
+	}
+	return count;
+}
+
 static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize,
 							  const float* bounds, const struct NVGpath* paths, int npaths)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	const struct NVGpath* path;
-	int i;
+	int i, maxCount;
+
+	maxCount = glnvg__maxVertCount(paths, npaths);
+	if (maxCount > gl->vertArrSize)
+		glnvg__resizeVertexBuffer(gl, maxCount);
 
 	if (gl->gradShader.prog == 0)
 		return;
 
 	glEnable(GL_CULL_FACE);
 
-	glEnableClientState(GL_VERTEX_ARRAY);
+	glBindVertexArray(gl->vertArr);
+	glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
 
 	// Draw shapes
 	glDisable(GL_BLEND);
@@ -484,33 +609,22 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 	glStencilFunc(GL_ALWAYS, 0, ~0);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
+	glUseProgram(gl->solidShader.prog);
+	glUniform2f(gl->solidShader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+	glUniform2f(gl->solidShader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
+	glnvg__checkError("fill solid loc");
+
+	glEnableVertexAttribArray(0);
+
 	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
 	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
 	glDisable(GL_CULL_FACE);
 	for (i = 0; i < npaths; i++) {
 		path = &paths[i];
-		glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->fill[0].x);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, path->nfill * sizeof(struct NVGvertex), &path->fill[0].x);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)0);
 		glDrawArrays(GL_TRIANGLE_FAN, 0, path->nfill);
 	}
-
-/*	glStencilOp(GL_KEEP, GL_KEEP, GL_INCR_WRAP);
-	glCullFace(GL_BACK);
-
-	for (i = 0; i < npaths; i++) {
-		path = &paths[i];
-		glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->fill[0].x);
-		glDrawArrays(GL_TRIANGLE_FAN, 0, path->nfill);
-	}
-
-	glStencilOp(GL_KEEP, GL_KEEP, GL_DECR_WRAP);
-	glCullFace(GL_FRONT);
-
-	for (i = 0; i < npaths; i++) {
-		path = &paths[i];
-		glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->fill[0].x);
-		glDrawArrays(GL_TRIANGLE_FAN, 0, path->nfill);
-	}
-	glCullFace(GL_BACK);*/
 
 	glEnable(GL_CULL_FACE);
 
@@ -521,36 +635,38 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 	glStencilFunc(GL_EQUAL, 0x00, 0xff);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glEnableVertexAttribArray(1);
 
 	glnvg__setupPaint(gl, paint, scissor, 1.0001f, aasize);
 
 	// Draw fringes
 	for (i = 0; i < npaths; i++) {
 		path = &paths[i];
-		glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->stroke[0].x);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->stroke[0].u);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, path->nstroke * sizeof(struct NVGvertex), &path->stroke[0].x);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)0);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(2 * sizeof(float)));
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
 	}
-
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
 	// Draw fill
 	glStencilFunc(GL_NOTEQUAL, 0x0, 0xff);
 	glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.5f,1.0f);
-	glVertex2f(bounds[0], bounds[3]);
-	glVertex2f(bounds[2], bounds[3]);
-	glVertex2f(bounds[2], bounds[1]);
-	glVertex2f(bounds[0], bounds[1]);
-	glEnd();
+	glDisableVertexAttribArray(1);
+
+	float quad[6*2] = {
+		bounds[0], bounds[3], bounds[2], bounds[3], bounds[2], bounds[1],
+		bounds[0], bounds[3], bounds[2], bounds[1], bounds[0], bounds[1],
+	};
+	glBufferSubData(GL_ARRAY_BUFFER, 0, 6 * 2*sizeof(float), quad);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (const GLvoid*)0);
+	glVertexAttrib2f(1, 0.5f, 1.0f);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glUseProgram(0);
 
-	glDisable(GL_TEXTURE_2D);
+	glDisableVertexAttribArray(0);
+
 	glDisable(GL_STENCIL_TEST);
 }
 
@@ -559,7 +675,11 @@ static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGsc
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	const struct NVGpath* path;
-	int i;
+	int i, maxCount;
+
+	maxCount = glnvg__maxVertCount(paths, npaths);
+	if (maxCount > gl->vertArrSize)
+		glnvg__resizeVertexBuffer(gl, maxCount);
 
 	if (gl->gradShader.prog == 0)
 		return;
@@ -568,22 +688,25 @@ static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGsc
 
 	glEnable(GL_CULL_FACE);
 
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glBindVertexArray(gl->vertArr);
+	glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 
 	// Draw Strokes
 	for (i = 0; i < npaths; i++) {
 		path = &paths[i];
-		glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->stroke[0].x);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->stroke[0].u);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, path->nstroke * sizeof(struct NVGvertex), &path->stroke[0].x);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)0);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(2 * sizeof(float)));
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
 	}
 
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
 
 	glUseProgram(0);
-	glDisable(GL_TEXTURE_2D);
 }
 
 static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, int image,
@@ -593,25 +716,36 @@ static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NV
 	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
 	float color[4];
 
+	if (nverts > gl->vertArrSize)
+		glnvg__resizeVertexBuffer(gl, nverts);
+
 	if (tex != NULL) {
 		glBindTexture(GL_TEXTURE_2D, tex->tex);
-		glEnable(GL_TEXTURE_2D);
 	}
 
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glUseProgram(gl->solidImgShader.prog);
+	glUniform2f(gl->solidImgShader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+	glUniform2f(gl->solidImgShader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
+	glUniform1i(gl->solidImgShader.loc[GLNVG_LOC_TEX], 0);
+	glUniform2f(gl->solidImgShader.loc[GLNVG_LOC_TEXOFFSET], 0.5f / (float)tex->width, 0.5f / (float)tex->height);
+	glUniform1i(gl->solidImgShader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
+	glnvg__checkError("tris solid img loc");
+
+	glBindVertexArray(gl->vertArr);
+	glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, nverts * sizeof(struct NVGvertex), verts);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 
 	glnvg__toFloatColor(color, paint->innerColor);
-	glColor4fv(color);
+	glVertexAttrib4fv(2, color);
 
-	glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &verts[0].x);
-	glTexCoordPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &verts[0].u);
 	glDrawArrays(GL_TRIANGLES, 0, nverts);
 
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-
-	glDisable(GL_TEXTURE_2D);
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
 }
 
 static void glnvg__renderDelete(void* uptr)
@@ -633,7 +767,7 @@ static void glnvg__renderDelete(void* uptr)
 }
 
 
-struct NVGcontext* glnvgCreate(int atlasw, int atlash)
+struct NVGcontext* nvgCreateGL3(int atlasw, int atlash)
 {
 	struct NVGparams params;
 	struct NVGcontext* ctx = NULL;
@@ -647,6 +781,7 @@ struct NVGcontext* glnvgCreate(int atlasw, int atlash)
 	params.renderDeleteTexture = glnvg__renderDeleteTexture;
 	params.renderUpdateTexture = glnvg__renderUpdateTexture;
 	params.renderGetTextureSize = glnvg__renderGetTextureSize;
+	params.renderViewport = glnvg__renderViewport;
 	params.renderFill = glnvg__renderFill;
 	params.renderStroke = glnvg__renderStroke;
 	params.renderTriangles = glnvg__renderTriangles;
@@ -661,12 +796,12 @@ struct NVGcontext* glnvgCreate(int atlasw, int atlash)
 	return ctx;
 
 error:
-	if (gl != NULL) free(gl);
+	// 'gl' is freed by nvgDeleteInternal.
 	if (ctx != NULL) nvgDeleteInternal(ctx);
 	return NULL;
 }
 
-void glnvgDelete(struct NVGcontext* ctx)
+void nvgDeleteGL3(struct NVGcontext* ctx)
 {
 	nvgDeleteInternal(ctx);
 }

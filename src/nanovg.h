@@ -52,7 +52,8 @@ enum NVGaling {
 
 
 // Called at the beginning of a frame.
-void nvgBeginFrame(struct NVGcontext* ctx);
+// 
+void nvgBeginFrame(struct NVGcontext* ctx, int width, int height);
 
 //
 // Color utils
@@ -396,6 +397,7 @@ struct NVGparams {
 	int (*renderDeleteTexture)(void* uptr, int image);
 	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
+	void (*renderViewport)(void* uptr, int width, int height);
 	void (*renderFill)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize, const float* bounds, const struct NVGpath* paths, int npaths);
 	void (*renderStroke)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize, float strokeWidth, const struct NVGpath* paths, int npaths);
 	void (*renderTriangles)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, int image, const struct NVGvertex* verts, int nverts);
