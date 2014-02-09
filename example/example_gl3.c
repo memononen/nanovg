@@ -76,6 +76,7 @@ int main()
 
 	glfwMakeContextCurrent(window);
 #ifdef NANOVG_GLEW
+	glewExperimental = GL_TRUE;
     if(glewInit() != GLEW_OK) {
 		printf("Could not init glew.\n");
 		return -1;
