@@ -21,7 +21,9 @@
 #	include <GL/glew.h>
 #endif
 #define GLFW_NO_GLU
-#define GLFW_INCLUDE_GLCOREARB
+#ifndef _WIN32
+#   define GLFW_INCLUDE_GLCOREARB
+#endif
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
@@ -63,18 +65,19 @@ int main()
 	initFPS(&fps);
 
 	glfwSetErrorCallback(errorcb);
-
+#ifndef _WIN32 // don't require this on win32, and works with more cards
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
+
 #ifdef DEMO_MSAA
 	glfwWindowHint(GLFW_SAMPLES, 4);
 #endif
-
 	window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
 //	window = glfwCreateWindow(1000, 600, "NanoVG", glfwGetPrimaryMonitor(), NULL);
-	if (!window) {
+    if (!window) {
 		glfwTerminate();
 		return -1;
 	}
