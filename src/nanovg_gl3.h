@@ -231,15 +231,6 @@ static void glnvg__getUniforms(struct GLNVGshader* shader)
 	shader->loc[GLNVG_LOC_TEXTYPE] = glGetUniformLocation(shader->prog, "texType");
 }
 
-
-static void glnvg__resizeVertexBuffer(struct GLNVGcontext* gl, int size)
-{
-    glBindVertexArray(gl->vertArr);
-	glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
-	glBufferData(GL_ARRAY_BUFFER, size * sizeof(struct NVGvertex), 0, GL_STREAM_DRAW);
-	gl->vertArrSize = size;
-}
-
 static int glnvg__renderCreate(void* uptr)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
@@ -577,10 +568,27 @@ static int glnvg__maxVertCount(const struct NVGpath* paths, int npaths)
 {
 	int i, count = 0;
 	for (i = 0; i < npaths; i++) {
-		if (paths[i].nfill > count) count = paths[i].nfill;
-		if (paths[i].nstroke > count) count = paths[i].nstroke;
+		count += paths[i].nfill;
+		count += paths[i].nstroke;
 	}
 	return count;
+}
+
+static void glnvg__uploadPaths(const struct NVGpath* paths, int npaths)
+{
+	const struct NVGpath* path;
+	int i, n = 0;
+	for (i = 0; i < npaths; i++) {
+		path = &paths[i];
+		if (path->nfill > 0) {
+			glBufferSubData(GL_ARRAY_BUFFER, n*sizeof(struct NVGvertex), path->nfill * sizeof(struct NVGvertex), &path->fill[0].x);
+			n += path->nfill;
+		}
+		if (path->nstroke > 0) {
+			glBufferSubData(GL_ARRAY_BUFFER, n*sizeof(struct NVGvertex), path->nstroke * sizeof(struct NVGvertex), &path->stroke[0].x);
+			n += path->nstroke;
+		}
+	}
 }
 
 static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize,
@@ -588,86 +596,131 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	const struct NVGpath* path;
-	int i, maxCount;
-
-	maxCount = glnvg__maxVertCount(paths, npaths);
-	if (maxCount > gl->vertArrSize)
-		glnvg__resizeVertexBuffer(gl, maxCount);
+	int i, n, offset, maxCount;
 
 	if (gl->gradShader.prog == 0)
 		return;
 
-	glEnable(GL_CULL_FACE);
-
+	maxCount = glnvg__maxVertCount(paths, npaths);
 	glBindVertexArray(gl->vertArr);
 	glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
+	glBufferData(GL_ARRAY_BUFFER, maxCount * sizeof(struct NVGvertex), NULL, GL_STREAM_DRAW);
+	glnvg__uploadPaths(paths, npaths);
 
-	// Draw shapes
-	glDisable(GL_BLEND);
-	glEnable(GL_STENCIL_TEST);
-	glStencilMask(0xff);
-	glStencilFunc(GL_ALWAYS, 0, ~0);
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	if (npaths == 1 && paths[0].convex) {
 
-	glUseProgram(gl->solidShader.prog);
-	glUniform2f(gl->solidShader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
-	glUniform2f(gl->solidShader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
-	glnvg__checkError("fill solid loc");
+		glEnable(GL_CULL_FACE);
 
-	glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glnvg__setupPaint(gl, paint, scissor, 1.0001f, aasize);
 
-	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
-	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
-	glDisable(GL_CULL_FACE);
-	for (i = 0; i < npaths; i++) {
-		path = &paths[i];
-		glBufferSubData(GL_ARRAY_BUFFER, 0, path->nfill * sizeof(struct NVGvertex), &path->fill[0].x);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)0);
-		glDrawArrays(GL_TRIANGLE_FAN, 0, path->nfill);
+		glDisable(GL_CULL_FACE);
+		n = 0;
+		for (i = 0; i < npaths; i++) {
+			path = &paths[i];
+			offset = n * sizeof(struct NVGvertex);
+			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
+			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
+			glDrawArrays(GL_TRIANGLE_FAN, 0, path->nfill);
+			n += path->nfill + path->nstroke;
+		}
+
+		glEnable(GL_CULL_FACE);
+
+		// Draw fringes
+		n = 0;
+		for (i = 0; i < npaths; i++) {
+			path = &paths[i];
+			offset = (n + path->nfill) * sizeof(struct NVGvertex);
+			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
+			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
+			n += path->nfill + path->nstroke;
+		}
+
+		glUseProgram(0);
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+
+	} else {
+
+		glEnable(GL_CULL_FACE);
+
+		glBindVertexArray(gl->vertArr);
+		glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
+
+		// Draw shapes
+		glDisable(GL_BLEND);
+		glEnable(GL_STENCIL_TEST);
+		glStencilMask(0xff);
+		glStencilFunc(GL_ALWAYS, 0, ~0);
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+		glUseProgram(gl->solidShader.prog);
+		glUniform2f(gl->solidShader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+		glUniform2f(gl->solidShader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
+		glnvg__checkError("fill solid loc");
+
+		glEnableVertexAttribArray(0);
+
+		glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
+		glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
+		glDisable(GL_CULL_FACE);
+		n = 0;
+		for (i = 0; i < npaths; i++) {
+			path = &paths[i];
+			offset = n * sizeof(struct NVGvertex);
+			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
+			glDrawArrays(GL_TRIANGLE_FAN, 0, path->nfill);
+			n += path->nfill + path->nstroke;
+		}
+
+		glEnable(GL_CULL_FACE);
+
+		// Draw aliased off-pixels
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glEnable(GL_BLEND);
+
+		glStencilFunc(GL_EQUAL, 0x00, 0xff);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+		glEnableVertexAttribArray(1);
+
+		glnvg__setupPaint(gl, paint, scissor, 1.0001f, aasize);
+
+		// Draw fringes
+		n = 0;
+		for (i = 0; i < npaths; i++) {
+			path = &paths[i];
+			offset = (n + path->nfill) * sizeof(struct NVGvertex);
+			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
+			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
+			n += path->nfill + path->nstroke;
+		}
+
+		// Draw fill
+		glStencilFunc(GL_NOTEQUAL, 0x0, 0xff);
+		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
+
+		glDisableVertexAttribArray(1);
+
+		float quad[6*2] = {
+			bounds[0], bounds[3], bounds[2], bounds[3], bounds[2], bounds[1],
+			bounds[0], bounds[3], bounds[2], bounds[1], bounds[0], bounds[1],
+		};
+		glBufferSubData(GL_ARRAY_BUFFER, 0, 6 * 2*sizeof(float), quad);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (const GLvoid*)0);
+		glVertexAttrib2f(1, 0.5f, 1.0f);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		glUseProgram(0);
+
+		glDisableVertexAttribArray(0);
+
+		glDisable(GL_STENCIL_TEST);
 	}
-
-	glEnable(GL_CULL_FACE);
-
-    // Draw aliased off-pixels
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glEnable(GL_BLEND);
-
-	glStencilFunc(GL_EQUAL, 0x00, 0xff);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
-	glEnableVertexAttribArray(1);
-
-	glnvg__setupPaint(gl, paint, scissor, 1.0001f, aasize);
-
-	// Draw fringes
-	for (i = 0; i < npaths; i++) {
-		path = &paths[i];
-		glBufferSubData(GL_ARRAY_BUFFER, 0, path->nstroke * sizeof(struct NVGvertex), &path->stroke[0].x);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)0);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(2 * sizeof(float)));
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
-	}
-
-	// Draw fill
-	glStencilFunc(GL_NOTEQUAL, 0x0, 0xff);
-	glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
-
-	glDisableVertexAttribArray(1);
-
-	float quad[6*2] = {
-		bounds[0], bounds[3], bounds[2], bounds[3], bounds[2], bounds[1],
-		bounds[0], bounds[3], bounds[2], bounds[1], bounds[0], bounds[1],
-	};
-	glBufferSubData(GL_ARRAY_BUFFER, 0, 6 * 2*sizeof(float), quad);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (const GLvoid*)0);
-	glVertexAttrib2f(1, 0.5f, 1.0f);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-
-	glUseProgram(0);
-
-	glDisableVertexAttribArray(0);
-
-	glDisable(GL_STENCIL_TEST);
 }
 
 static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize,
@@ -675,11 +728,7 @@ static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGsc
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	const struct NVGpath* path;
-	int i, maxCount;
-
-	maxCount = glnvg__maxVertCount(paths, npaths);
-	if (maxCount > gl->vertArrSize)
-		glnvg__resizeVertexBuffer(gl, maxCount);
+	int i, n, offset, maxCount;
 
 	if (gl->gradShader.prog == 0)
 		return;
@@ -688,19 +737,24 @@ static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGsc
 
 	glEnable(GL_CULL_FACE);
 
+	maxCount = glnvg__maxVertCount(paths, npaths);
 	glBindVertexArray(gl->vertArr);
 	glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
+	glBufferData(GL_ARRAY_BUFFER, maxCount * sizeof(struct NVGvertex), NULL, GL_STREAM_DRAW);
+	glnvg__uploadPaths(paths, npaths);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 
 	// Draw Strokes
+	n = 0;
 	for (i = 0; i < npaths; i++) {
 		path = &paths[i];
-		glBufferSubData(GL_ARRAY_BUFFER, 0, path->nstroke * sizeof(struct NVGvertex), &path->stroke[0].x);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)0);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(2 * sizeof(float)));
+		offset = (n + path->nfill) * sizeof(struct NVGvertex);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
+		n += path->nfill + path->nstroke;
 	}
 
 	glDisableVertexAttribArray(0);
@@ -716,9 +770,6 @@ static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NV
 	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
 	float color[4];
 
-	if (nverts > gl->vertArrSize)
-		glnvg__resizeVertexBuffer(gl, nverts);
-
 	if (tex != NULL) {
 		glBindTexture(GL_TEXTURE_2D, tex->tex);
 	}
@@ -733,7 +784,8 @@ static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NV
 
 	glBindVertexArray(gl->vertArr);
 	glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, nverts * sizeof(struct NVGvertex), verts);
+	glBufferData(GL_ARRAY_BUFFER, nverts * sizeof(struct NVGvertex), verts, GL_STREAM_DRAW);
+
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)0);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(2 * sizeof(float)));
 	glEnableVertexAttribArray(0);

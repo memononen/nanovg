@@ -486,85 +486,104 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 	if (gl->gradShader.prog == 0)
 		return;
 
-	glEnable(GL_CULL_FACE);
+	if (npaths == 1 && paths[0].convex) {
 
-	glEnableClientState(GL_VERTEX_ARRAY);
+		glEnable(GL_CULL_FACE);
 
-	// Draw shapes
-	glDisable(GL_BLEND);
-	glEnable(GL_STENCIL_TEST);
-	glStencilMask(0xff);
-	glStencilFunc(GL_ALWAYS, 0, ~0);
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		glEnableClientState(GL_VERTEX_ARRAY);
 
-	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
-	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
-	glDisable(GL_CULL_FACE);
-	for (i = 0; i < npaths; i++) {
-		path = &paths[i];
-		glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->fill[0].x);
-		glDrawArrays(GL_TRIANGLE_FAN, 0, path->nfill);
+		glnvg__setupPaint(gl, paint, scissor, 1.0001f, aasize);
+
+		// Fill
+		glDisable(GL_CULL_FACE);
+		glTexCoord2f(0.5f,1.0f);
+		for (i = 0; i < npaths; i++) {
+			path = &paths[i];
+			glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->fill[0].x);
+			glDrawArrays(GL_TRIANGLE_FAN, 0, path->nfill);
+		}
+
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glEnable(GL_CULL_FACE);
+
+		// Draw fringes
+		for (i = 0; i < npaths; i++) {
+			path = &paths[i];
+			glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->stroke[0].x);
+			glTexCoordPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->stroke[0].u);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
+		}
+
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		glUseProgram(0);
+
+		glDisable(GL_TEXTURE_2D);
+
+	} else {
+		
+		glEnable(GL_CULL_FACE);
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+
+		// Draw shapes
+		glDisable(GL_BLEND);
+		glEnable(GL_STENCIL_TEST);
+		glStencilMask(0xff);
+		glStencilFunc(GL_ALWAYS, 0, ~0);
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+		glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
+		glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
+		glDisable(GL_CULL_FACE);
+		for (i = 0; i < npaths; i++) {
+			path = &paths[i];
+			glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->fill[0].x);
+			glDrawArrays(GL_TRIANGLE_FAN, 0, path->nfill);
+		}
+
+		glEnable(GL_CULL_FACE);
+
+	    // Draw aliased off-pixels
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glEnable(GL_BLEND);
+
+		glStencilFunc(GL_EQUAL, 0x00, 0xff);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		glnvg__setupPaint(gl, paint, scissor, 1.0001f, aasize);
+
+		// Draw fringes
+		for (i = 0; i < npaths; i++) {
+			path = &paths[i];
+			glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->stroke[0].x);
+			glTexCoordPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->stroke[0].u);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
+		}
+
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		// Draw fill
+		glStencilFunc(GL_NOTEQUAL, 0x0, 0xff);
+		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
+
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.5f,1.0f);
+		glVertex2f(bounds[0], bounds[3]);
+		glVertex2f(bounds[2], bounds[3]);
+		glVertex2f(bounds[2], bounds[1]);
+		glVertex2f(bounds[0], bounds[1]);
+		glEnd();
+
+		glUseProgram(0);
+
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_STENCIL_TEST);
 	}
-
-/*	glStencilOp(GL_KEEP, GL_KEEP, GL_INCR_WRAP);
-	glCullFace(GL_BACK);
-
-	for (i = 0; i < npaths; i++) {
-		path = &paths[i];
-		glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->fill[0].x);
-		glDrawArrays(GL_TRIANGLE_FAN, 0, path->nfill);
-	}
-
-	glStencilOp(GL_KEEP, GL_KEEP, GL_DECR_WRAP);
-	glCullFace(GL_FRONT);
-
-	for (i = 0; i < npaths; i++) {
-		path = &paths[i];
-		glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->fill[0].x);
-		glDrawArrays(GL_TRIANGLE_FAN, 0, path->nfill);
-	}
-	glCullFace(GL_BACK);*/
-
-	glEnable(GL_CULL_FACE);
-
-    // Draw aliased off-pixels
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glEnable(GL_BLEND);
-
-	glStencilFunc(GL_EQUAL, 0x00, 0xff);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-	glnvg__setupPaint(gl, paint, scissor, 1.0001f, aasize);
-
-	// Draw fringes
-	for (i = 0; i < npaths; i++) {
-		path = &paths[i];
-		glVertexPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->stroke[0].x);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(struct NVGvertex), &path->stroke[0].u);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
-	}
-
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-
-	// Draw fill
-	glStencilFunc(GL_NOTEQUAL, 0x0, 0xff);
-	glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
-
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.5f,1.0f);
-	glVertex2f(bounds[0], bounds[3]);
-	glVertex2f(bounds[2], bounds[3]);
-	glVertex2f(bounds[2], bounds[1]);
-	glVertex2f(bounds[0], bounds[1]);
-	glEnd();
-
-	glUseProgram(0);
-
-	glDisable(GL_TEXTURE_2D);
-	glDisable(GL_STENCIL_TEST);
 }
 
 static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize,

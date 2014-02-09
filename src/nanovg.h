@@ -387,6 +387,7 @@ struct NVGpath {
 	struct NVGvertex* stroke;
 	int nstroke;
 	int winding;
+	int convex;
 };
 
 struct NVGparams {

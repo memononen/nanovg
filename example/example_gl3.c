@@ -91,6 +91,8 @@ int main()
 	if (loadDemoData(vg, &data) == -1)
 		return -1;
 
+	glfwSwapInterval(0);
+
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
