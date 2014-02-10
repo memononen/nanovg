@@ -30,7 +30,7 @@ solution "nanovg"
 
 		configuration { "macosx" }
 			links { "glfw3" }
-			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit" }
+			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
@@ -57,7 +57,7 @@ solution "nanovg"
 
 		configuration { "macosx" }
 			links { "glfw3" }
-			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit" }
+			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
