@@ -1572,7 +1572,7 @@ void nvgFontFace(struct NVGcontext* ctx, const char* font)
 
 static float nvg__quantize(float a, float d)
 {
-	return ((int)(a / d)) * d;
+	return ((int)(a / d + 0.5f)) * d;
 }
 
 float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, const char* end)

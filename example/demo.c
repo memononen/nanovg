@@ -750,7 +750,7 @@ void renderDemo(struct NVGcontext* vg, float mx, float my, float width, float he
 
 	nvgSave(vg);
 	if (blowup) {
-//			nvgRotate(vg, 3.0f/180.0f*NVG_PI);
+		nvgRotate(vg, sinf(t*0.3f)*5.0f/180.0f*NVG_PI);
 		nvgScale(vg, 2.0f, 2.0f);
 	}
 
