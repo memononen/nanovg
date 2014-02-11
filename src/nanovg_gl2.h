@@ -18,8 +18,16 @@
 #ifndef NANOVG_GL2_H
 #define NANOVG_GL2_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct NVGcontext* nvgCreateGL2();
 void nvgDeleteGL2(struct NVGcontext* ctx);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
@@ -522,7 +530,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 		glDisable(GL_TEXTURE_2D);
 
 	} else {
-		
+
 		glEnable(GL_CULL_FACE);
 
 		glEnableClientState(GL_VERTEX_ARRAY);

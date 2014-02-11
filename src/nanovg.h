@@ -19,10 +19,25 @@
 #ifndef NANOVG_H
 #define NANOVG_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NVG_PI 3.14159265358979323846264338327f
 
 struct NVGcontext;
-struct NVGpaint;
+
+struct NVGpaint
+{
+	float xform[6];
+	float extent[2];
+	float radius;
+	float feather;
+	unsigned int innerColor;
+	unsigned int outerColor;
+	int image;
+	int repeat;
+};
 
 enum NVGwinding {
 	NVG_CCW = 1,			// Winding for solid shapes
@@ -355,18 +370,6 @@ enum NVGtexture {
 	NVG_TEXTURE_RGBA = 0x02,
 };
 
-struct NVGpaint
-{
-	float xform[6];
-	float extent[2];
-	float radius;
-	float feather;
-	unsigned int innerColor;
-	unsigned int outerColor;
-	int image;
-	int repeat;
-};
-
 struct NVGscissor
 {
 	float xform[6];
@@ -410,5 +413,8 @@ struct NVGcontext* nvgCreateInternal(struct NVGparams* params);
 void nvgDeleteInternal(struct NVGcontext* ctx);
 
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif // NANOVG_H

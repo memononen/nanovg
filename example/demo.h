@@ -3,6 +3,10 @@
 
 #include "nanovg.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct DemoData {
 	int fontNormal, fontBold, fontIcons; 
 	int images[12];
@@ -22,5 +26,9 @@ struct FPScounter
 void initFPS(struct FPScounter* fps);
 void updateFPS(struct FPScounter* fps, float frameTime);
 void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // WIDGETS_H

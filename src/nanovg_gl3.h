@@ -18,8 +18,16 @@
 #ifndef NANOVG_GL3_H
 #define NANOVG_GL3_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct NVGcontext* nvgCreateGL3();
 void nvgDeleteGL3(struct NVGcontext* ctx);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
