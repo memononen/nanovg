@@ -241,6 +241,8 @@ static void* fons__tmpalloc(size_t size, void* up)
 
 static void fons__tmpfree(void* ptr, void* up)
 {
+	(void)ptr;
+	(void)up;
 	// empty
 }
 
@@ -314,7 +316,7 @@ static struct FONSatlas* fons__allocAtlas(int w, int h, int nnodes)
 	// Init root node.
 	atlas->nodes[0].x = 0;
 	atlas->nodes[0].y = 0;
-	atlas->nodes[0].width = w;
+	atlas->nodes[0].width = (short)w;
 	atlas->nnodes++;
 
 	return atlas;
@@ -336,9 +338,9 @@ static int fons__atlasInsertNode(struct FONSatlas* atlas, int idx, int x, int y,
 	}
 	for (i = atlas->nnodes; i > idx; i--)
 		atlas->nodes[i] = atlas->nodes[i-1];
-	atlas->nodes[idx].x = x;
-	atlas->nodes[idx].y = y;
-	atlas->nodes[idx].width = w;
+	atlas->nodes[idx].x = (short)x;
+	atlas->nodes[idx].y = (short)y;
+	atlas->nodes[idx].width = (short)w;
 	atlas->nnodes++;
 
 	return 1;
@@ -365,8 +367,8 @@ static int fons__atlasAddSkylineLevel(struct FONSatlas* atlas, int idx, int x, i
 	for (i = idx+1; i < atlas->nnodes; i++) {
 		if (atlas->nodes[i].x < atlas->nodes[i-1].x + atlas->nodes[i-1].width) {
 			int shrink = atlas->nodes[i-1].x + atlas->nodes[i-1].width - atlas->nodes[i].x;
-			atlas->nodes[i].x += shrink;
-			atlas->nodes[i].width -= shrink;
+			atlas->nodes[i].x += (short)shrink;
+			atlas->nodes[i].width -= (short)shrink;
 			if (atlas->nodes[i].width <= 0) {
 				fons__atlasRemoveNode(atlas, i);
 				i--;
@@ -397,9 +399,10 @@ static int fons__atlasRectFits(struct FONSatlas* atlas, int i, int w, int h)
 	// (think tetris block being dropped at that position). Or -1 if no space found.
 	int x = atlas->nodes[i].x;
 	int y = atlas->nodes[i].y;
+	int spaceLeft;
 	if (x + w > atlas->width)
 		return -1;
-	int spaceLeft = w;
+	spaceLeft = w;
 	while (spaceLeft > 0) {
 		if (i == atlas->nnodes) return -1;
 		y = fons__maxi(y, atlas->nodes[i].y);
@@ -413,10 +416,10 @@ static int fons__atlasRectFits(struct FONSatlas* atlas, int i, int w, int h)
 static int fons__atlasAddRect(struct FONSatlas* atlas, int rw, int rh, int* rx, int* ry)
 {
 	int besth = atlas->height, bestw = atlas->width, besti = -1;
-	int bestx, besty, i;
+	int bestx = -1, besty = -1, i;
 
 	// Bottom left fit heuristic.
-	for (i = 0; i < atlas->nnodes; i++) {
+	for (i = 0; i < atlas->nnodes; i++) { 
 		int y = fons__atlasRectFits(atlas, i, rw, rh);
 		if (y != -1) {
 			if (y + rh < besth || (y + rh == besth && atlas->nodes[i].width < bestw)) {
@@ -635,7 +638,7 @@ int fonsAddFontMem(struct FONScontext* stash, const char* name, unsigned char* d
 	// Read in the font data.
 	font->dataSize = dataSize;
 	font->data = data;
-	font->freeData = freeData;
+	font->freeData = (unsigned char)freeData;
 
 	// Init stb_truetype
 	stash->nscratch = 0;
@@ -731,6 +734,7 @@ static void fons__blur(struct FONScontext* stash, unsigned char* dst, int w, int
 {
 	int alpha;
 	float sigma;
+	(void)stash;
 
 	if (blur < 1)
 		return;
@@ -791,13 +795,13 @@ static struct FONSglyph* fons__getGlyph(struct FONScontext* stash, struct FONSfo
 	glyph->size = isize;
 	glyph->blur = iblur;
 	glyph->index = g;
-	glyph->x0 = gx;
-	glyph->y0 = gy;
-	glyph->x1 = glyph->x0+gw;
-	glyph->y1 = glyph->y0+gh;
+	glyph->x0 = (short)gx;
+	glyph->y0 = (short)gy;
+	glyph->x1 = (short)(glyph->x0+gw);
+	glyph->y1 = (short)(glyph->y0+gh);
 	glyph->xadv = (short)(scale * advance * 10.0f);
-	glyph->xoff = x0 - pad;
-	glyph->yoff = y0 - pad;
+	glyph->xoff = (short)(x0 - pad);
+	glyph->yoff = (short)(y0 - pad);
 	glyph->next = 0;
 
 	// Insert char to hash lookup.
@@ -858,16 +862,16 @@ static void fons__getQuad(struct FONScontext* stash, struct FONSfont* font,
 	// Each glyph has 2px border to allow good interpolation,
 	// one pixel to prevent leaking, and one to allow good interpolation for rendering.
 	// Inset the texture region by one pixel for corret interpolation.
-	xoff = glyph->xoff+1;
-	yoff = glyph->yoff+1;
-	x0 = glyph->x0+1;
-	y0 = glyph->y0+1;
-	x1 = glyph->x1-1;
-	y1 = glyph->y1-1;
+	xoff = (short)(glyph->xoff+1);
+	yoff = (short)(glyph->yoff+1);
+	x0 = (float)(glyph->x0+1);
+	y0 = (float)(glyph->y0+1);
+	x1 = (float)(glyph->x1-1);
+	y1 = (float)(glyph->y1-1);
 
 	if (stash->params.flags & FONS_ZERO_TOPLEFT) {
-		rx = (int)(*x + xoff);
-		ry = (int)(*y + yoff);
+		rx = (float)(int)(*x + xoff);
+		ry = (float)(int)(*y + yoff);
 
 		q->x0 = rx;
 		q->y0 = ry;
@@ -879,8 +883,8 @@ static void fons__getQuad(struct FONScontext* stash, struct FONSfont* font,
 		q->s1 = x1 * stash->itw;
 		q->t1 = y1 * stash->ith;
 	} else {
-		rx = (int)(*x + xoff);
-		ry = (int)(*y - yoff);
+		rx = (float)(int)(*x + xoff);
+		ry = (float)(int)(*y - yoff);
 
 		q->x0 = rx;
 		q->y0 = ry;
