@@ -1575,13 +1575,18 @@ static float nvg__quantize(float a, float d)
 	return ((int)(a / d + 0.5f)) * d;
 }
 
+static float nvg__getFontScale(struct NVGstate* state)
+{
+	return nvg__minf(nvg__quantize(nvg__getAverageScale(state->xform), 0.01f), 4.0f);
+}
+
 float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, const char* end)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	struct FONStextIter iter;
 	struct FONSquad q;
 	struct NVGvertex* verts;
-	float scale = nvg__minf(nvg__quantize(nvg__getAverageScale(state->xform), 0.01f), 4.0f);
+	float scale = nvg__getFontScale(state);
 	float invscale = 1.0f / scale;
 	int dirty[4];
 	int cverts = 0;
@@ -1646,11 +1651,13 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end, float* bounds)
 {
 	struct NVGstate* state = nvg__getState(ctx);
+	float scale = nvg__getFontScale(state);
+
 	if (state->fontId == FONS_INVALID) return 0;
 
-	fonsSetSize(ctx->fs, state->fontSize);
-	fonsSetSpacing(ctx->fs, state->letterSpacing);
-	fonsSetBlur(ctx->fs, state->fontBlur);
+	fonsSetSize(ctx->fs, state->fontSize*scale);
+	fonsSetSpacing(ctx->fs, state->letterSpacing*scale);
+	fonsSetBlur(ctx->fs, state->fontBlur*scale);
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 
@@ -1660,11 +1667,13 @@ float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end,
 void nvgVertMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh)
 {
 	struct NVGstate* state = nvg__getState(ctx);
+	float scale = nvg__getFontScale(state);
+
 	if (state->fontId == FONS_INVALID) return;
 
-	fonsSetSize(ctx->fs, state->fontSize);
-	fonsSetSpacing(ctx->fs, state->letterSpacing);
-	fonsSetBlur(ctx->fs, state->fontBlur);
+	fonsSetSize(ctx->fs, state->fontSize*scale);
+	fonsSetSpacing(ctx->fs, state->letterSpacing*scale);
+	fonsSetBlur(ctx->fs, state->fontBlur*scale);
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 

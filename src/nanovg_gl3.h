@@ -38,7 +38,6 @@ void nvgDeleteGL3(struct NVGcontext* ctx);
 #include "nanovg.h"
 
 enum GLNVGuniformLoc {
-	GLNVG_LOC_VIEWPOS,
 	GLNVG_LOC_VIEWSIZE,
 	GLNVG_LOC_SCISSORMAT,
 	GLNVG_LOC_SCISSOREXT,
@@ -53,6 +52,13 @@ enum GLNVGuniformLoc {
 	GLNVG_LOC_TEXTYPE,
 	GLNVG_LOC_TYPE,
 	GLNVG_MAX_LOCS
+};
+
+enum GLNVGshaderType {
+	NSVG_SHADER_FILLGRAD,
+	NSVG_SHADER_FILLIMG,
+	NSVG_SHADER_SIMPLE,
+	NSVG_SHADER_IMG
 };
 
 struct GLNVGshader {
@@ -224,7 +230,6 @@ static void glnvg__deleteShader(struct GLNVGshader* shader)
 
 static void glnvg__getUniforms(struct GLNVGshader* shader)
 {
-	shader->loc[GLNVG_LOC_VIEWPOS] = glGetUniformLocation(shader->prog, "viewPos");
 	shader->loc[GLNVG_LOC_VIEWSIZE] = glGetUniformLocation(shader->prog, "viewSize");
 	shader->loc[GLNVG_LOC_SCISSORMAT] = glGetUniformLocation(shader->prog, "scissorMat");
 	shader->loc[GLNVG_LOC_SCISSOREXT] = glGetUniformLocation(shader->prog, "scissorExt");
@@ -246,7 +251,6 @@ static int glnvg__renderCreate(void* uptr)
 
 	static const char* fillVertShader =
 		"#version 150 core\n"
-		"uniform vec2 viewPos;\n"
 		"uniform vec2 viewSize;\n"
 		"in vec2 vertex;\n"
 		"in vec2 tcoord;\n"
@@ -258,7 +262,7 @@ static int glnvg__renderCreate(void* uptr)
 		"	ftcoord = tcoord;\n"
 		"	fcolor = color;\n"
 		"	fpos = vertex;\n"
-		"	gl_Position = vec4(2.0*(vertex.x+viewPos.x)/viewSize.x - 1.0, 1.0 - 2.0*(vertex.y+viewPos.y)/viewSize.y, 0, 1);\n"
+		"	gl_Position = vec4(2.0*vertex.x/viewSize.x - 1.0, 1.0 - 2.0*vertex.y/viewSize.y, 0, 1);\n"
 		"}\n";
 
 	static const char* fillFragShader = 
@@ -485,8 +489,7 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		tex = glnvg__findTexture(gl, paint->image);
 		if (tex == NULL) return 0;
 		glUseProgram(gl->shader.prog);
-		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], 1);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], NSVG_SHADER_FILLIMG);
 		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
 		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
@@ -500,8 +503,7 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		glnvg__checkError("tex paint tex");
 	} else {
 		glUseProgram(gl->shader.prog);
-		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], 0);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], NSVG_SHADER_FILLGRAD);
 		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
 		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
@@ -618,8 +620,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 		glUseProgram(gl->shader.prog);
-		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], 2);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], NSVG_SHADER_SIMPLE);
 		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 		glnvg__checkError("fill solid loc");
 
@@ -739,8 +740,7 @@ static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NV
 	}
 
 	glUseProgram(gl->shader.prog);
-	glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], 3);
-	glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+	glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], NSVG_SHADER_IMG);
 	glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 	glUniform1i(gl->shader.loc[GLNVG_LOC_TEX], 0);
 	glUniform1i(gl->shader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
