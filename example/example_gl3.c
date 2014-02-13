@@ -119,6 +119,8 @@ int main()
 		glEnable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);
 
+		glfwGetWindowSize(window, &width, &height);
+
 		nvgBeginFrame(vg, width, height);
 
 		renderDemo(vg, mx,my, width,height, t, blowup, &data);

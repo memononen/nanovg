@@ -116,6 +116,8 @@ int main()
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_DEPTH_TEST);
 		glColor4ub(255,255,255,255);
+        
+		glfwGetWindowSize(window, &width, &height);
 
 		nvgBeginFrame(vg, width, height);
 
