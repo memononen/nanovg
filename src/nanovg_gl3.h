@@ -50,7 +50,6 @@ enum GLNVGuniformLoc {
 	GLNVG_LOC_OUTERCOL,
 	GLNVG_LOC_STROKEMULT,
 	GLNVG_LOC_TEX,
-	GLNVG_LOC_TEXOFFSET,
 	GLNVG_LOC_TEXTYPE,
 	GLNVG_MAX_LOCS
 };
@@ -235,7 +234,6 @@ static void glnvg__getUniforms(struct GLNVGshader* shader)
 	shader->loc[GLNVG_LOC_OUTERCOL] = glGetUniformLocation(shader->prog, "outerCol");
 	shader->loc[GLNVG_LOC_STROKEMULT] = glGetUniformLocation(shader->prog, "strokeMult");
 	shader->loc[GLNVG_LOC_TEX] = glGetUniformLocation(shader->prog, "tex");
-	shader->loc[GLNVG_LOC_TEXOFFSET] = glGetUniformLocation(shader->prog, "texOffset");
 	shader->loc[GLNVG_LOC_TEXTYPE] = glGetUniformLocation(shader->prog, "texType");
 }
 
@@ -249,36 +247,15 @@ static int glnvg__renderCreate(void* uptr)
 		"uniform vec2 viewSize;\n"
 		"in vec2 vertex;\n"
 		"in vec2 tcoord;\n"
-		"out vec2 pos;\n"
-		"out vec2 alpha;\n"
-		"void main(void) {\n"
-		"	alpha = tcoord.st;\n"
-		"	pos = vertex.xy;\n"
-		"	gl_Position = vec4(2.0*(vertex.x+viewPos.x-0.5)/viewSize.x - 1.0, 1.0 - 2.0*(vertex.y+viewPos.y-0.5)/viewSize.y, 0, 1);\n"
-		"}\n";
-
-	static const char* fillVertSolidShader =
-		"#version 150 core\n"
-		"uniform vec2 viewPos;\n"
-		"uniform vec2 viewSize;\n"
-		"in vec2 vertex;\n"
-		"void main(void) {\n"
-		"	gl_Position = vec4(2.0*(vertex.x+viewPos.x-0.5)/viewSize.x - 1.0, 1.0 - 2.0*(vertex.y+viewPos.y-0.5)/viewSize.y, 0, 1);\n"
-		"}\n";
-
-	static const char* fillVertSolidImgShader =
-		"#version 150 core\n"
-		"uniform vec2 viewPos;\n"
-		"uniform vec2 viewSize;\n"
-		"in vec2 vertex;\n"
-		"in vec2 tcoord;\n"
 		"in vec4 color;\n"
 		"out vec2 ftcoord;\n"
 		"out vec4 fcolor;\n"
+		"out vec2 fpos;\n"
 		"void main(void) {\n"
 		"	ftcoord = tcoord;\n"
 		"	fcolor = color;\n"
-		"	gl_Position = vec4(2.0*(vertex.x+viewPos.x-0.5)/viewSize.x - 1.0, 1.0 - 2.0*(vertex.y+viewPos.y-0.5)/viewSize.y, 0, 1);\n"
+		"	fpos = vertex;\n"
+		"	gl_Position = vec4(2.0*(vertex.x+viewPos.x)/viewSize.x - 1.0, 1.0 - 2.0*(vertex.y+viewPos.y)/viewSize.y, 0, 1);\n"
 		"}\n";
 
 	static const char* fillFragGradShader = 
@@ -292,8 +269,9 @@ static int glnvg__renderCreate(void* uptr)
 		"uniform vec4 innerCol;\n"
 		"uniform vec4 outerCol;\n"
 		"uniform float strokeMult;\n"
-		"in vec2 pos;\n"
-		"in vec2 alpha;\n"
+		"in vec2 ftcoord;\n"
+		"in vec4 fcolor;\n"
+		"in vec2 fpos;\n"
 		"out vec4 outColor;\n"
 		"float sdroundrect(vec2 pt, vec2 ext, float rad) {\n"
 		"	vec2 ext2 = ext - vec2(rad,rad);\n"
@@ -302,13 +280,13 @@ static int glnvg__renderCreate(void* uptr)
 		"}\n"
 		"void main(void) {\n"
 		"	// Scissoring\n"
-		"	vec2 sc = vec2(0.5,0.5) - (abs((scissorMat * vec3(pos,1.0)).xy) - scissorExt);\n"
+		"	vec2 sc = vec2(0.5,0.5) - (abs((scissorMat * vec3(fpos,1.0)).xy) - scissorExt);\n"
 		"	float scissor = clamp(sc.x,0.0,1.0) * clamp(sc.y,0.0,1.0);\n"
 //		"	if (scissor < 0.001) discard;\n"
 		"	// Stroke - from [0..1] to clipped pyramid, where the slope is 1px.\n"
-		"	float strokeAlpha = min(1.0, (1.0-abs(alpha.x*2.0-1.0))*strokeMult) * alpha.y;\n"
+		"	float strokeAlpha = min(1.0, (1.0-abs(ftcoord.x*2.0-1.0))*strokeMult) * ftcoord.y;\n"
 		"	// Calculate gradient color using box gradient\n"
-		"	vec2 pt = (paintMat * vec3(pos,1.0)).xy;\n"
+		"	vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
 		"	float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
 		"	vec4 color = mix(innerCol,outerCol,d);\n"
 		"	// Combine alpha\n"
@@ -324,22 +302,22 @@ static int glnvg__renderCreate(void* uptr)
 		"uniform vec2 extent;\n"
 		"uniform float strokeMult;\n"
 		"uniform sampler2D tex;\n"
-		"uniform vec2 texOffset;\n"
 		"uniform int texType;\n"
-		"in vec2 pos;\n"
-		"in vec2 alpha;\n"
+		"in vec2 ftcoord;\n"
+		"in vec4 fcolor;\n"
+		"in vec2 fpos;\n"
 		"out vec4 outColor;\n"
 		"void main(void) {\n"
 		"	// Scissoring\n"
-		"	vec2 sc = vec2(0.5,0.5) - (abs((scissorMat * vec3(pos,1.0)).xy) - scissorExt);\n"
+		"	vec2 sc = vec2(0.5,0.5) - (abs((scissorMat * vec3(fpos,1.0)).xy) - scissorExt);\n"
 		"	float scissor = clamp(sc.x,0.0,1.0) * clamp(sc.y,0.0,1.0);\n"
 //		"	if (scissor < 0.001) discard;\n"
 		"	// Stroke - from [0..1] to clipped pyramid, where the slope is 1px.\n"
-		"	float strokeAlpha = min(1.0, (1.0-abs(alpha.x*2.0-1.0))*strokeMult) * alpha.y;\n"
+		"	float strokeAlpha = min(1.0, (1.0-abs(ftcoord.x*2.0-1.0))*strokeMult) * ftcoord.y;\n"
 		"	// Calculate color fron texture\n"
-		"	vec2 pt = (paintMat * vec3(pos,1.0)).xy;\n"
+		"	vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
 		"	pt /= extent;\n"
-		"	vec4 color = texture(tex, pt + texOffset);\n"
+		"	vec4 color = texture(tex, pt);\n"
 		"   color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
 		"	// Combine alpha\n"
 		"	color.w *= strokeAlpha * scissor;\n"
@@ -348,6 +326,9 @@ static int glnvg__renderCreate(void* uptr)
 
 	static const char* fillFragSolidShader = 
 		"#version 150 core\n"
+		"in vec2 ftcoord;\n"
+		"in vec4 fcolor;\n"
+		"in vec2 fpos;\n"
 		"out vec4 outColor;\n"
 		"void main(void) {\n"
 		"	outColor = vec4(1,1,1,1);\n"
@@ -356,13 +337,13 @@ static int glnvg__renderCreate(void* uptr)
 	static const char* fillFragSolidImgShader = 
 		"#version 150 core\n"
 		"uniform sampler2D tex;\n"
-		"uniform vec2 texOffset;\n"
 		"uniform int texType;\n"
 		"in vec2 ftcoord;\n"
 		"in vec4 fcolor;\n"
+		"in vec2 fpos;\n"
 		"out vec4 outColor;\n"
 		"void main(void) {\n"
-		"	vec4 color = texture(tex, ftcoord + texOffset);\n"
+		"	vec4 color = texture(tex, ftcoord);\n"
 		"   color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
 		"	outColor = color * fcolor;\n"
 		"}\n";
@@ -373,9 +354,9 @@ static int glnvg__renderCreate(void* uptr)
 		return 0;
 	if (glnvg__createShader(&gl->imgShader, "image", fillVertShader, fillFragImgShader) == 0)
 		return 0;
-	if (glnvg__createShader(&gl->solidShader, "solid", fillVertSolidShader, fillFragSolidShader) == 0)
+	if (glnvg__createShader(&gl->solidShader, "solid", fillVertShader, fillFragSolidShader) == 0)
 		return 0;
-	if (glnvg__createShader(&gl->solidImgShader, "solid-img", fillVertSolidImgShader, fillFragSolidImgShader) == 0)
+	if (glnvg__createShader(&gl->solidImgShader, "solid-img", fillVertShader, fillFragSolidImgShader) == 0)
 		return 0;
 
 	glnvg__checkError("uniform locations");
@@ -542,7 +523,6 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		glUniform2f(gl->imgShader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
 		glUniform1f(gl->imgShader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + aasize*0.5f);
 		glUniform1i(gl->imgShader.loc[GLNVG_LOC_TEX], 0);
-		glUniform2f(gl->imgShader.loc[GLNVG_LOC_TEXOFFSET], 0.5f / (float)tex->width, 0.5f / (float)tex->height);
 		glUniform1i(gl->imgShader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
 		glnvg__checkError("tex paint loc");
 		glBindTexture(GL_TEXTURE_2D, tex->tex);
@@ -786,7 +766,6 @@ static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NV
 	glUniform2f(gl->solidImgShader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
 	glUniform2f(gl->solidImgShader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 	glUniform1i(gl->solidImgShader.loc[GLNVG_LOC_TEX], 0);
-	glUniform2f(gl->solidImgShader.loc[GLNVG_LOC_TEXOFFSET], 0.5f / (float)tex->width, 0.5f / (float)tex->height);
 	glUniform1i(gl->solidImgShader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
 	glnvg__checkError("tris solid img loc");
 
