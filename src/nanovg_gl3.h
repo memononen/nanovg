@@ -51,6 +51,7 @@ enum GLNVGuniformLoc {
 	GLNVG_LOC_STROKEMULT,
 	GLNVG_LOC_TEX,
 	GLNVG_LOC_TEXTYPE,
+	GLNVG_LOC_TYPE,
 	GLNVG_MAX_LOCS
 };
 
@@ -69,10 +70,11 @@ struct GLNVGtexture {
 };
 
 struct GLNVGcontext {
-	struct GLNVGshader gradShader;
+	struct GLNVGshader shader;
+/*	struct GLNVGshader gradShader;
 	struct GLNVGshader imgShader;
 	struct GLNVGshader solidShader;
-	struct GLNVGshader solidImgShader;
+	struct GLNVGshader solidImgShader;*/
 	struct GLNVGtexture* textures;
 	float viewWidth, viewHeight;
 	int ntextures;
@@ -235,6 +237,7 @@ static void glnvg__getUniforms(struct GLNVGshader* shader)
 	shader->loc[GLNVG_LOC_STROKEMULT] = glGetUniformLocation(shader->prog, "strokeMult");
 	shader->loc[GLNVG_LOC_TEX] = glGetUniformLocation(shader->prog, "tex");
 	shader->loc[GLNVG_LOC_TEXTYPE] = glGetUniformLocation(shader->prog, "texType");
+	shader->loc[GLNVG_LOC_TYPE] = glGetUniformLocation(shader->prog, "type");
 }
 
 static int glnvg__renderCreate(void* uptr)
@@ -258,7 +261,7 @@ static int glnvg__renderCreate(void* uptr)
 		"	gl_Position = vec4(2.0*(vertex.x+viewPos.x)/viewSize.x - 1.0, 1.0 - 2.0*(vertex.y+viewPos.y)/viewSize.y, 0, 1);\n"
 		"}\n";
 
-	static const char* fillFragGradShader = 
+	static const char* fillFragShader = 
 		"#version 150 core\n"
 		"uniform mat3 scissorMat;\n"
 		"uniform vec2 scissorExt;\n"
@@ -269,101 +272,68 @@ static int glnvg__renderCreate(void* uptr)
 		"uniform vec4 innerCol;\n"
 		"uniform vec4 outerCol;\n"
 		"uniform float strokeMult;\n"
+		"uniform sampler2D tex;\n"
+		"uniform int texType;\n"
+		"uniform int type;\n"
 		"in vec2 ftcoord;\n"
 		"in vec4 fcolor;\n"
 		"in vec2 fpos;\n"
 		"out vec4 outColor;\n"
+		"\n"
 		"float sdroundrect(vec2 pt, vec2 ext, float rad) {\n"
 		"	vec2 ext2 = ext - vec2(rad,rad);\n"
 		"	vec2 d = abs(pt) - ext2;\n"
 		"	return min(max(d.x,d.y),0.0) + length(max(d,0.0)) - rad;\n"
 		"}\n"
+		"\n"
+		"// Scissoring\n"
+		"float scissorMask(vec2 p) {\n"
+		"	vec2 sc = vec2(0.5,0.5) - (abs((scissorMat * vec3(p,1.0)).xy) - scissorExt);\n"
+		"	return clamp(sc.x,0.0,1.0) * clamp(sc.y,0.0,1.0);\n"
+		"}\n"
+		"\n"
+		"// Stroke - from [0..1] to clipped pyramid, where the slope is 1px.\n"
+		"float strokeMask() {\n"
+		"	return min(1.0, (1.0-abs(ftcoord.x*2.0-1.0))*strokeMult) * ftcoord.y;\n"
+		"}\n"
+		"\n"
 		"void main(void) {\n"
-		"	// Scissoring\n"
-		"	vec2 sc = vec2(0.5,0.5) - (abs((scissorMat * vec3(fpos,1.0)).xy) - scissorExt);\n"
-		"	float scissor = clamp(sc.x,0.0,1.0) * clamp(sc.y,0.0,1.0);\n"
-//		"	if (scissor < 0.001) discard;\n"
-		"	// Stroke - from [0..1] to clipped pyramid, where the slope is 1px.\n"
-		"	float strokeAlpha = min(1.0, (1.0-abs(ftcoord.x*2.0-1.0))*strokeMult) * ftcoord.y;\n"
-		"	// Calculate gradient color using box gradient\n"
-		"	vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
-		"	float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
-		"	vec4 color = mix(innerCol,outerCol,d);\n"
-		"	// Combine alpha\n"
-		"	color.w *= strokeAlpha * scissor;\n"
-		"	outColor = color;\n"
-		"}\n";
-
-	static const char* fillFragImgShader = 
-		"#version 150 core\n"
-		"uniform mat3 scissorMat;\n"
-		"uniform vec2 scissorExt;\n"
-		"uniform mat3 paintMat;\n"
-		"uniform vec2 extent;\n"
-		"uniform float strokeMult;\n"
-		"uniform sampler2D tex;\n"
-		"uniform int texType;\n"
-		"in vec2 ftcoord;\n"
-		"in vec4 fcolor;\n"
-		"in vec2 fpos;\n"
-		"out vec4 outColor;\n"
-		"void main(void) {\n"
-		"	// Scissoring\n"
-		"	vec2 sc = vec2(0.5,0.5) - (abs((scissorMat * vec3(fpos,1.0)).xy) - scissorExt);\n"
-		"	float scissor = clamp(sc.x,0.0,1.0) * clamp(sc.y,0.0,1.0);\n"
-//		"	if (scissor < 0.001) discard;\n"
-		"	// Stroke - from [0..1] to clipped pyramid, where the slope is 1px.\n"
-		"	float strokeAlpha = min(1.0, (1.0-abs(ftcoord.x*2.0-1.0))*strokeMult) * ftcoord.y;\n"
-		"	// Calculate color fron texture\n"
-		"	vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
-		"	pt /= extent;\n"
-		"	vec4 color = texture(tex, pt);\n"
-		"   color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
-		"	// Combine alpha\n"
-		"	color.w *= strokeAlpha * scissor;\n"
-		"	outColor = color;\n"
-		"}\n";
-
-	static const char* fillFragSolidShader = 
-		"#version 150 core\n"
-		"in vec2 ftcoord;\n"
-		"in vec4 fcolor;\n"
-		"in vec2 fpos;\n"
-		"out vec4 outColor;\n"
-		"void main(void) {\n"
-		"	outColor = vec4(1,1,1,1);\n"
-		"}\n";
-
-	static const char* fillFragSolidImgShader = 
-		"#version 150 core\n"
-		"uniform sampler2D tex;\n"
-		"uniform int texType;\n"
-		"in vec2 ftcoord;\n"
-		"in vec4 fcolor;\n"
-		"in vec2 fpos;\n"
-		"out vec4 outColor;\n"
-		"void main(void) {\n"
-		"	vec4 color = texture(tex, ftcoord);\n"
-		"   color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
-		"	outColor = color * fcolor;\n"
+		"	if (type == 0) {\n"
+		"		float scissor = scissorMask(fpos);\n"
+		"		float strokeAlpha = strokeMask();\n"
+		"		// Calculate gradient color using box gradient\n"
+		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
+		"		float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
+		"		vec4 color = mix(innerCol,outerCol,d);\n"
+		"		// Combine alpha\n"
+		"		color.w *= strokeAlpha * scissor;\n"
+		"		outColor = color;\n"
+		"	} else if (type == 1) {\n"
+		"		float scissor = scissorMask(fpos);\n"
+		"		float strokeAlpha = strokeMask();\n"
+		"		// Calculate color fron texture\n"
+		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy / extent;\n"
+		"		vec4 color = texture(tex, pt);\n"
+		"   	color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
+		"		// Combine alpha\n"
+		"		color.w *= strokeAlpha * scissor;\n"
+		"		outColor = color;\n"
+		"	} else if (type == 2) {\n"
+		"		outColor = vec4(1,1,1,1);\n"
+		"	} else if (type == 3) {\n"
+		"		vec4 color = texture(tex, ftcoord);\n"
+		"   	color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
+		"		outColor = color * fcolor;\n"
+		"	}\n"
 		"}\n";
 
 	glnvg__checkError("init");
 
-	if (glnvg__createShader(&gl->gradShader, "grad", fillVertShader, fillFragGradShader) == 0)
-		return 0;
-	if (glnvg__createShader(&gl->imgShader, "image", fillVertShader, fillFragImgShader) == 0)
-		return 0;
-	if (glnvg__createShader(&gl->solidShader, "solid", fillVertShader, fillFragSolidShader) == 0)
-		return 0;
-	if (glnvg__createShader(&gl->solidImgShader, "solid-img", fillVertShader, fillFragSolidImgShader) == 0)
+	if (glnvg__createShader(&gl->shader, "shader", fillVertShader, fillFragShader) == 0)
 		return 0;
 
 	glnvg__checkError("uniform locations");
-	glnvg__getUniforms(&gl->gradShader);
-	glnvg__getUniforms(&gl->imgShader);
-	glnvg__getUniforms(&gl->solidShader);
-	glnvg__getUniforms(&gl->solidImgShader);
+	glnvg__getUniforms(&gl->shader);
 
 	// Create dynamic vertex array
 	glGenVertexArrays(1, &gl->vertArr);
@@ -514,32 +484,34 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 	if (paint->image != 0) {
 		tex = glnvg__findTexture(gl, paint->image);
 		if (tex == NULL) return 0;
-		glUseProgram(gl->imgShader.prog);
-		glUniform2f(gl->imgShader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
-		glUniform2f(gl->imgShader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
-		glUniformMatrix3fv(gl->imgShader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
-		glUniform2f(gl->imgShader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
-		glUniformMatrix3fv(gl->imgShader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
-		glUniform2f(gl->imgShader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
-		glUniform1f(gl->imgShader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + aasize*0.5f);
-		glUniform1i(gl->imgShader.loc[GLNVG_LOC_TEX], 0);
-		glUniform1i(gl->imgShader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
+		glUseProgram(gl->shader.prog);
+		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], 1);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
+		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
+		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
+		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + aasize*0.5f);
+		glUniform1i(gl->shader.loc[GLNVG_LOC_TEX], 0);
+		glUniform1i(gl->shader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
 		glnvg__checkError("tex paint loc");
 		glBindTexture(GL_TEXTURE_2D, tex->tex);
 		glnvg__checkError("tex paint tex");
 	} else {
-		glUseProgram(gl->gradShader.prog);
-		glUniform2f(gl->gradShader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
-		glUniform2f(gl->gradShader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
-		glUniformMatrix3fv(gl->gradShader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
-		glUniform2f(gl->gradShader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
-		glUniformMatrix3fv(gl->gradShader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
-		glUniform2f(gl->gradShader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
-		glUniform1f(gl->gradShader.loc[GLNVG_LOC_RADIUS], paint->radius);
-		glUniform1f(gl->gradShader.loc[GLNVG_LOC_FEATHER], paint->feather);
-		glUniform4fv(gl->gradShader.loc[GLNVG_LOC_INNERCOL], 1, innerCol);
-		glUniform4fv(gl->gradShader.loc[GLNVG_LOC_OUTERCOL], 1, outerCol);
-		glUniform1f(gl->gradShader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + aasize*0.5f);
+		glUseProgram(gl->shader.prog);
+		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], 0);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
+		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
+		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
+		glUniform1f(gl->shader.loc[GLNVG_LOC_RADIUS], paint->radius);
+		glUniform1f(gl->shader.loc[GLNVG_LOC_FEATHER], paint->feather);
+		glUniform4fv(gl->shader.loc[GLNVG_LOC_INNERCOL], 1, innerCol);
+		glUniform4fv(gl->shader.loc[GLNVG_LOC_OUTERCOL], 1, outerCol);
+		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + aasize*0.5f);
 		glnvg__checkError("grad paint loc");
 	}
 	return 1;
@@ -586,7 +558,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 	const struct NVGpath* path;
 	int i, n, offset, maxCount;
 
-	if (gl->gradShader.prog == 0)
+	if (gl->shader.prog == 0)
 		return;
 
 	maxCount = glnvg__maxVertCount(paths, npaths);
@@ -645,9 +617,10 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 		glStencilFunc(GL_ALWAYS, 0, ~0);
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-		glUseProgram(gl->solidShader.prog);
-		glUniform2f(gl->solidShader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
-		glUniform2f(gl->solidShader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
+		glUseProgram(gl->shader.prog);
+		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], 2);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 		glnvg__checkError("fill solid loc");
 
 		glEnableVertexAttribArray(0);
@@ -718,7 +691,7 @@ static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGsc
 	const struct NVGpath* path;
 	int i, n, offset, maxCount;
 
-	if (gl->gradShader.prog == 0)
+	if (gl->shader.prog == 0)
 		return;
 
 	glnvg__setupPaint(gl, paint, scissor, width, aasize);
@@ -758,15 +731,19 @@ static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NV
 	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
 	float color[4];
 
+	if (gl->shader.prog == 0)
+		return;
+
 	if (tex != NULL) {
 		glBindTexture(GL_TEXTURE_2D, tex->tex);
 	}
 
-	glUseProgram(gl->solidImgShader.prog);
-	glUniform2f(gl->solidImgShader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
-	glUniform2f(gl->solidImgShader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
-	glUniform1i(gl->solidImgShader.loc[GLNVG_LOC_TEX], 0);
-	glUniform1i(gl->solidImgShader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
+	glUseProgram(gl->shader.prog);
+	glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], 3);
+	glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWPOS], 0, 0);
+	glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
+	glUniform1i(gl->shader.loc[GLNVG_LOC_TEX], 0);
+	glUniform1i(gl->shader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
 	glnvg__checkError("tris solid img loc");
 
 	glBindVertexArray(gl->vertArr);
@@ -793,8 +770,7 @@ static void glnvg__renderDelete(void* uptr)
 	int i;
 	if (gl == NULL) return;
 
-	glnvg__deleteShader(&gl->gradShader);
-	glnvg__deleteShader(&gl->imgShader);
+	glnvg__deleteShader(&gl->shader);
 
 	for (i = 0; i < gl->ntextures; i++) {
 		if (gl->textures[i].tex != 0)

@@ -801,6 +801,8 @@ void updateFPS(struct FPScounter* fps, float frameTime)
 	fps->values[fps->head] = frameTime;
 }
 
+#define AVG_SIZE 20
+
 void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps)
 {
 	int i, head;
@@ -809,11 +811,11 @@ void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps)
 
 	avg = 0;
 	head = fps->head;
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < AVG_SIZE; i++) {
 		avg += fps->values[head];
 		head = (head+FPS_HISTORY_COUNT-1) % FPS_HISTORY_COUNT;
 	}
-	avg /= 10.0f;
+	avg /= (float)AVG_SIZE;
 
 	w = 200;
 	h = 30;
@@ -836,11 +838,18 @@ void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps)
 	nvgFillColor(vg, nvgRGBA(255,192,0,128));
 	nvgFill(vg);
 
-	nvgFontSize(vg, 18.0f);
 	nvgFontFace(vg, "sans");
+	nvgFontSize(vg, 18.0f);
 	nvgTextAlign(vg,NVG_ALIGN_RIGHT|NVG_ALIGN_MIDDLE);
 	nvgFillColor(vg, nvgRGBA(240,240,240,255));
 	sprintf(str, "%.2f FPS", 1.0f / avg);
 	nvgText(vg, x+w-5,y+h/2, str, NULL);
+
+	nvgFontSize(vg, 15.0f);
+	nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_MIDDLE);
+	nvgFillColor(vg, nvgRGBA(240,240,240,160));
+	sprintf(str, "%.2f ms", avg * 1000.0f);
+	nvgText(vg, x+5,y+h/2, str, NULL);
+
 }
 

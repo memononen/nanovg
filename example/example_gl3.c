@@ -66,7 +66,8 @@ int main()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
+	window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
+//	window = glfwCreateWindow(1000, 600, "NanoVG", glfwGetPrimaryMonitor(), NULL);
 	if (!window) {
 		glfwTerminate();
 		return -1;
