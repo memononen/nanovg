@@ -24,6 +24,15 @@ extern "C" {
 
 #define NVG_ANTIALIAS 1
 
+#ifdef NANOVG_GLES3_IMPLEMENTATION
+#  ifndef NANOVG_GLES3
+#    define NANOVG_GLES3
+#  endif
+#  ifndef NANOVG_GL3_IMPLEMENTATION
+#    define NANOVG_GL3_IMPLEMENTATION
+#  endif
+#endif
+
 #ifdef NANOVG_GLES3
 
 struct NVGcontext* nvgCreateGLES3(int atlasw, int atlash, int edgeaa);

@@ -20,8 +20,7 @@
 #define GLFW_INCLUDE_ES2
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
-#define NANOVG_GL2_IMPLEMENTATION
-#define NANOVG_GLES2
+#define NANOVG_GLES2_IMPLEMENTATION
 #include "nanovg_gl2.h"
 #include "demo.h"
 
