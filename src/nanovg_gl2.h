@@ -24,7 +24,7 @@ extern "C" {
 
 #define NVG_ANTIALIAS 1
 
-#ifdef NANOVG_GLES2
+#if defined(NANOVG_GLES2) || defined(NANOVG_GLES2_IMPLEMENTATION)
 
 struct NVGcontext* nvgCreateGLES2(int atlasw, int atlash, int edgeaa);
 void nvgDeleteGLES2(struct NVGcontext* ctx);
@@ -912,7 +912,7 @@ error:
 	return NULL;
 }
 
-#ifdef NANOVG_GLES2
+#if defined(NANOVG_GLES2) || defined(NANOVG_GLES2_IMPLEMENTATION)
 void nvgDeleteGLES2(struct NVGcontext* ctx)
 #else
 void nvgDeleteGL2(struct NVGcontext* ctx)
