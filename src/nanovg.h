@@ -356,9 +356,11 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 
 // Measures the specified text string. Parameter bounds should be a pointer to float[4] if 
 // the bounding box of the text should be returned. Returns the width of the measured text.
+// Current transform does not affect the measured values.
 float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end, float* bounds);
 
 // Returns the vertical metrics based on the current text style.
+// Current transform does not affect the measured values.
 void nvgVertMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh);
 
 

@@ -1664,13 +1664,12 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end, float* bounds)
 {
 	struct NVGstate* state = nvg__getState(ctx);
-	float scale = 1.0f; // nvg__getFontScale(state);
 
 	if (state->fontId == FONS_INVALID) return 0;
 
-	fonsSetSize(ctx->fs, state->fontSize*scale);
-	fonsSetSpacing(ctx->fs, state->letterSpacing*scale);
-	fonsSetBlur(ctx->fs, state->fontBlur*scale);
+	fonsSetSize(ctx->fs, state->fontSize);
+	fonsSetSpacing(ctx->fs, state->letterSpacing);
+	fonsSetBlur(ctx->fs, state->fontBlur);
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 
@@ -1680,13 +1679,12 @@ float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end,
 void nvgVertMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh)
 {
 	struct NVGstate* state = nvg__getState(ctx);
-	float scale = 1.0f; // nvg__getFontScale(state);
 
 	if (state->fontId == FONS_INVALID) return;
 
-	fonsSetSize(ctx->fs, state->fontSize*scale);
-	fonsSetSpacing(ctx->fs, state->letterSpacing*scale);
-	fonsSetBlur(ctx->fs, state->fontBlur*scale);
+	fonsSetSize(ctx->fs, state->fontSize);
+	fonsSetSpacing(ctx->fs, state->letterSpacing);
+	fonsSetBlur(ctx->fs, state->fontBlur);
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 
