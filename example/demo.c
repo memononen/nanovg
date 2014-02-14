@@ -623,8 +623,8 @@ void drawColorwheel(struct NVGcontext* vg, float x, float y, float w, float h, f
 	}
 
 	nvgBeginPath(vg);
-	nvgCircle(vg, cx,cy, r0-1);
-	nvgCircle(vg, cx,cy, r1+1);
+	nvgCircle(vg, cx,cy, r0-0.5f);
+	nvgCircle(vg, cx,cy, r1+0.5f);
 	nvgStrokeColor(vg, nvgRGBA(0,0,0,64));
 	nvgStrokeWidth(vg, 1.0f);
 	nvgStroke(vg);
@@ -643,8 +643,8 @@ void drawColorwheel(struct NVGcontext* vg, float x, float y, float w, float h, f
 
 	paint = nvgBoxGradient(vg, r0-3,-5,r1-r0+6,10, 2,4, nvgRGBA(0,0,0,128), nvgRGBA(0,0,0,0));
 	nvgBeginPath(vg);
-	nvgRect(vg, r0-3-10,-5-10,r1-r0+6+20,10+20);
-	nvgRect(vg, r0-3,-5,r1-r0+6,10);
+	nvgRect(vg, r0-2-10,-4-10,r1-r0+4+20,8+20);
+	nvgRect(vg, r0-2,-4,r1-r0+4,8);
 	nvgPathWinding(vg, NVG_HOLE);
 	nvgFillPaint(vg, paint);
 	nvgFill(vg);

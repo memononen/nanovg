@@ -108,7 +108,9 @@ int main()
 	while (!glfwWindowShouldClose(window))
 	{
 		double mx, my, t, dt;
-		int width, height;
+		int winWidth, winHeight;
+		int fbWidth, fbHeight;
+		float pxRatio;
 
 		t = glfwGetTime();
 		dt = t - prevt;
@@ -116,21 +118,27 @@ int main()
 		updateFPS(&fps, dt);
 
 		glfwGetCursorPos(window, &mx, &my);
-		glfwGetFramebufferSize(window, &width, &height);
+		glfwGetWindowSize(window, &winWidth, &winHeight);
+		glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+		// Calculate pixel ration for hi-dpi devices.
+		pxRatio = (float)fbWidth / (float)winWidth;
 
 		// Update and render
-		glViewport(0, 0, width, height);
+		glViewport(0, 0, fbWidth, fbHeight);
 		glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);
 
-		nvgBeginFrame(vg, width, height);
+		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
-		renderDemo(vg, mx,my, width,height, t, blowup, &data);
+		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
 		renderFPS(vg, 5,5, &fps);
+
+		nvgEndFrame(vg);
 
 		glEnable(GL_DEPTH_TEST);
 

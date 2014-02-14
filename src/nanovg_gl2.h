@@ -609,6 +609,12 @@ static void glnvg__renderViewport(void* uptr, int width, int height)
 	gl->viewHeight = height;
 }
 
+static void glnvg__renderFlush(void* uptr)
+{
+//	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
+	// empty
+}
+
 static int glnvg__maxVertCount(const struct NVGpath* paths, int npaths)
 {
 	int i, count = 0;
@@ -883,6 +889,7 @@ struct NVGcontext* nvgCreateGL2(int atlasw, int atlash, int edgeaa)
 	params.renderUpdateTexture = glnvg__renderUpdateTexture;
 	params.renderGetTextureSize = glnvg__renderGetTextureSize;
 	params.renderViewport = glnvg__renderViewport;
+	params.renderFlush = glnvg__renderFlush;
 	params.renderFill = glnvg__renderFill;
 	params.renderStroke = glnvg__renderStroke;
 	params.renderTriangles = glnvg__renderTriangles;

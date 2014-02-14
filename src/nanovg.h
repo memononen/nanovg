@@ -66,9 +66,18 @@ enum NVGaling {
 };
 
 
-// Called at the beginning of a frame.
-// 
-void nvgBeginFrame(struct NVGcontext* ctx, int width, int height);
+// Begin drawing a new frame
+// Calls to nanovg drawing API should be wrapped in nvgBeginFrame() & nvgEndFrame()
+// nvgBeginFrame() defines the size of the window to render to in relation currently
+// set viewport (i.e. glViewport on GL backends). Device pixel ration allows to
+// control the rendering on Hi-DPI devices.
+// For example, GLFW returns two dimension for an opened window: window size and
+// frame buffer size. In that case you would set windowWidth/Height to the window size
+// devicePixelRatio to: frameBufferWidth / windowWidth.
+void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, float devicePixelRatio);
+
+// Ends drawing flushing remaining render state.
+void nvgEndFrame(struct NVGcontext* ctx);
 
 //
 // Color utils
@@ -405,6 +414,7 @@ struct NVGparams {
 	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
 	void (*renderViewport)(void* uptr, int width, int height);
+	void (*renderFlush)(void* uptr);
 	void (*renderFill)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize, const float* bounds, const struct NVGpath* paths, int npaths);
 	void (*renderStroke)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize, float strokeWidth, const struct NVGpath* paths, int npaths);
 	void (*renderTriangles)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, int image, const struct NVGvertex* verts, int nverts);

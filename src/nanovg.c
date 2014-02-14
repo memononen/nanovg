@@ -28,7 +28,6 @@
 #define NVG_INIT_PATH_SIZE 256
 #define NVG_MAX_STATES 32
 
-#define NVG_AA 1.0f
 #define NVG_KAPPA90 0.5522847493f	// Lenght proportional to radius of a cubic bezier handle for 90deg arcs.
 
 #define NVG_COUNTOF(arr) (sizeof(arr) / sizeof(0[arr]))
@@ -101,6 +100,8 @@ struct NVGcontext {
 	struct NVGpathCache* cache;
 	float tessTol;
 	float distTol;
+	float fringeWidth;
+	float devicePxRatio;
 	struct FONScontext* fs;
 	int fontImage;
 	int drawCallCount;
@@ -173,6 +174,13 @@ error:
 	return NULL;
 }
 
+static void nvg__setDevicePixelRatio(struct NVGcontext* ctx, float ratio)
+{
+	ctx->tessTol = 0.3f * 4.0f / ratio;
+	ctx->distTol = 0.01f / ratio;
+	ctx->fringeWidth = 1.0f / ratio;
+	ctx->devicePxRatio = ratio;
+}
 
 struct NVGcontext* nvgCreateInternal(struct NVGparams* params)
 {
@@ -194,8 +202,7 @@ struct NVGcontext* nvgCreateInternal(struct NVGparams* params)
 	nvgSave(ctx);
 	nvgReset(ctx);
 
-	ctx->tessTol = 0.3f * 4.0f;
-	ctx->distTol = 0.01f;
+	nvg__setDevicePixelRatio(ctx, 1.0f);
 
 	if (ctx->params.renderCreate(ctx->params.userPtr) == 0) goto error;
 
@@ -238,18 +245,29 @@ void nvgDeleteInternal(struct NVGcontext* ctx)
 	free(ctx);
 }
 
-void nvgBeginFrame(struct NVGcontext* ctx, int width, int height)
+void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, float devicePixelRatio)
 {
 /*	printf("Tris: draws:%d  fill:%d  stroke:%d  text:%d  TOT:%d\n",
 		ctx->drawCallCount, ctx->fillTriCount, ctx->strokeTriCount, ctx->textTriCount,
 		ctx->fillTriCount+ctx->strokeTriCount+ctx->textTriCount);*/
+
+	ctx->nstates = 0;
+	nvgSave(ctx);
+	nvgReset(ctx);
+
+	nvg__setDevicePixelRatio(ctx, devicePixelRatio);
 	
-	ctx->params.renderViewport(ctx->params.userPtr, width, height);
+	ctx->params.renderViewport(ctx->params.userPtr, windowWidth, windowHeight);
 
 	ctx->drawCallCount = 0;
 	ctx->fillTriCount = 0;
 	ctx->strokeTriCount = 0;
 	ctx->textTriCount = 0;
+}
+
+void nvgEndFrame(struct NVGcontext* ctx)
+{
+	ctx->params.renderFlush(ctx->params.userPtr);
 }
 
 unsigned int nvgRGB(unsigned char r, unsigned char g, unsigned char b)
@@ -1084,6 +1102,7 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w)
 	int convex = 0;
 	int i, j, s, e;
 	float wo = 0;
+	float aa = ctx->fringeWidth;
 
 	// Calculate max vertex usage.
 	cverts = 0;
@@ -1110,7 +1129,7 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w)
 
 		// Calculate shape vertices.
 		if (feats & NVG_FILL) {
-			wo = 0.5f;
+			wo = 0.5f*aa;
 			dst = verts;
 			path->fill = dst;
 
@@ -1196,8 +1215,8 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w)
 				nvg__normalize(&dx, &dy);
 				dlx = dy;
 				dly = -dx;
-				nvg__vset(dst, p0->x + dlx*rw - dx*NVG_AA, p0->y + dly*rw - dy*NVG_AA, u0,0); dst++;
-				nvg__vset(dst, p0->x - dlx*lw - dx*NVG_AA, p0->y - dly*lw - dy*NVG_AA, u1,0); dst++;
+				nvg__vset(dst, p0->x + dlx*rw - dx*aa, p0->y + dly*rw - dy*aa, u0,0); dst++;
+				nvg__vset(dst, p0->x - dlx*lw - dx*aa, p0->y - dly*lw - dy*aa, u1,0); dst++;
 				nvg__vset(dst, p0->x + dlx*rw, p0->y + dly * rw, u0,1); dst++;
 				nvg__vset(dst, p0->x - dlx*lw, p0->y - dly * lw, u1,1); dst++;
 			}
@@ -1252,8 +1271,8 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w)
 				dly = -dx;
 				nvg__vset(dst, p1->x + dlx*rw, p1->y + dly * rw, u0,1); dst++;
 				nvg__vset(dst, p1->x - dlx*lw, p1->y - dly * lw, u1,1); dst++;
-				nvg__vset(dst, p1->x + dlx*rw + dx*NVG_AA, p1->y + dly*rw + dy*NVG_AA, u0,0); dst++;
-				nvg__vset(dst, p1->x - dlx*lw + dx*NVG_AA, p1->y - dly*lw + dy*NVG_AA, u1,0); dst++;
+				nvg__vset(dst, p1->x + dlx*rw + dx*aa, p1->y + dly*rw + dy*aa, u0,0); dst++;
+				nvg__vset(dst, p1->x - dlx*lw + dx*aa, p1->y - dly*lw + dy*aa, u1,0); dst++;
 			}
 
 			path->nstroke = (int)(dst - verts);
@@ -1488,11 +1507,11 @@ void nvgFill(struct NVGcontext* ctx)
 
 	nvg__flattenPaths(ctx, state->miterLimit);
 	if (ctx->params.edgeAntiAlias)
-		nvg__expandStrokeAndFill(ctx, NVG_FILL|NVG_STROKE, NVG_AA);
+		nvg__expandStrokeAndFill(ctx, NVG_FILL|NVG_STROKE, ctx->fringeWidth);
 	else
 		nvg__expandStrokeAndFill(ctx, NVG_FILL, 0.0f);
 
-	ctx->params.renderFill(ctx->params.userPtr, &state->fill, &state->scissor, NVG_AA,
+	ctx->params.renderFill(ctx->params.userPtr, &state->fill, &state->scissor, 1.0f,
 						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
@@ -1514,11 +1533,11 @@ void nvgStroke(struct NVGcontext* ctx)
 
 	nvg__flattenPaths(ctx, state->miterLimit);
 	if (ctx->params.edgeAntiAlias)
-		nvg__expandStrokeAndFill(ctx, NVG_STROKE|NVG_CAPS, strokeWidth*0.5f + NVG_AA/2.0f);
+		nvg__expandStrokeAndFill(ctx, NVG_STROKE|NVG_CAPS, strokeWidth*0.5f + ctx->fringeWidth/2.0f);
 	else
 		nvg__expandStrokeAndFill(ctx, NVG_STROKE|NVG_CAPS, strokeWidth*0.5f);
 
-	ctx->params.renderStroke(ctx->params.userPtr, &state->stroke, &state->scissor, NVG_AA,
+	ctx->params.renderStroke(ctx->params.userPtr, &state->stroke, &state->scissor, 1.0f,
 							 strokeWidth, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
@@ -1599,7 +1618,7 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 	struct FONStextIter iter;
 	struct FONSquad q;
 	struct NVGvertex* verts;
-	float scale = nvg__getFontScale(state);
+	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
 	float invscale = 1.0f / scale;
 	int dirty[4];
 	int cverts = 0;
