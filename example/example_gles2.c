@@ -17,13 +17,11 @@
 //
 
 #include <stdio.h>
-#ifdef NANOVG_GLEW
-#	include <GL/glew.h>
-#endif
 #define GLFW_INCLUDE_ES2
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
 #define NANOVG_GL2_IMPLEMENTATION
+#define NANOVG_GLES2
 #include "nanovg_gl2.h"
 #include "demo.h"
 
@@ -60,10 +58,9 @@ int main()
 
 	glfwSetErrorCallback(errorcb);
 
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-//    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
 //	window = glfwCreateWindow(1000, 600, "NanoVG", glfwGetPrimaryMonitor(), NULL);
@@ -75,13 +72,6 @@ int main()
 	glfwSetKeyCallback(window, key);
 
 	glfwMakeContextCurrent(window);
-#ifdef NANOVG_GLEW
-	glewExperimental = GL_TRUE;
-    if(glewInit() != GLEW_OK) {
-		printf("Could not init glew.\n");
-		return -1;
-	}
-#endif
 
 	vg = nvgCreateGL2(512, 512, NVG_ANTIALIAS);
 	if (vg == NULL) {

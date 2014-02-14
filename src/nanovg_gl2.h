@@ -247,6 +247,10 @@ static int glnvg__renderCreate(void* uptr)
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 
 	static const char* fillVertShader =
+#ifdef NANOVG_GLES2
+		"#version 100\n"
+		"precision mediump float;\n"
+#endif
 		"uniform vec2 viewSize;\n"
 		"attribute vec2 vertex;\n"
 		"attribute vec2 tcoord;\n"
@@ -262,6 +266,10 @@ static int glnvg__renderCreate(void* uptr)
 		"}\n";
 
 	static const char* fillFragShaderEdgeAA = 
+#ifdef NANOVG_GLES2
+		"#version 100\n"
+		"precision mediump float;\n"
+#endif
 		"uniform mat3 scissorMat;\n"
 		"uniform vec2 scissorExt;\n"
 		"uniform mat3 paintMat;\n"
@@ -326,6 +334,10 @@ static int glnvg__renderCreate(void* uptr)
 		"}\n";
 
 	static const char* fillFragShader = 
+#ifdef NANOVG_GLES2
+		"#version 100\n"
+		"precision mediump float;\n"
+#endif
 		"uniform mat3 scissorMat;\n"
 		"uniform vec2 scissorExt;\n"
 		"uniform mat3 paintMat;\n"
@@ -415,14 +427,11 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, const 
 	glBindTexture(GL_TEXTURE_2D, tex->tex);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->width);
-	glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-	glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
 	if (type == NVG_TEXTURE_RGBA)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	else
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, w, h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -448,14 +457,24 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 	glBindTexture(GL_TEXTURE_2D, tex->tex);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+#ifdef NANOVG_GLES2
+	// No support for all of unpack, need to update a whole row at a time.
+	if (tex->type == NVG_TEXTURE_RGBA)
+		data += y*tex->width*4;
+	else
+		data += y*tex->width;
+	x = 0;
+	w = tex->width;
+#else
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->width);
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, x);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, y);
+#endif
 
 	if (tex->type == NVG_TEXTURE_RGBA)
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	else
-		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RED, GL_UNSIGNED_BYTE, data);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
 
 	return 1;
 }
