@@ -77,10 +77,6 @@ struct GLNVGtexture {
 
 struct GLNVGcontext {
 	struct GLNVGshader shader;
-/*	struct GLNVGshader gradShader;
-	struct GLNVGshader imgShader;
-	struct GLNVGshader solidShader;
-	struct GLNVGshader solidImgShader;*/
 	struct GLNVGtexture* textures;
 	float viewWidth, viewHeight;
 	int ntextures;
@@ -88,7 +84,6 @@ struct GLNVGcontext {
 	int textureId;
 	GLuint vertArr;
 	GLuint vertBuf;
-	int vertArrSize;
 };
 
 static struct GLNVGtexture* glnvg__allocTexture(struct GLNVGcontext* gl)
@@ -342,7 +337,6 @@ static int glnvg__renderCreate(void* uptr)
 	// Create dynamic vertex array
 	glGenVertexArrays(1, &gl->vertArr);
 	glGenBuffers(1, &gl->vertBuf);
-	gl->vertArrSize = 0;
 
 	glnvg__checkError("done");
 

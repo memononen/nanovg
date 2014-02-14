@@ -23,8 +23,8 @@
 #define GLFW_INCLUDE_ES2
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
-#define NANOVG_GLES2_IMPLEMENTATION
-#include "nanovg_gles2.h"
+#define NANOVG_GL2_IMPLEMENTATION
+#include "nanovg_gl2.h"
 #include "demo.h"
 
 
@@ -83,7 +83,7 @@ int main()
 	}
 #endif
 
-	vg = nvgCreateGL3(512,512);
+	vg = nvgCreateGL2(512,512);
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
 		return -1;
@@ -132,7 +132,7 @@ int main()
 
 	freeDemoData(vg, &data);
 
-	nvgDeleteGLES2(vg);
+	nvgDeleteGL2(vg);
 
 	glfwTerminate();
 	return 0;
