@@ -54,6 +54,7 @@ void nvgDeleteGL3(struct NVGcontext* ctx);
 #ifdef NANOVG_GL3_IMPLEMENTATION
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "nanovg.h"
 
