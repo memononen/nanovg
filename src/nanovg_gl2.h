@@ -24,8 +24,18 @@ extern "C" {
 
 #define NVG_ANTIALIAS 1
 
+#ifdef NANOVG_GLES2
+
+struct NVGcontext* nvgCreateGLES2(int atlasw, int atlash, int edgeaa);
+void nvgDeleteGLES2(struct NVGcontext* ctx);
+
+#else
+
 struct NVGcontext* nvgCreateGL2(int atlasw, int atlash, int edgeaa);
 void nvgDeleteGL2(struct NVGcontext* ctx);
+
+#endif
+
 
 #ifdef __cplusplus
 }
@@ -854,7 +864,11 @@ static void glnvg__renderDelete(void* uptr)
 }
 
 
+#ifdef NANOVG_GLES2
+struct NVGcontext* nvgCreateGLES2(int atlasw, int atlash, int edgeaa)
+#else
 struct NVGcontext* nvgCreateGL2(int atlasw, int atlash, int edgeaa)
+#endif
 {
 	struct NVGparams params;
 	struct NVGcontext* ctx = NULL;
@@ -891,7 +905,11 @@ error:
 	return NULL;
 }
 
+#ifdef NANOVG_GLES2
+void nvgDeleteGLES2(struct NVGcontext* ctx)
+#else
 void nvgDeleteGL2(struct NVGcontext* ctx)
+#endif
 {
 	nvgDeleteInternal(ctx);
 }

@@ -24,8 +24,17 @@ extern "C" {
 
 #define NVG_ANTIALIAS 1
 
+#ifdef NANOVG_GLES3
+
+struct NVGcontext* nvgCreateGLES3(int atlasw, int atlash, int edgeaa);
+void nvgDeleteGLES3(struct NVGcontext* ctx);
+
+#else
+
 struct NVGcontext* nvgCreateGL3(int atlasw, int atlash, int edgeaa);
 void nvgDeleteGL3(struct NVGcontext* ctx);
+
+#endif
 
 #ifdef __cplusplus
 }
@@ -444,11 +453,7 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, const 
 	if (type == NVG_TEXTURE_RGBA)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	else
-#ifdef NANOVG_GLES3
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, w, h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
-#else
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
-#endif
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -481,11 +486,7 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 	if (tex->type == NVG_TEXTURE_RGBA)
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	else
-#ifdef NANOVG_GLES3
-		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
-#else
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RED, GL_UNSIGNED_BYTE, data);
-#endif
 
 	return 1;
 }
@@ -869,7 +870,11 @@ static void glnvg__renderDelete(void* uptr)
 }
 
 
+#ifdef NANOVG_GLES3
+struct NVGcontext* nvgCreateGLES3(int atlasw, int atlash, int edgeaa)
+#else
 struct NVGcontext* nvgCreateGL3(int atlasw, int atlash, int edgeaa)
+#endif
 {
 	struct NVGparams params;
 	struct NVGcontext* ctx = NULL;
@@ -906,7 +911,11 @@ error:
 	return NULL;
 }
 
+#ifdef NANOVG_GLES3
+void nvgDeleteGLES3(struct NVGcontext* ctx)
+#else
 void nvgDeleteGL3(struct NVGcontext* ctx)
+#endif
 {
 	nvgDeleteInternal(ctx);
 }

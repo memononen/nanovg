@@ -73,7 +73,7 @@ int main()
 
 	glfwMakeContextCurrent(window);
 
-	vg = nvgCreateGL3(512, 512, NVG_ANTIALIAS);
+	vg = nvgCreateGLES3(512, 512, NVG_ANTIALIAS);
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
 		return -1;
@@ -122,7 +122,7 @@ int main()
 
 	freeDemoData(vg, &data);
 
-	nvgDeleteGL3(vg);
+	nvgDeleteGLES3(vg);
 
 	glfwTerminate();
 	return 0;
