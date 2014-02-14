@@ -1114,31 +1114,38 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w)
 			dst = verts;
 			path->fill = dst;
 
-			// Looping
-			p0 = &pts[path->count-1];
-			p1 = &pts[0];
-			for (j = 0; j < path->count; ++j) {
-				if (p1->flags & NVG_BEVEL) {
-					float dlx0 = p0->dy;
-					float dly0 = -p0->dx;
-					float dlx1 = p1->dy;
-					float dly1 = -p1->dx;
-					if (p1->flags & NVG_LEFT) {
-						float lx = p1->x - p1->dmx * wo;
-						float ly = p1->y - p1->dmy * wo;
-						nvg__vset(dst, lx, ly, 0.5f,1); dst++;
-					} else {
-						float lx0 = p1->x - dlx0 * wo;
-						float ly0 = p1->y - dly0 * wo;
-						float lx1 = p1->x - dlx1 * wo;
-						float ly1 = p1->y - dly1 * wo;
-						nvg__vset(dst, lx0, ly0, 0.5f,1); dst++;
-						nvg__vset(dst, lx1, ly1, 0.5f,1); dst++;
-					}
-				} else {
-					nvg__vset(dst, p1->x - (p1->dmx * wo), p1->y - (p1->dmy * wo), 0.5f,1); dst++;
+			if (w == 0.0f) {
+				for (j = 0; j < path->count; ++j) {
+					nvg__vset(dst, pts[j].x, pts[j].y, 0.5f,1);
+					dst++;
 				}
-				p0 = p1++;
+			} else {
+				// Looping
+				p0 = &pts[path->count-1];
+				p1 = &pts[0];
+				for (j = 0; j < path->count; ++j) {
+					if (p1->flags & NVG_BEVEL) {
+						float dlx0 = p0->dy;
+						float dly0 = -p0->dx;
+						float dlx1 = p1->dy;
+						float dly1 = -p1->dx;
+						if (p1->flags & NVG_LEFT) {
+							float lx = p1->x - p1->dmx * wo;
+							float ly = p1->y - p1->dmy * wo;
+							nvg__vset(dst, lx, ly, 0.5f,1); dst++;
+						} else {
+							float lx0 = p1->x - dlx0 * wo;
+							float ly0 = p1->y - dly0 * wo;
+							float lx1 = p1->x - dlx1 * wo;
+							float ly1 = p1->y - dly1 * wo;
+							nvg__vset(dst, lx0, ly0, 0.5f,1); dst++;
+							nvg__vset(dst, lx1, ly1, 0.5f,1); dst++;
+						}
+					} else {
+						nvg__vset(dst, p1->x - (p1->dmx * wo), p1->y - (p1->dmy * wo), 0.5f,1); dst++;
+					}
+					p0 = p1++;
+				}
 			}
 
 			path->nfill = (int)(dst - verts);
@@ -1480,7 +1487,10 @@ void nvgFill(struct NVGcontext* ctx)
 	int i;
 
 	nvg__flattenPaths(ctx, state->miterLimit);
-	nvg__expandStrokeAndFill(ctx, NVG_FILL|NVG_STROKE, NVG_AA);
+	if (ctx->params.edgeAntiAlias)
+		nvg__expandStrokeAndFill(ctx, NVG_FILL|NVG_STROKE, NVG_AA);
+	else
+		nvg__expandStrokeAndFill(ctx, NVG_FILL, 0.0f);
 
 	ctx->params.renderFill(ctx->params.userPtr, &state->fill, &state->scissor, NVG_AA,
 						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
@@ -1503,7 +1513,10 @@ void nvgStroke(struct NVGcontext* ctx)
 	int i;
 
 	nvg__flattenPaths(ctx, state->miterLimit);
-	nvg__expandStrokeAndFill(ctx, NVG_STROKE|NVG_CAPS, strokeWidth*0.5f + NVG_AA/2.0f);
+	if (ctx->params.edgeAntiAlias)
+		nvg__expandStrokeAndFill(ctx, NVG_STROKE|NVG_CAPS, strokeWidth*0.5f + NVG_AA/2.0f);
+	else
+		nvg__expandStrokeAndFill(ctx, NVG_STROKE|NVG_CAPS, strokeWidth*0.5f);
 
 	ctx->params.renderStroke(ctx->params.userPtr, &state->stroke, &state->scissor, NVG_AA,
 							 strokeWidth, ctx->cache->paths, ctx->cache->npaths);
@@ -1651,7 +1664,7 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end, float* bounds)
 {
 	struct NVGstate* state = nvg__getState(ctx);
-	float scale = nvg__getFontScale(state);
+	float scale = 1.0f; // nvg__getFontScale(state);
 
 	if (state->fontId == FONS_INVALID) return 0;
 
@@ -1667,7 +1680,7 @@ float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end,
 void nvgVertMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh)
 {
 	struct NVGstate* state = nvg__getState(ctx);
-	float scale = nvg__getFontScale(state);
+	float scale = 1.0f; // nvg__getFontScale(state);
 
 	if (state->fontId == FONS_INVALID) return;
 

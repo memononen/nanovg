@@ -22,7 +22,9 @@
 extern "C" {
 #endif
 
-struct NVGcontext* nvgCreateGL3();
+#define NVG_ANTIALIAS 1
+
+struct NVGcontext* nvgCreateGL3(int atlasw, int atlash, int edgeaa);
 void nvgDeleteGL3(struct NVGcontext* ctx);
 
 #ifdef __cplusplus
@@ -84,6 +86,7 @@ struct GLNVGcontext {
 	int textureId;
 	GLuint vertArr;
 	GLuint vertBuf;
+	int edgeAntiAlias;
 };
 
 static struct GLNVGtexture* glnvg__allocTexture(struct GLNVGcontext* gl)
@@ -260,7 +263,7 @@ static int glnvg__renderCreate(void* uptr)
 		"	gl_Position = vec4(2.0*vertex.x/viewSize.x - 1.0, 1.0 - 2.0*vertex.y/viewSize.y, 0, 1);\n"
 		"}\n";
 
-	static const char* fillFragShader = 
+	static const char* fillFragShaderEdgeAA = 
 		"#version 150 core\n"
 		"uniform mat3 scissorMat;\n"
 		"uniform vec2 scissorExt;\n"
@@ -297,7 +300,7 @@ static int glnvg__renderCreate(void* uptr)
 		"}\n"
 		"\n"
 		"void main(void) {\n"
-		"	if (type == 0) {\n"
+		"	if (type == 0) {			// Gradient\n"
 		"		float scissor = scissorMask(fpos);\n"
 		"		float strokeAlpha = strokeMask();\n"
 		"		// Calculate gradient color using box gradient\n"
@@ -307,7 +310,7 @@ static int glnvg__renderCreate(void* uptr)
 		"		// Combine alpha\n"
 		"		color.w *= strokeAlpha * scissor;\n"
 		"		outColor = color;\n"
-		"	} else if (type == 1) {\n"
+		"	} else if (type == 1) {		// Image\n"
 		"		float scissor = scissorMask(fpos);\n"
 		"		float strokeAlpha = strokeMask();\n"
 		"		// Calculate color fron texture\n"
@@ -317,9 +320,68 @@ static int glnvg__renderCreate(void* uptr)
 		"		// Combine alpha\n"
 		"		color.w *= strokeAlpha * scissor;\n"
 		"		outColor = color;\n"
-		"	} else if (type == 2) {\n"
+		"	} else if (type == 2) {		// Stencil fill\n"
 		"		outColor = vec4(1,1,1,1);\n"
-		"	} else if (type == 3) {\n"
+		"	} else if (type == 3) {		// Textured tris\n"
+		"		vec4 color = texture(tex, ftcoord);\n"
+		"   	color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
+		"		outColor = color * fcolor;\n"
+		"	}\n"
+		"}\n";
+
+	static const char* fillFragShader = 
+		"#version 150 core\n"
+		"uniform mat3 scissorMat;\n"
+		"uniform vec2 scissorExt;\n"
+		"uniform mat3 paintMat;\n"
+		"uniform vec2 extent;\n"
+		"uniform float radius;\n"
+		"uniform float feather;\n"
+		"uniform vec4 innerCol;\n"
+		"uniform vec4 outerCol;\n"
+		"uniform float strokeMult;\n"
+		"uniform sampler2D tex;\n"
+		"uniform int texType;\n"
+		"uniform int type;\n"
+		"in vec2 ftcoord;\n"
+		"in vec4 fcolor;\n"
+		"in vec2 fpos;\n"
+		"out vec4 outColor;\n"
+		"\n"
+		"float sdroundrect(vec2 pt, vec2 ext, float rad) {\n"
+		"	vec2 ext2 = ext - vec2(rad,rad);\n"
+		"	vec2 d = abs(pt) - ext2;\n"
+		"	return min(max(d.x,d.y),0.0) + length(max(d,0.0)) - rad;\n"
+		"}\n"
+		"\n"
+		"// Scissoring\n"
+		"float scissorMask(vec2 p) {\n"
+		"	vec2 sc = vec2(0.5,0.5) - (abs((scissorMat * vec3(p,1.0)).xy) - scissorExt);\n"
+		"	return clamp(sc.x,0.0,1.0) * clamp(sc.y,0.0,1.0);\n"
+		"}\n"
+		"\n"
+		"void main(void) {\n"
+		"	if (type == 0) {			// Gradient\n"
+		"		float scissor = scissorMask(fpos);\n"
+		"		// Calculate gradient color using box gradient\n"
+		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
+		"		float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
+		"		vec4 color = mix(innerCol,outerCol,d);\n"
+		"		// Combine alpha\n"
+		"		color.w *= scissor;\n"
+		"		outColor = color;\n"
+		"	} else if (type == 1) {		// Image\n"
+		"		float scissor = scissorMask(fpos);\n"
+		"		// Calculate color fron texture\n"
+		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy / extent;\n"
+		"		vec4 color = texture(tex, pt);\n"
+		"   	color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
+		"		// Combine alpha\n"
+		"		color.w *= scissor;\n"
+		"		outColor = color;\n"
+		"	} else if (type == 2) {		// Stencil fill\n"
+		"		outColor = vec4(1,1,1,1);\n"
+		"	} else if (type == 3) {		// Textured tris\n"
 		"		vec4 color = texture(tex, ftcoord);\n"
 		"   	color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
 		"		outColor = color * fcolor;\n"
@@ -328,8 +390,13 @@ static int glnvg__renderCreate(void* uptr)
 
 	glnvg__checkError("init");
 
-	if (glnvg__createShader(&gl->shader, "shader", fillVertShader, fillFragShader) == 0)
-		return 0;
+	if (gl->edgeAntiAlias) {
+		if (glnvg__createShader(&gl->shader, "shader", fillVertShader, fillFragShaderEdgeAA) == 0)
+			return 0;
+	} else {
+		if (glnvg__createShader(&gl->shader, "shader", fillVertShader, fillFragShader) == 0)
+			return 0;
+	}
 
 	glnvg__checkError("uniform locations");
 	glnvg__getUniforms(&gl->shader);
@@ -584,15 +651,17 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 
 		glEnable(GL_CULL_FACE);
 
-		// Draw fringes
-		n = 0;
-		for (i = 0; i < npaths; i++) {
-			path = &paths[i];
-			offset = (n + path->nfill) * sizeof(struct NVGvertex);
-			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
-			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
-			n += path->nfill + path->nstroke;
+		if (gl->edgeAntiAlias) {
+			// Draw fringes
+			n = 0;
+			for (i = 0; i < npaths; i++) {
+				path = &paths[i];
+				offset = (n + path->nfill) * sizeof(struct NVGvertex);
+				glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
+				glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
+				n += path->nfill + path->nstroke;
+			}
 		}
 
 		glUseProgram(0);
@@ -638,22 +707,23 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glEnable(GL_BLEND);
 
-		glStencilFunc(GL_EQUAL, 0x00, 0xff);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
 		glEnableVertexAttribArray(1);
-
 		glnvg__setupPaint(gl, paint, scissor, 1.0001f, aasize);
 
-		// Draw fringes
-		n = 0;
-		for (i = 0; i < npaths; i++) {
-			path = &paths[i];
-			offset = (n + path->nfill) * sizeof(struct NVGvertex);
-			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
-			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
-			n += path->nfill + path->nstroke;
+		if (gl->edgeAntiAlias) {
+			glStencilFunc(GL_EQUAL, 0x00, 0xff);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+			// Draw fringes
+			n = 0;
+			for (i = 0; i < npaths; i++) {
+				path = &paths[i];
+				offset = (n + path->nfill) * sizeof(struct NVGvertex);
+				glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
+				glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, path->nstroke);
+				n += path->nfill + path->nstroke;
+			}
 		}
 
 		// Draw fill
@@ -776,7 +846,7 @@ static void glnvg__renderDelete(void* uptr)
 }
 
 
-struct NVGcontext* nvgCreateGL3(int atlasw, int atlash)
+struct NVGcontext* nvgCreateGL3(int atlasw, int atlash, int edgeaa)
 {
 	struct NVGparams params;
 	struct NVGcontext* ctx = NULL;
@@ -798,6 +868,9 @@ struct NVGcontext* nvgCreateGL3(int atlasw, int atlash)
 	params.userPtr = gl;
 	params.atlasWidth = atlasw;
 	params.atlasHeight = atlash;
+	params.edgeAntiAlias = edgeaa;
+
+	gl->edgeAntiAlias = edgeaa;
 
 	ctx = nvgCreateInternal(&params);
 	if (ctx == NULL) goto error;

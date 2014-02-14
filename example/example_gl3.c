@@ -65,6 +65,9 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef DEMO_MSAA
+	glfwWindowHint(GLFW_SAMPLES, 4);
+#endif
 
 	window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
 //	window = glfwCreateWindow(1000, 600, "NanoVG", glfwGetPrimaryMonitor(), NULL);
@@ -84,7 +87,11 @@ int main()
 	}
 #endif
 
-	vg = nvgCreateGL3(512,512);
+#ifdef DEMO_MSAA
+	vg = nvgCreateGL3(512, 512, 0);
+#else
+	vg = nvgCreateGL3(512, 512, NVG_ANTIALIAS);
+#endif
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
 		return -1;

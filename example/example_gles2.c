@@ -83,7 +83,7 @@ int main()
 	}
 #endif
 
-	vg = nvgCreateGL2(512,512);
+	vg = nvgCreateGL2(512, 512, NVG_ANTIALIAS);
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
 		return -1;
