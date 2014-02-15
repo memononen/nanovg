@@ -21,10 +21,8 @@
 #	include <GL/glew.h>
 #endif
 #define GLFW_NO_GLU
-#define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
-#define NANOVG_GL3_IMPLEMENTATION
 #include "nanovg_gl3.h"
 #include "demo.h"
 
