@@ -615,8 +615,8 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 static void glnvg__renderViewport(void* uptr, int width, int height)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	gl->viewWidth = width;
-	gl->viewHeight = height;
+	gl->viewWidth = (float)width;
+	gl->viewHeight = (float)height;
 }
 
 static void glnvg__renderFlush(void* uptr)
