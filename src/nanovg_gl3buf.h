@@ -256,7 +256,6 @@ static int glnvg__createShader(struct GLNVGshader* shader, const char* name, con
 
     glBindAttribLocation(prog, 0, "vertex");
     glBindAttribLocation(prog, 1, "tcoord");
-    glBindAttribLocation(prog, 2, "color");
 
 	glLinkProgram(prog);
 	glGetProgramiv(prog, GL_LINK_STATUS, &status);
@@ -314,13 +313,10 @@ static int glnvg__renderCreate(void* uptr)
 		"uniform vec2 viewSize;\n"
 		"in vec2 vertex;\n"
 		"in vec2 tcoord;\n"
-		"in vec4 color;\n"
 		"out vec2 ftcoord;\n"
-		"out vec4 fcolor;\n"
 		"out vec2 fpos;\n"
 		"void main(void) {\n"
 		"	ftcoord = tcoord;\n"
-		"	fcolor = color;\n"
 		"	fpos = vertex;\n"
 		"	gl_Position = vec4(2.0*vertex.x/viewSize.x - 1.0, 1.0 - 2.0*vertex.y/viewSize.y, 0, 1);\n"
 		"}\n";
@@ -346,7 +342,6 @@ static int glnvg__renderCreate(void* uptr)
 		"uniform int texType;\n"
 		"uniform int type;\n"
 		"in vec2 ftcoord;\n"
-		"in vec4 fcolor;\n"
 		"in vec2 fpos;\n"
 		"out vec4 outColor;\n"
 		"\n"
@@ -394,7 +389,7 @@ static int glnvg__renderCreate(void* uptr)
 		"	} else if (type == 3) {		// Textured tris\n"
 		"		vec4 color = texture(tex, ftcoord);\n"
 		"   	color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
-		"		outColor = color * fcolor;\n"
+		"		outColor = color * innerCol;\n"
 		"	}\n"
 		"}\n";
 
@@ -419,7 +414,6 @@ static int glnvg__renderCreate(void* uptr)
 		"uniform int texType;\n"
 		"uniform int type;\n"
 		"in vec2 ftcoord;\n"
-		"in vec4 fcolor;\n"
 		"in vec2 fpos;\n"
 		"out vec4 outColor;\n"
 		"\n"
@@ -460,7 +454,7 @@ static int glnvg__renderCreate(void* uptr)
 		"	} else if (type == 3) {		// Textured tris\n"
 		"		vec4 color = texture(tex, ftcoord);\n"
 		"   	color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
-		"		outColor = color * fcolor;\n"
+		"		outColor = color * innerCol;\n"
 		"	}\n"
 		"}\n";
 
@@ -684,10 +678,7 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 
 		glDisable(GL_CULL_FACE);
 		for (i = 0; i < npaths; i++) {
-			offset = paths[i].fillOffset * sizeof(struct NVGvertex);
-			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
-			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
-			glDrawArrays(GL_TRIANGLE_FAN, 0, paths[i].fillCount);
+			glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
 		}
 
 		glEnable(GL_CULL_FACE);
@@ -695,10 +686,7 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 		if (gl->edgeAntiAlias) {
 			// Draw fringes
 			for (i = 0; i < npaths; i++) {
-				offset = paths[i].strokeOffset * sizeof(struct NVGvertex);
-				glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
-				glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
-				glDrawArrays(GL_TRIANGLE_STRIP, 0, paths[i].strokeCount);
+				glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 			}
 		}
 
@@ -721,10 +709,7 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 		glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
 		glDisable(GL_CULL_FACE);
 		for (i = 0; i < npaths; i++) {
-			offset = paths[i].fillOffset * sizeof(struct NVGvertex);
-			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
-			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
-			glDrawArrays(GL_TRIANGLE_FAN, 0, paths[i].fillCount);
+			glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
 		}
 
 		glEnable(GL_CULL_FACE);
@@ -733,7 +718,6 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glEnable(GL_BLEND);
 
-		glEnableVertexAttribArray(1);
 		glnvg__setupPaint(gl, &call->paint, &call->scissor, 1.0001f);
 
 		if (gl->edgeAntiAlias) {
@@ -742,20 +726,14 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 
 			// Draw fringes
 			for (i = 0; i < npaths; i++) {
-				offset = paths[i].strokeOffset * sizeof(struct NVGvertex);
-				glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
-				glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
-				glDrawArrays(GL_TRIANGLE_STRIP, 0, paths[i].strokeCount);
+				glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 			}
 		}
 
 		// Draw fill
 		glStencilFunc(GL_NOTEQUAL, 0x0, 0xff);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
-		offset = call->triangleOffset * sizeof(struct NVGvertex);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
-		glDrawArrays(GL_TRIANGLES, 0, call->triangleCount);
+		glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
 
 		glDisable(GL_STENCIL_TEST);
 	}
@@ -772,10 +750,7 @@ static void glnvg__stroke(struct GLNVGcontext* gl, struct GLNVGcall* call)
 
 	// Draw Strokes
 	for (i = 0; i < npaths; i++) {
-		offset = paths[i].strokeOffset * sizeof(struct NVGvertex);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2*sizeof(float)));
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, paths[i].strokeCount);
+		glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 	}
 }
 
@@ -793,15 +768,12 @@ static void glnvg__triangles(struct GLNVGcontext* gl, struct GLNVGcall* call)
 	glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 	glUniform1i(gl->shader.loc[GLNVG_LOC_TEX], 0);
 	glUniform1i(gl->shader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
+ 	glnvg__toFloatColor(color, call->paint.innerColor);
+    glUniform4fv(gl->shader.loc[GLNVG_LOC_INNERCOL], 1, color );
 	glnvg__checkError("tris solid img loc");
 
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)offset);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(offset + 2 * sizeof(float)));
 
-	glnvg__toFloatColor(color, call->paint.innerColor);
-	glVertexAttrib4fv(2, color);
-
-	glDrawArrays(GL_TRIANGLES, 0, call->triangleCount);
+	glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
 }
 
 static void glnvg__renderFlush(void* uptr)
@@ -819,6 +791,8 @@ static void glnvg__renderFlush(void* uptr)
 		glBufferData(GL_ARRAY_BUFFER, gl->nverts * sizeof(struct NVGvertex), gl->verts, GL_STREAM_DRAW);
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)0);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(0 + 2*sizeof(float)));
 
 		for (i = 0; i < gl->ncalls; i++) {
 			struct GLNVGcall* call = &gl->calls[i];
