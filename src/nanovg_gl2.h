@@ -728,7 +728,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 		glDisable(GL_BLEND);
 		glEnable(GL_STENCIL_TEST);
 		glStencilMask(0xff);
-		glStencilFunc(GL_ALWAYS, 0, ~0);
+		glStencilFunc(GL_ALWAYS, 0, ~0U);
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 		glUseProgram(gl->shader.prog);
