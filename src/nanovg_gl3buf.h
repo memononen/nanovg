@@ -130,7 +130,7 @@ struct GLNVGpath {
 struct GLNVGcontext {
 	struct GLNVGshader shader;
 	struct GLNVGtexture* textures;
-    float view[2];
+	float view[2];
 	int ntextures;
 	int ctextures;
 	int textureId;
@@ -317,9 +317,9 @@ static int glnvg__renderCreate(void* uptr)
 #else
 		"#version 150 core\n"
 #endif
-        "layout(std140) uniform uboView {\n"
+		"layout(std140) uniform uboView {\n"
 		"   vec2 viewSize;\n"
-        "};\n"
+		"};\n"
 		"in vec2 vertex;\n"
 		"in vec2 tcoord;\n"
 		"out vec2 ftcoord;\n"
@@ -802,11 +802,12 @@ static void glnvg__renderFlush(void* uptr)
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)0);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(0 + 2*sizeof(float)));
-        // once per frame set ubo for view
-        glBindBuffer(GL_UNIFORM_BUFFER, gl->uboViewBuf);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(gl->view), 0, GL_STREAM_DRAW);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(gl->view), gl->view, GL_STREAM_DRAW);
-        glBindBufferBase(GL_UNIFORM_BUFFER, GLNVG_UBO_VIEW_BINDING, gl->uboViewBuf);
+        
+		// once per frame set ubo for view
+		glBindBuffer(GL_UNIFORM_BUFFER, gl->uboViewBuf);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(gl->view), 0, GL_STREAM_DRAW);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(gl->view), gl->view, GL_STREAM_DRAW);
+		glBindBufferBase(GL_UNIFORM_BUFFER, GLNVG_UBO_VIEW_BINDING, gl->uboViewBuf);
 
 		for (i = 0; i < gl->ncalls; i++) {
 			struct GLNVGcall* call = &gl->calls[i];
