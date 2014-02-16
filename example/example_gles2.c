@@ -27,13 +27,15 @@
 
 void errorcb(int error, const char* desc)
 {
-	printf("GLFW error: %s\n", desc);
+	printf("GLFW error %d: %s\n", error, desc);
 }
 
 int blowup = 0;
 
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	NVG_NOTUSED(scancode);
+	NVG_NOTUSED(mods);
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)

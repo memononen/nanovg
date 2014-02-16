@@ -425,6 +425,7 @@ struct NVGparams {
 struct NVGcontext* nvgCreateInternal(struct NVGparams* params);
 void nvgDeleteInternal(struct NVGcontext* ctx);
 
+#define NVG_NOTUSED(v)  (void)sizeof(v)
 
 #ifdef __cplusplus
 }

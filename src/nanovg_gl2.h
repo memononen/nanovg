@@ -57,12 +57,14 @@ void nvgDeleteGL2(struct NVGcontext* ctx);
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "nanovg.h"
 
 enum GLNVGuniformLoc {
 	GLNVG_LOC_VIEWSIZE,
 	GLNVG_LOC_SCISSORMAT,
 	GLNVG_LOC_SCISSOREXT,
+	GLNVG_LOC_SCISSORSCALE,
 	GLNVG_LOC_PAINTMAT,
 	GLNVG_LOC_EXTENT,
 	GLNVG_LOC_RADIUS,
@@ -250,6 +252,7 @@ static void glnvg__getUniforms(struct GLNVGshader* shader)
 	shader->loc[GLNVG_LOC_VIEWSIZE] = glGetUniformLocation(shader->prog, "viewSize");
 	shader->loc[GLNVG_LOC_SCISSORMAT] = glGetUniformLocation(shader->prog, "scissorMat");
 	shader->loc[GLNVG_LOC_SCISSOREXT] = glGetUniformLocation(shader->prog, "scissorExt");
+	shader->loc[GLNVG_LOC_SCISSORSCALE] = glGetUniformLocation(shader->prog, "scissorScale");
 	shader->loc[GLNVG_LOC_PAINTMAT] = glGetUniformLocation(shader->prog, "paintMat");
 	shader->loc[GLNVG_LOC_EXTENT] = glGetUniformLocation(shader->prog, "extent");
 	shader->loc[GLNVG_LOC_RADIUS] = glGetUniformLocation(shader->prog, "radius");
@@ -292,6 +295,7 @@ static int glnvg__renderCreate(void* uptr)
 #endif
 		"uniform mat3 scissorMat;\n"
 		"uniform vec2 scissorExt;\n"
+		"uniform vec2 scissorScale;\n"
 		"uniform mat3 paintMat;\n"
 		"uniform vec2 extent;\n"
 		"uniform float radius;\n"
@@ -314,7 +318,8 @@ static int glnvg__renderCreate(void* uptr)
 		"\n"
 		"// Scissoring\n"
 		"float scissorMask(vec2 p) {\n"
-		"	vec2 sc = vec2(0.5,0.5) - (abs((scissorMat * vec3(p,1.0)).xy) - scissorExt);\n"
+		"	vec2 sc = (abs((scissorMat * vec3(p,1.0)).xy) - scissorExt);\n"
+		"	sc = vec2(0.5,0.5) - sc * scissorScale;\n"
 		"	return clamp(sc.x,0.0,1.0) * clamp(sc.y,0.0,1.0);\n"
 		"}\n"
 		"\n"
@@ -360,6 +365,7 @@ static int glnvg__renderCreate(void* uptr)
 #endif
 		"uniform mat3 scissorMat;\n"
 		"uniform vec2 scissorExt;\n"
+		"uniform vec2 scissorScale;\n"
 		"uniform mat3 paintMat;\n"
 		"uniform vec2 extent;\n"
 		"uniform float radius;\n"
@@ -382,7 +388,8 @@ static int glnvg__renderCreate(void* uptr)
 		"\n"
 		"// Scissoring\n"
 		"float scissorMask(vec2 p) {\n"
-		"	vec2 sc = vec2(0.5,0.5) - (abs((scissorMat * vec3(p,1.0)).xy) - scissorExt);\n"
+		"	vec2 sc = (abs((scissorMat * vec3(p,1.0)).xy) - scissorExt);\n"
+		"	sc = vec2(0.5,0.5) - sc * scissorScale;\n"
 		"	return clamp(sc.x,0.0,1.0) * clamp(sc.y,0.0,1.0);\n"
 		"}\n"
 		"\n"
@@ -563,6 +570,7 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 	struct GLNVGtexture* tex = NULL;
 	float invxform[6], paintMat[9], scissorMat[9];
 	float scissorx = 0, scissory = 0;
+	float scissorsx = 0, scissorsy = 0;
 
 	glnvg__xformInverse(invxform, paint->xform);
 	glnvg__xformToMat3x3(paintMat, invxform);
@@ -571,11 +579,15 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		memset(scissorMat, 0, sizeof(scissorMat));
 		scissorx = 1.0f;
 		scissory = 1.0f;
+		scissorsx = 1.0f;
+		scissorsy = 1.0f;
 	} else {
 		glnvg__xformInverse(invxform, scissor->xform);
 		glnvg__xformToMat3x3(scissorMat, invxform);
 		scissorx = scissor->extent[0];
 		scissory = scissor->extent[1];
+		scissorsx = sqrtf(scissor->xform[0]*scissor->xform[0] + scissor->xform[2]*scissor->xform[2]);
+		scissorsy = sqrtf(scissor->xform[1]*scissor->xform[1] + scissor->xform[3]*scissor->xform[3]);
 	}
 
 	if (paint->image != 0) {
@@ -586,6 +598,7 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
 		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSORSCALE], scissorsx, scissorsy);
 		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
 		glUniform2f(gl->shader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
 		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + aasize*0.5f);
@@ -600,6 +613,7 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
 		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
+		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSORSCALE], scissorsx, scissorsy);
 		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
 		glUniform2f(gl->shader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
 		glUniform1f(gl->shader.loc[GLNVG_LOC_RADIUS], paint->radius);
@@ -622,7 +636,7 @@ static void glnvg__renderViewport(void* uptr, int width, int height)
 static void glnvg__renderFlush(void* uptr)
 {
 //	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	// empty
+	NVG_NOTUSED(uptr);
 }
 
 static int glnvg__maxVertCount(const struct NVGpath* paths, int npaths)
@@ -830,6 +844,7 @@ static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NV
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
 	float color[4];
+	NVG_NOTUSED(scissor);
 
 	if (gl->shader.prog == 0)
 		return;
