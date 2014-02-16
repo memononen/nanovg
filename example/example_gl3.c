@@ -25,7 +25,8 @@
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
-#include "nanovg_gl3.h"
+//#include "nanovg_gl3.h"
+#include "nanovg_gl3buf.h"
 #include "demo.h"
 
 
