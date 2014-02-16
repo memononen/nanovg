@@ -683,16 +683,11 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 
 	if (npaths == 1 && paths[0].convex) {
 
-		glEnable(GL_CULL_FACE);
-
 		glnvg__setupPaint(gl, &call->paint, &call->scissor, 1.0001f);
 
-		glDisable(GL_CULL_FACE);
 		for (i = 0; i < npaths; i++) {
 			glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
 		}
-
-		glEnable(GL_CULL_FACE);
 
 		if (gl->edgeAntiAlias) {
 			// Draw fringes
@@ -702,8 +697,6 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 		}
 
 	} else {
-
-		glEnable(GL_CULL_FACE);
 
 		// Draw shapes
 		glDisable(GL_BLEND);
@@ -721,7 +714,6 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 		for (i = 0; i < npaths; i++) {
 			glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
 		}
-
 		glEnable(GL_CULL_FACE);
 
 		// Draw aliased off-pixels
@@ -755,8 +747,6 @@ static void glnvg__stroke(struct GLNVGcontext* gl, struct GLNVGcall* call)
 	int npaths = call->pathCount, offset, i;
 
 	glnvg__setupPaint(gl, &call->paint, &call->scissor, call->strokeWidth);
-
-	glEnable(GL_CULL_FACE);
 
 	// Draw Strokes
 	for (i = 0; i < npaths; i++) {
@@ -793,6 +783,7 @@ static void glnvg__renderFlush(void* uptr)
 	if (gl->ncalls > 0) {
 
 		glUseProgram(gl->shader.prog);
+		glEnable(GL_CULL_FACE);
 
 		// Upload vertex data
 		glBindVertexArray(gl->vertArr);
