@@ -1027,9 +1027,9 @@ static void nvg__flattenPaths(struct NVGcontext* ctx, float m)
 		// Enforce winding.
 		if (path->count > 2) {
 			area = nvg__polyArea(pts, path->count);
-			if (path->winding == NVG_CCW && area > 0.0f)
+			if (path->winding == NVG_CCW && area < 0.0f)
 				nvg__polyReverse(pts, path->count);
-			if (path->winding == NVG_CW && area < 0.0f)
+			if (path->winding == NVG_CW && area > 0.0f)
 				nvg__polyReverse(pts, path->count);
 		}
 
@@ -1077,7 +1077,7 @@ static void nvg__flattenPaths(struct NVGcontext* ctx, float m)
 			if ((dmr2 * m*m) < 1.0f) {
 				cross = p1->dx * p0->dy - p0->dx * p1->dy;
 				p1->flags |= NVG_BEVEL;
-				if (cross < 0) {
+				if (cross > 0.0f) {
 					p1->flags |= NVG_LEFT;
 					nleft++;
 				}
@@ -1149,19 +1149,19 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w)
 						float dlx1 = p1->dy;
 						float dly1 = -p1->dx;
 						if (p1->flags & NVG_LEFT) {
-							float lx = p1->x - p1->dmx * wo;
-							float ly = p1->y - p1->dmy * wo;
+							float lx = p1->x + p1->dmx * wo;
+							float ly = p1->y + p1->dmy * wo;
 							nvg__vset(dst, lx, ly, 0.5f,1); dst++;
 						} else {
-							float lx0 = p1->x - dlx0 * wo;
-							float ly0 = p1->y - dly0 * wo;
-							float lx1 = p1->x - dlx1 * wo;
-							float ly1 = p1->y - dly1 * wo;
+							float lx0 = p1->x + dlx0 * wo;
+							float ly0 = p1->y + dly0 * wo;
+							float lx1 = p1->x + dlx1 * wo;
+							float ly1 = p1->y + dly1 * wo;
 							nvg__vset(dst, lx0, ly0, 0.5f,1); dst++;
 							nvg__vset(dst, lx1, ly1, 0.5f,1); dst++;
 						}
 					} else {
-						nvg__vset(dst, p1->x - (p1->dmx * wo), p1->y - (p1->dmy * wo), 0.5f,1); dst++;
+						nvg__vset(dst, p1->x + (p1->dmx * wo), p1->y + (p1->dmy * wo), 0.5f,1); dst++;
 					}
 					p0 = p1++;
 				}
@@ -1181,7 +1181,7 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w)
 		// Calculate fringe
 		if (feats & NVG_STROKE) {
 			float lw = w + wo, rw = w - wo;
-			float u0 = 0, u1 = 1;
+			float ru = 1, lu = 0;
 			int loop = ((feats & NVG_CAPS) && path->closed == 0) ? 0 : 1;
 			dst = verts;
 			path->stroke = dst;
@@ -1190,7 +1190,7 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w)
 			// the shape can be rendered without stenciling.
 			if (convex) {
 				lw = wo;	// This should generate the same vertex as fill inset above.
-				u1 = 0.5f;	// Set outline fade at middle.
+				lu = 0.5f;	// Set outline fade at middle.
 			}
 
 			if (loop) {
@@ -1215,10 +1215,10 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w)
 				nvg__normalize(&dx, &dy);
 				dlx = dy;
 				dly = -dx;
-				nvg__vset(dst, p0->x + dlx*rw - dx*aa, p0->y + dly*rw - dy*aa, u0,0); dst++;
-				nvg__vset(dst, p0->x - dlx*lw - dx*aa, p0->y - dly*lw - dy*aa, u1,0); dst++;
-				nvg__vset(dst, p0->x + dlx*rw, p0->y + dly * rw, u0,1); dst++;
-				nvg__vset(dst, p0->x - dlx*lw, p0->y - dly * lw, u1,1); dst++;
+				nvg__vset(dst, p0->x + dlx*lw - dx*aa, p0->y + dly*lw - dy*aa, lu,0); dst++;
+				nvg__vset(dst, p0->x - dlx*rw - dx*aa, p0->y - dly*rw - dy*aa, ru,0); dst++;
+				nvg__vset(dst, p0->x + dlx*lw, p0->y + dly * lw, lu,1); dst++;
+				nvg__vset(dst, p0->x - dlx*rw, p0->y - dly * rw, ru,1); dst++;
 			}
 
 			for (j = s; j < e; ++j) {
@@ -1228,39 +1228,39 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w)
 					float dlx1 = p1->dy;
 					float dly1 = -p1->dx;
 					if (p1->flags & NVG_LEFT) {
-						float rx0 = p1->x + dlx0 * rw;
-						float ry0 = p1->y + dly0 * rw;
-						float rx1 = p1->x + dlx1 * rw;
-						float ry1 = p1->y + dly1 * rw;
-						float lx = p1->x - p1->dmx * lw;
-						float ly = p1->y - p1->dmy * lw;
-						nvg__vset(dst, rx0, ry0, u0,1); dst++;
-						nvg__vset(dst, lx, ly, u1,1); dst++;
-						nvg__vset(dst, rx1, ry1, u0,1); dst++;
-						nvg__vset(dst, lx, ly, u1,1); dst++;
+						float rx0 = p1->x - dlx0 * rw;
+						float ry0 = p1->y - dly0 * rw;
+						float rx1 = p1->x - dlx1 * rw;
+						float ry1 = p1->y - dly1 * rw;
+						float lx = p1->x + p1->dmx * lw;
+						float ly = p1->y + p1->dmy * lw;
+						nvg__vset(dst, lx, ly, lu,1); dst++;
+						nvg__vset(dst, rx0, ry0, ru,1); dst++;
+						nvg__vset(dst, lx, ly, lu,1); dst++;
+						nvg__vset(dst, rx1, ry1, ru,1); dst++;
 					} else {
-						float rx = p1->x + p1->dmx * rw;
-						float ry = p1->y + p1->dmy * rw;
-						float lx0 = p1->x - dlx0 * lw;
-						float ly0 = p1->y - dly0 * lw;
-						float lx1 = p1->x - dlx1 * lw;
-						float ly1 = p1->y - dly1 * lw;
-						nvg__vset(dst, rx, ry, u0,1); dst++;
-						nvg__vset(dst, lx0, ly0, u1,1); dst++;
-						nvg__vset(dst, rx, ry, u0,1); dst++;
-						nvg__vset(dst, lx1, ly1, u1,1); dst++;
+						float rx = p1->x - p1->dmx * rw;
+						float ry = p1->y - p1->dmy * rw;
+						float lx0 = p1->x + dlx0 * lw;
+						float ly0 = p1->y + dly0 * lw;
+						float lx1 = p1->x + dlx1 * lw;
+						float ly1 = p1->y + dly1 * lw;
+						nvg__vset(dst, lx0, ly0, lu,1); dst++;
+						nvg__vset(dst, rx, ry, ru,1); dst++;
+						nvg__vset(dst, lx1, ly1, lu,1); dst++;
+						nvg__vset(dst, rx, ry, ru,1); dst++;
 					}
 				} else {
-					nvg__vset(dst, p1->x + (p1->dmx * rw), p1->y + (p1->dmy * rw), u0,1); dst++;
-					nvg__vset(dst, p1->x - (p1->dmx * lw), p1->y - (p1->dmy * lw), u1,1); dst++;
+					nvg__vset(dst, p1->x + (p1->dmx * lw), p1->y + (p1->dmy * lw), lu,1); dst++;
+					nvg__vset(dst, p1->x - (p1->dmx * rw), p1->y - (p1->dmy * rw), ru,1); dst++;
 				}
 				p0 = p1++;
 			}
 
 			if (loop) {
 				// Loop it
-				nvg__vset(dst, verts[0].x, verts[0].y, u0,1); dst++;
-				nvg__vset(dst, verts[1].x, verts[1].y, u1,1); dst++;
+				nvg__vset(dst, verts[0].x, verts[0].y, lu,1); dst++;
+				nvg__vset(dst, verts[1].x, verts[1].y, ru,1); dst++;
 			} else {
 				// Add cap
 				float dx, dy, dlx, dly;
@@ -1269,10 +1269,10 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w)
 				nvg__normalize(&dx, &dy);
 				dlx = dy;
 				dly = -dx;
-				nvg__vset(dst, p1->x + dlx*rw, p1->y + dly * rw, u0,1); dst++;
-				nvg__vset(dst, p1->x - dlx*lw, p1->y - dly * lw, u1,1); dst++;
-				nvg__vset(dst, p1->x + dlx*rw + dx*aa, p1->y + dly*rw + dy*aa, u0,0); dst++;
-				nvg__vset(dst, p1->x - dlx*lw + dx*aa, p1->y - dly*lw + dy*aa, u1,0); dst++;
+				nvg__vset(dst, p1->x + dlx*lw, p1->y + dly * lw, lu,1); dst++;
+				nvg__vset(dst, p1->x - dlx*rw, p1->y - dly * rw, ru,1); dst++;
+				nvg__vset(dst, p1->x + dlx*lw + dx*aa, p1->y + dly*lw + dy*aa, lu,0); dst++;
+				nvg__vset(dst, p1->x - dlx*rw + dx*aa, p1->y - dly*rw + dy*aa, ru,0); dst++;
 			}
 
 			path->nstroke = (int)(dst - verts);
