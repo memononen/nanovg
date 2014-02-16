@@ -20,6 +20,7 @@ solution "nanovg"
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
+		defines { "NANOVG_GL2_IMPLEMENTATION" }
 	 
 		configuration { "linux" }
 			 links { "X11","Xrandr", "rt", "GL", "GLU", "pthread", "m", "glfw3", "GLEW" }
@@ -27,6 +28,7 @@ solution "nanovg"
 
 		configuration { "windows" }
 			 links { "glu32","opengl32", "gdi32", "winmm", "user32" }
+			 defines { "NANOVG_GLEW" }
 
 		configuration { "macosx" }
 			links { "glfw3" }
@@ -47,17 +49,20 @@ solution "nanovg"
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
+		defines { "NANOVG_GL3_IMPLEMENTATION" }
 	 
 		configuration { "linux" }
 			 links { "X11","Xrandr", "rt", "GL", "GLU", "pthread", "m", "glfw3", "GLEW" }
-			 defines { "NANOVG_GLEW" }
+			 defines { "NANOVG_GLEW", "GLFW_INCLUDE_GLCOREARB" }
 
 		configuration { "windows" }
 			 links { "glu32","opengl32", "gdi32", "winmm", "user32" }
+			 defines { "NANOVG_GLEW" }
 
 		configuration { "macosx" }
 			links { "glfw3" }
 			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo" }
+			defines { "GLFW_INCLUDE_GLCOREARB" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
@@ -70,7 +75,7 @@ solution "nanovg"
 	project "example_gl2_msaa"
 		kind "ConsoleApp"
 		language "C"
-		defines { "DEMO_MSAA" }
+		defines { "DEMO_MSAA", "NANOVG_GL2_IMPLEMENTATION" }
 		files { "example/example_gl2.c", "example/demo.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
@@ -82,6 +87,7 @@ solution "nanovg"
 
 		configuration { "windows" }
 			 links { "glu32","opengl32", "gdi32", "winmm", "user32" }
+			 defines { "NANOVG_GLEW" }
 
 		configuration { "macosx" }
 			links { "glfw3" }
@@ -98,7 +104,7 @@ solution "nanovg"
 	project "example_gl3_msaa"
 		kind "ConsoleApp"
 		language "C"
-		defines { "DEMO_MSAA" }
+		defines { "DEMO_MSAA", "NANOVG_GL3_IMPLEMENTATION" }
 		files { "example/example_gl3.c", "example/demo.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
@@ -106,14 +112,16 @@ solution "nanovg"
 	 
 		configuration { "linux" }
 			 links { "X11","Xrandr", "rt", "GL", "GLU", "pthread", "m", "glfw3", "GLEW" }
-			 defines { "NANOVG_GLEW" }
+			 defines { "NANOVG_GLEW", "GLFW_INCLUDE_GLCOREARB" }
 
 		configuration { "windows" }
 			 links { "glu32","opengl32", "gdi32", "winmm", "user32" }
+			 defines { "NANOVG_GLEW" }
 
 		configuration { "macosx" }
 			links { "glfw3" }
 			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo" }
+			defines { "GLFW_INCLUDE_GLCOREARB" }
 
 		configuration "Debug"
 			defines { "DEBUG" }

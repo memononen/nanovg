@@ -22,7 +22,6 @@
 #endif
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
-#define NANOVG_GL2_IMPLEMENTATION
 #include "nanovg_gl2.h"
 #include "demo.h"
 
