@@ -415,9 +415,9 @@ struct NVGparams {
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
 	void (*renderViewport)(void* uptr, int width, int height);
 	void (*renderFlush)(void* uptr);
-	void (*renderFill)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize, const float* bounds, const struct NVGpath* paths, int npaths);
-	void (*renderStroke)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize, float strokeWidth, const struct NVGpath* paths, int npaths);
-	void (*renderTriangles)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, int image, const struct NVGvertex* verts, int nverts);
+	void (*renderFill)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, const float* bounds, const struct NVGpath* paths, int npaths);
+	void (*renderStroke)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float strokeWidth, const struct NVGpath* paths, int npaths);
+	void (*renderTriangles)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, const struct NVGvertex* verts, int nverts);
 	void (*renderDelete)(void* uptr);
 };
 

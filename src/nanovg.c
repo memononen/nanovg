@@ -1511,7 +1511,7 @@ void nvgFill(struct NVGcontext* ctx)
 	else
 		nvg__expandStrokeAndFill(ctx, NVG_FILL, 0.0f);
 
-	ctx->params.renderFill(ctx->params.userPtr, &state->fill, &state->scissor, 1.0f,
+	ctx->params.renderFill(ctx->params.userPtr, &state->fill, &state->scissor,
 						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
@@ -1537,7 +1537,7 @@ void nvgStroke(struct NVGcontext* ctx)
 	else
 		nvg__expandStrokeAndFill(ctx, NVG_STROKE|NVG_CAPS, strokeWidth*0.5f);
 
-	ctx->params.renderStroke(ctx->params.userPtr, &state->stroke, &state->scissor, 1.0f,
+	ctx->params.renderStroke(ctx->params.userPtr, &state->stroke, &state->scissor,
 							 strokeWidth, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
@@ -1615,6 +1615,7 @@ static float nvg__getFontScale(struct NVGstate* state)
 float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, const char* end)
 {
 	struct NVGstate* state = nvg__getState(ctx);
+	struct NVGpaint paint;
 	struct FONStextIter iter;
 	struct FONSquad q;
 	struct NVGvertex* verts;
@@ -1672,7 +1673,9 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 	}
 
 	// Render triangles.
-	ctx->params.renderTriangles(ctx->params.userPtr, &state->fill, &state->scissor, ctx->fontImage, verts, nverts);
+	paint = state->fill;
+	paint.image = ctx->fontImage;
+	ctx->params.renderTriangles(ctx->params.userPtr, &paint, &state->scissor, verts, nverts);
 
 	ctx->drawCallCount++;
 	ctx->textTriCount += nverts/3;

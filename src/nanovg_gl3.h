@@ -566,8 +566,7 @@ static void glnvg__xformToMat3x3(float* m3, float* t)
 	m3[8] = 1.0f;
 }
 
-static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, struct NVGscissor* scissor,
-							 float width, float aasize)
+static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, struct NVGscissor* scissor, float width)
 {
 	float innerCol[4];
 	float outerCol[4];
@@ -607,7 +606,7 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSORSCALE], scissorsx, scissorsy);
 		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
 		glUniform2f(gl->shader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
-		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + aasize*0.5f);
+		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + 0.5f);
 		glUniform1i(gl->shader.loc[GLNVG_LOC_TEX], 0);
 		glUniform1i(gl->shader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
 		glnvg__checkError("tex paint loc");
@@ -626,7 +625,7 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		glUniform1f(gl->shader.loc[GLNVG_LOC_FEATHER], paint->feather);
 		glUniform4fv(gl->shader.loc[GLNVG_LOC_INNERCOL], 1, innerCol);
 		glUniform4fv(gl->shader.loc[GLNVG_LOC_OUTERCOL], 1, outerCol);
-		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + aasize*0.5f);
+		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + 0.5f);
 		glnvg__checkError("grad paint loc");
 	}
 	return 1;
@@ -672,7 +671,7 @@ static void glnvg__uploadPaths(const struct NVGpath* paths, int npaths)
 	}
 }
 
-static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize,
+static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor,
 							  const float* bounds, const struct NVGpath* paths, int npaths)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
@@ -694,7 +693,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
-		glnvg__setupPaint(gl, paint, scissor, 1.0001f, aasize);
+		glnvg__setupPaint(gl, paint, scissor, 1.0001f);
 
 		glDisable(GL_CULL_FACE);
 		n = 0;
@@ -766,7 +765,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 		glEnable(GL_BLEND);
 
 		glEnableVertexAttribArray(1);
-		glnvg__setupPaint(gl, paint, scissor, 1.0001f, aasize);
+		glnvg__setupPaint(gl, paint, scissor, 1.0001f);
 
 		if (gl->edgeAntiAlias) {
 			glStencilFunc(GL_EQUAL, 0x00, 0xff);
@@ -807,7 +806,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 	}
 }
 
-static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float aasize,
+static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor,
 								float width, const struct NVGpath* paths, int npaths)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
@@ -817,7 +816,7 @@ static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGsc
 	if (gl->shader.prog == 0)
 		return;
 
-	glnvg__setupPaint(gl, paint, scissor, width, aasize);
+	glnvg__setupPaint(gl, paint, scissor, width);
 
 	glEnable(GL_CULL_FACE);
 
@@ -847,11 +846,11 @@ static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGsc
 	glUseProgram(0);
 }
 
-static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, int image,
+static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor,
 								   const struct NVGvertex* verts, int nverts)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
+	struct GLNVGtexture* tex = glnvg__findTexture(gl, paint->image);
 	float color[4];
 	NVG_NOTUSED(scissor);
 

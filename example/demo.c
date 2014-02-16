@@ -166,6 +166,8 @@ void drawDropDown(struct NVGcontext* vg, const char* text, float x, float y, flo
 
 void drawLabel(struct NVGcontext* vg, const char* text, float x, float y, float w, float h)
 {
+	NVG_NOTUSED(w);
+	
 	nvgFontSize(vg, 18.0f);
 	nvgFontFace(vg, "sans");
 	nvgFillColor(vg, nvgRGBA(255,255,255,128));
@@ -228,6 +230,7 @@ void drawCheckBox(struct NVGcontext* vg, const char* text, float x, float y, flo
 {
 	struct NVGpaint bg;
 	char icon[8];
+	NVG_NOTUSED(w);
 
 	nvgFontSize(vg, 18.0f);
 	nvgFontFace(vg, "sans");
