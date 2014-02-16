@@ -167,7 +167,7 @@ void drawDropDown(struct NVGcontext* vg, const char* text, float x, float y, flo
 void drawLabel(struct NVGcontext* vg, const char* text, float x, float y, float w, float h)
 {
 	NVG_NOTUSED(w);
-	
+
 	nvgFontSize(vg, 18.0f);
 	nvgFontFace(vg, "sans");
 	nvgFillColor(vg, nvgRGBA(255,255,255,128));
@@ -694,6 +694,59 @@ void drawColorwheel(struct NVGcontext* vg, float x, float y, float w, float h, f
 	nvgRestore(vg);
 }
 
+void drawLines(struct NVGcontext* vg, float x, float y, float w, float h, float t)
+{
+	int i, j;
+	float pad = 5.0f, s = w/9.0f - pad*2;
+	float pts[4*2], fx, fy;
+	int joins[3] = {NVG_MITER, NVG_ROUND, NVG_BEVEL};
+	int caps[3] = {NVG_BUTT, NVG_ROUND, NVG_SQUARE};
+	NVG_NOTUSED(h);
+
+	nvgSave(vg);
+	pts[0] = -s*0.25f + cosf(t*0.3f) * s*0.5f;
+	pts[1] = sinf(t*0.3f) * s*0.5f;
+	pts[2] = -s*0.25;
+	pts[3] = 0;
+	pts[4] = s*0.25f;
+	pts[5] = 0;
+	pts[6] = s*0.25f + cosf(-t*0.3f) * s*0.5f;
+	pts[7] = sinf(-t*0.3f) * s*0.5f;
+
+	for (i = 0; i < 3; i++) {
+		for (j = 0; j < 3; j++) {
+			fx = x + s*0.5f + (i*3+j)/9.0f*w + pad;
+			fy = y - s*0.5f + pad;
+
+			nvgLineCap(vg, caps[i]);
+			nvgLineJoin(vg, joins[j]);
+
+			nvgStrokeWidth(vg, s*0.3f);
+			nvgStrokeColor(vg, nvgRGBA(0,0,0,160));
+			nvgBeginPath(vg);
+			nvgMoveTo(vg, fx+pts[0], fy+pts[1]);
+			nvgLineTo(vg, fx+pts[2], fy+pts[3]);
+			nvgLineTo(vg, fx+pts[4], fy+pts[5]);
+			nvgLineTo(vg, fx+pts[6], fy+pts[7]);
+			nvgStroke(vg);
+
+			nvgLineCap(vg, NVG_BUTT);
+			nvgLineJoin(vg, NVG_BEVEL);
+
+			nvgStrokeWidth(vg, 1.0f);
+			nvgStrokeColor(vg, nvgRGBA(0,192,255,255));
+			nvgBeginPath(vg);
+			nvgMoveTo(vg, fx+pts[0], fy+pts[1]);
+			nvgLineTo(vg, fx+pts[2], fy+pts[3]);
+			nvgLineTo(vg, fx+pts[4], fy+pts[5]);
+			nvgLineTo(vg, fx+pts[6], fy+pts[7]);
+			nvgStroke(vg);
+		}
+	}
+
+
+	nvgRestore(vg);
+}
 
 int loadDemoData(struct NVGcontext* vg, struct DemoData* data)
 {
@@ -750,6 +803,9 @@ void renderDemo(struct NVGcontext* vg, float mx, float my, float width, float he
 	drawEyes(vg, width - 250, 50, 150, 100, mx, my, t);
 	drawGraph(vg, 0, height/2, width, height/2, t);
 	drawColorwheel(vg, width - 300, height - 300, 250.0f, 250.0f, t);
+
+	// Line joints
+	drawLines(vg, 50, height-50, 600, 50, t);
 
 	nvgSave(vg);
 	if (blowup) {

@@ -43,9 +43,18 @@ enum NVGwinding {
 	NVG_CCW = 1,			// Winding for solid shapes
 	NVG_CW = 2,				// Winding for holes
 };
+
 enum NVGsolidity {
 	NVG_SOLID = 1,			// CCW
 	NVG_HOLE = 2,			// CW
+};
+
+enum NVGlineCap {
+	NVG_BUTT,
+	NVG_ROUND,
+	NVG_SQUARE,
+	NVG_BEVEL,
+	NVG_MITER,
 };
 
 enum NVGpatternRepeat {
@@ -148,6 +157,9 @@ void nvgMiterLimit(struct NVGcontext* ctx, float limit);
 
 // Sets the stroke witdth of the stroke style.
 void nvgStrokeWidth(struct NVGcontext* ctx, float size);
+
+void nvgLineCap(struct NVGcontext* ctx, int cap);
+void nvgLineJoin(struct NVGcontext* ctx, int join);
 
 //
 // Transforms
