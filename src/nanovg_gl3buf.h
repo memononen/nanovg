@@ -60,20 +60,8 @@ void nvgDeleteGL3(struct NVGcontext* ctx);
 #include "nanovg.h"
 
 enum GLNVGuniformLoc {
-	GLNVG_LOC_VIEWSIZE,
-	GLNVG_LOC_SCISSORMAT,
-	GLNVG_LOC_SCISSOREXT,
-	GLNVG_LOC_SCISSORSCALE,
-	GLNVG_LOC_PAINTMAT,
-	GLNVG_LOC_EXTENT,
-	GLNVG_LOC_RADIUS,
-	GLNVG_LOC_FEATHER,
-	GLNVG_LOC_INNERCOL,
-	GLNVG_LOC_OUTERCOL,
-	GLNVG_LOC_STROKEMULT,
-	GLNVG_LOC_TEX,
-	GLNVG_LOC_TEXTYPE,
-	GLNVG_LOC_TYPE,
+	GLNVG_LOC_UBOVIEW,
+	GLNVG_LOC_UBOFRAG,
 	GLNVG_MAX_LOCS
 };
 
@@ -82,6 +70,11 @@ enum GLNVGshaderType {
 	NSVG_SHADER_FILLIMG,
 	NSVG_SHADER_SIMPLE,
 	NSVG_SHADER_IMG
+};
+
+enum GLNVGuniformBindings {
+	GLNVG_UBO_VIEW_BINDING = 0,
+	GLNVG_UBO_FRAG_BINDING = 1,
 };
 
 struct GLNVGshader {
@@ -123,15 +116,33 @@ struct GLNVGpath {
 	int convex;
 };
 
+struct GLNVGuboFrag {
+   float scissorMat[12]; // matrices are actually 3 vec4s
+   float paintMat[12];
+   float innerCol[4];
+   float outerCol[4];
+   float scissorExt[2];
+   float scissorScale[2];
+   float extent[2];
+   float radius;
+   float feather;
+   float strokeMult;
+   int texType;
+   int type;
+};
+
 struct GLNVGcontext {
 	struct GLNVGshader shader;
 	struct GLNVGtexture* textures;
-	float viewWidth, viewHeight;
+	float view[2];
 	int ntextures;
 	int ctextures;
 	int textureId;
 	GLuint vertArr;
 	GLuint vertBuf;
+    GLuint uboViewBuf;
+	GLuint uboFragBuf;
+	int uboPosAlignment;
 	int edgeAntiAlias;
 
 	struct GLNVGcall* calls;
@@ -144,6 +155,8 @@ struct GLNVGcontext {
 	int cverts;
 	int nverts;
 };
+
+
 
 static struct GLNVGtexture* glnvg__allocTexture(struct GLNVGcontext* gl)
 {
@@ -283,20 +296,8 @@ static void glnvg__deleteShader(struct GLNVGshader* shader)
 
 static void glnvg__getUniforms(struct GLNVGshader* shader)
 {
-	shader->loc[GLNVG_LOC_VIEWSIZE] = glGetUniformLocation(shader->prog, "viewSize");
-	shader->loc[GLNVG_LOC_SCISSORMAT] = glGetUniformLocation(shader->prog, "scissorMat");
-	shader->loc[GLNVG_LOC_SCISSOREXT] = glGetUniformLocation(shader->prog, "scissorExt");
-	shader->loc[GLNVG_LOC_SCISSORSCALE] = glGetUniformLocation(shader->prog, "scissorScale");
-	shader->loc[GLNVG_LOC_PAINTMAT] = glGetUniformLocation(shader->prog, "paintMat");
-	shader->loc[GLNVG_LOC_EXTENT] = glGetUniformLocation(shader->prog, "extent");
-	shader->loc[GLNVG_LOC_RADIUS] = glGetUniformLocation(shader->prog, "radius");
-	shader->loc[GLNVG_LOC_FEATHER] = glGetUniformLocation(shader->prog, "feather");
-	shader->loc[GLNVG_LOC_INNERCOL] = glGetUniformLocation(shader->prog, "innerCol");
-	shader->loc[GLNVG_LOC_OUTERCOL] = glGetUniformLocation(shader->prog, "outerCol");
-	shader->loc[GLNVG_LOC_STROKEMULT] = glGetUniformLocation(shader->prog, "strokeMult");
-	shader->loc[GLNVG_LOC_TEX] = glGetUniformLocation(shader->prog, "tex");
-	shader->loc[GLNVG_LOC_TEXTYPE] = glGetUniformLocation(shader->prog, "texType");
-	shader->loc[GLNVG_LOC_TYPE] = glGetUniformLocation(shader->prog, "type");
+	shader->loc[GLNVG_LOC_UBOVIEW] = glGetUniformBlockIndex(shader->prog, "uboView");
+	shader->loc[GLNVG_LOC_UBOFRAG] = glGetUniformBlockIndex(shader->prog, "uboFrag");
 }
 
 static int glnvg__renderCreate(void* uptr)
@@ -310,7 +311,9 @@ static int glnvg__renderCreate(void* uptr)
 #else
 		"#version 150 core\n"
 #endif
-		"uniform vec2 viewSize;\n"
+		"layout(std140) uniform uboView {\n"
+		"   vec2 viewSize;\n"
+		"};\n"
 		"in vec2 vertex;\n"
 		"in vec2 tcoord;\n"
 		"out vec2 ftcoord;\n"
@@ -328,19 +331,21 @@ static int glnvg__renderCreate(void* uptr)
 #else
 		"#version 150 core\n"
 #endif
-		"uniform mat3 scissorMat;\n"
-		"uniform vec2 scissorExt;\n"
-		"uniform vec2 scissorScale;\n"
-		"uniform mat3 paintMat;\n"
-		"uniform vec2 extent;\n"
-		"uniform float radius;\n"
-		"uniform float feather;\n"
-		"uniform vec4 innerCol;\n"
-		"uniform vec4 outerCol;\n"
-		"uniform float strokeMult;\n"
+        "layout(std140) uniform uboFrag {\n"
+		"	mat3 scissorMat;\n"
+		"	mat3 paintMat;\n"
+		"	vec4 innerCol;\n"
+		"	vec4 outerCol;\n"
+		"	vec2 scissorExt;\n"
+		"	vec2 scissorScale;\n"
+		"	vec2 extent;\n"
+		"	float radius;\n"
+		"	float feather;\n"
+		"	float strokeMult;\n"
+		"	int texType;\n"
+		"	int type;\n"
+        "};\n"
 		"uniform sampler2D tex;\n"
-		"uniform int texType;\n"
-		"uniform int type;\n"
 		"in vec2 ftcoord;\n"
 		"in vec2 fpos;\n"
 		"out vec4 outColor;\n"
@@ -400,19 +405,21 @@ static int glnvg__renderCreate(void* uptr)
 #else
 		"#version 150 core\n"
 #endif
-		"uniform mat3 scissorMat;\n"
-		"uniform vec2 scissorExt;\n"
-		"uniform vec2 scissorScale;\n"
-		"uniform mat3 paintMat;\n"
-		"uniform vec2 extent;\n"
-		"uniform float radius;\n"
-		"uniform float feather;\n"
-		"uniform vec4 innerCol;\n"
-		"uniform vec4 outerCol;\n"
-		"uniform float strokeMult;\n"
+        "layout(std140) uniform uboFrag {\n"
+		"	mat3 scissorMat;\n"
+		"	mat3 paintMat;\n"
+		"	vec4 innerCol;\n"
+		"	vec4 outerCol;\n"
+		"	vec2 scissorExt;\n"
+		"	vec2 scissorScale;\n"
+		"	vec2 extent;\n"
+		"	float radius;\n"
+		"	float feather;\n"
+		"	float strokeMult;\n"
+		"	int texType;\n"
+		"	int type;\n"
+        "};\n"
 		"uniform sampler2D tex;\n"
-		"uniform int texType;\n"
-		"uniform int type;\n"
 		"in vec2 ftcoord;\n"
 		"in vec2 fpos;\n"
 		"out vec4 outColor;\n"
@@ -474,6 +481,14 @@ static int glnvg__renderCreate(void* uptr)
 	// Create dynamic vertex array
 	glGenVertexArrays(1, &gl->vertArr);
 	glGenBuffers(1, &gl->vertBuf);
+
+    // Create UBOs
+    glUniformBlockBinding(gl->shader.prog, gl->shader.loc[GLNVG_LOC_UBOVIEW], GLNVG_UBO_VIEW_BINDING);
+    glGenBuffers(1, &gl->uboViewBuf); 
+    glUniformBlockBinding(gl->shader.prog, gl->shader.loc[GLNVG_LOC_UBOFRAG], GLNVG_UBO_FRAG_BINDING);
+    glGenBuffers(1, &gl->uboFragBuf); 
+    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &gl->uboPosAlignment);
+    gl->uboPosAlignment = sizeof( struct GLNVGuboFrag ) + gl->uboPosAlignment - sizeof( struct GLNVGuboFrag ) % gl->uboPosAlignment;
 
 	glnvg__checkError("done");
 
@@ -595,65 +610,75 @@ static void glnvg__xformToMat3x3(float* m3, float* t)
 	m3[8] = 1.0f;
 }
 
-static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, struct NVGscissor* scissor, float width)
+static void glnvg__xformToMat3x4(float* m3, float* t)
 {
-	float innerCol[4];
-	float outerCol[4];
-	glnvg__toFloatColor(innerCol, paint->innerColor);
-	glnvg__toFloatColor(outerCol, paint->outerColor);
+	m3[0] = t[0];
+	m3[1] = t[1];
+	m3[2] = 0.0f;
+	m3[3] = 0.0f;
+	m3[4] = t[2];
+	m3[5] = t[3];
+	m3[6] = 0.0f;
+	m3[7] = 0.0f;
+	m3[8] = t[4];
+	m3[9] = t[5];
+	m3[10] = 1.0f;
+	m3[11] = 0.0f;
+}
+
+static int glnvg__setupPaintUBO(struct GLNVGcontext* gl, struct NVGpaint* paint, struct NVGscissor* scissor, float width, struct GLNVGuboFrag* uboBuff)
+{
+    struct GLNVGuboFrag ubo;
+	glnvg__toFloatColor(ubo.innerCol, paint->innerColor);
+	glnvg__toFloatColor(ubo.outerCol, paint->outerColor);
 	struct GLNVGtexture* tex = NULL;
-	float invxform[6], paintMat[9], scissorMat[9];
-	float scissorx = 0, scissory = 0;
-	float scissorsx = 0, scissorsy = 0;
+	float invxform[6];
 
 	glnvg__xformInverse(invxform, paint->xform);
-	glnvg__xformToMat3x3(paintMat, invxform);
+	glnvg__xformToMat3x4(ubo.paintMat, invxform);
 
 	if (scissor->extent[0] < 0.5f || scissor->extent[1] < 0.5f) {
-		memset(scissorMat, 0, sizeof(scissorMat));
-		scissorx = 1.0f;
-		scissory = 1.0f;
-		scissorsx = 1.0f;
-		scissorsy = 1.0f;
+		memset(ubo.scissorMat, 0, sizeof(ubo.scissorMat));
+		ubo.scissorExt[0] = 1.0f;
+		ubo.scissorExt[1] = 1.0f;
+		ubo.scissorScale[0] = 1.0f;
+		ubo.scissorScale[1] = 1.0f;
 	} else {
 		glnvg__xformInverse(invxform, scissor->xform);
-		glnvg__xformToMat3x3(scissorMat, invxform);
-		scissorx = scissor->extent[0];
-		scissory = scissor->extent[1];
-		scissorsx = sqrtf(scissor->xform[0]*scissor->xform[0] + scissor->xform[2]*scissor->xform[2]);
-		scissorsy = sqrtf(scissor->xform[1]*scissor->xform[1] + scissor->xform[3]*scissor->xform[3]);
+		glnvg__xformToMat3x4(ubo.scissorMat, invxform);
+		ubo.scissorExt[0] = scissor->extent[0];
+		ubo.scissorExt[1] = scissor->extent[1];
+		ubo.scissorScale[0] = sqrtf(scissor->xform[0]*scissor->xform[0] + scissor->xform[2]*scissor->xform[2]);
+		ubo.scissorScale[1] = sqrtf(scissor->xform[1]*scissor->xform[1] + scissor->xform[3]*scissor->xform[3]);
 	}
+    memcpy( ubo.extent, paint->extent, sizeof( ubo.extent ) );
+    ubo.strokeMult = width*0.5f + 0.5f;
 
 	if (paint->image != 0) {
 		tex = glnvg__findTexture(gl, paint->image);
 		if (tex == NULL) return 0;
-		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], NSVG_SHADER_FILLIMG);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
-		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSORSCALE], scissorsx, scissorsy);
-		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
-		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + 0.5f);
-		glUniform1i(gl->shader.loc[GLNVG_LOC_TEX], 0);
-		glUniform1i(gl->shader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
+		ubo.type = NSVG_SHADER_FILLIMG;
+        ubo.texType = tex->type == NVG_TEXTURE_RGBA ? 0 : 1;
 		glnvg__checkError("tex paint loc");
+	} else {
+		ubo.type = NSVG_SHADER_FILLGRAD;
+        ubo.radius = paint->radius;
+        ubo.feather = paint->feather;
+		glnvg__checkError("grad paint loc");
+	}
+	*uboBuff = ubo;
+	return 1;
+}
+
+static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, int* uboPos)
+{
+	glBindBufferRange( GL_UNIFORM_BUFFER, GLNVG_UBO_FRAG_BINDING, gl->uboFragBuf, *uboPos, sizeof(struct GLNVGuboFrag));
+	*uboPos += gl->uboPosAlignment;
+	if (paint->image != 0) {
+		struct GLNVGtexture* tex = glnvg__findTexture(gl, paint->image);
+		if (tex == NULL) return 0;
 		glBindTexture(GL_TEXTURE_2D, tex->tex);
 		glnvg__checkError("tex paint tex");
-	} else {
-		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], NSVG_SHADER_FILLGRAD);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
-		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, scissorMat);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSOREXT], scissorx, scissory);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSORSCALE], scissorsx, scissorsy);
-		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
-		glUniform1f(gl->shader.loc[GLNVG_LOC_RADIUS], paint->radius);
-		glUniform1f(gl->shader.loc[GLNVG_LOC_FEATHER], paint->feather);
-		glUniform4fv(gl->shader.loc[GLNVG_LOC_INNERCOL], 1, innerCol);
-		glUniform4fv(gl->shader.loc[GLNVG_LOC_OUTERCOL], 1, outerCol);
-		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + 0.5f);
-		glnvg__checkError("grad paint loc");
 	}
 	return 1;
 }
@@ -661,18 +686,18 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 static void glnvg__renderViewport(void* uptr, int width, int height)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	gl->viewWidth = (float)width;
-	gl->viewHeight = (float)height;
+	gl->view[0] = (float)width;
+	gl->view[1] = (float)height;
 }
 
-static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
+static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call, int* uboPos )
 {
 	struct GLNVGpath* paths = &gl->paths[call->pathOffset];
-	int npaths = call->pathCount, offset, i;
+	int npaths = call->pathCount, i;
 
 	if (npaths == 1 && paths[0].convex) {
 
-		glnvg__setupPaint(gl, &call->paint, &call->scissor, 1.0001f);
+		glnvg__setupPaint(gl, &call->paint, uboPos);
 
 		for (i = 0; i < npaths; i++) {
 			glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
@@ -694,8 +719,9 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 		glStencilFunc(GL_ALWAYS, 0, ~0);
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-		glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], NSVG_SHADER_SIMPLE);
-		glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
+		// set bindpoint for solid loc
+		glBindBufferRange( GL_UNIFORM_BUFFER, GLNVG_UBO_FRAG_BINDING, gl->uboFragBuf, *uboPos, sizeof(struct GLNVGuboFrag));
+		*uboPos += gl->uboPosAlignment;
 		glnvg__checkError("fill solid loc");
 
 		glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
@@ -710,7 +736,7 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glEnable(GL_BLEND);
 
-		glnvg__setupPaint(gl, &call->paint, &call->scissor, 1.0001f);
+		glnvg__setupPaint(gl, &call->paint, uboPos);
 
 		if (gl->edgeAntiAlias) {
 			glStencilFunc(GL_EQUAL, 0x00, 0xff);
@@ -731,12 +757,12 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 	}
 }
 
-static void glnvg__stroke(struct GLNVGcontext* gl, struct GLNVGcall* call)
+static void glnvg__stroke(struct GLNVGcontext* gl, struct GLNVGcall* call, int* uboPos)
 {
 	struct GLNVGpath* paths = &gl->paths[call->pathOffset];
-	int npaths = call->pathCount, offset, i;
+	int npaths = call->pathCount, i;
 
-	glnvg__setupPaint(gl, &call->paint, &call->scissor, call->strokeWidth);
+	glnvg__setupPaint(gl, &call->paint, uboPos);
 
 	// Draw Strokes
 	for (i = 0; i < npaths; i++) {
@@ -744,22 +770,15 @@ static void glnvg__stroke(struct GLNVGcontext* gl, struct GLNVGcall* call)
 	}
 }
 
-static void glnvg__triangles(struct GLNVGcontext* gl, struct GLNVGcall* call)
+static void glnvg__triangles(struct GLNVGcontext* gl, struct GLNVGcall* call, int* uboPos)
 {
 	struct GLNVGtexture* tex = glnvg__findTexture(gl, call->paint.image);
-	int offset = call->triangleOffset * sizeof(struct NVGvertex);
-	float color[4];
 
 	if (tex != NULL) {
 		glBindTexture(GL_TEXTURE_2D, tex->tex);
 	}
-
-	glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], NSVG_SHADER_IMG);
-	glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
-	glUniform1i(gl->shader.loc[GLNVG_LOC_TEX], 0);
-	glUniform1i(gl->shader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
- 	glnvg__toFloatColor(color, call->paint.innerColor);
-    glUniform4fv(gl->shader.loc[GLNVG_LOC_INNERCOL], 1, color );
+	glBindBufferRange( GL_UNIFORM_BUFFER, GLNVG_UBO_FRAG_BINDING, gl->uboFragBuf, *uboPos, sizeof(struct GLNVGuboFrag));
+	*uboPos += gl->uboPosAlignment;
 	glnvg__checkError("tris solid img loc");
 
 
@@ -769,12 +788,45 @@ static void glnvg__triangles(struct GLNVGcontext* gl, struct GLNVGcall* call)
 static void glnvg__renderFlush(void* uptr)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	int i;
+	int i, uboPos;
 
 	if (gl->ncalls > 0) {
 
 		glUseProgram(gl->shader.prog);
 		glEnable(GL_CULL_FACE);
+
+		// upload ubo for frag shaders - maximum ubos is 2x num calls
+		glBindBuffer(GL_UNIFORM_BUFFER, gl->uboFragBuf);
+		glBufferData(GL_UNIFORM_BUFFER, 2 * gl->ncalls * sizeof(struct GLNVGuboFrag), 0, GL_STREAM_DRAW);
+		char* buff =  glMapBuffer( GL_UNIFORM_BUFFER, GL_WRITE_ONLY );
+		for (i = 0; i < gl->ncalls; i++) {
+			struct GLNVGcall* call = &gl->calls[i];
+			struct GLNVGuboFrag* ubo = (struct GLNVGuboFrag*)buff;
+			if (call->type == GLNVG_FILL)
+			{
+				if (!(call->pathCount == 1 && gl->paths[call->pathOffset].convex)) {
+					ubo->type = NSVG_SHADER_SIMPLE;
+					buff += gl->uboPosAlignment;;
+					ubo = (struct GLNVGuboFrag*)buff;
+				}
+				glnvg__setupPaintUBO(gl, &call->paint, &call->scissor, 1.0001f, ubo);
+				buff += gl->uboPosAlignment;
+			}
+			else if (call->type == GLNVG_STROKE)
+			{
+				glnvg__setupPaintUBO(gl, &call->paint, &call->scissor, call->strokeWidth, ubo);
+				buff += gl->uboPosAlignment;
+			}
+			else if (call->type == GLNVG_TRIANGLES)
+			{
+				struct GLNVGtexture* tex = glnvg__findTexture(gl, call->paint.image);
+				glnvg__toFloatColor(ubo->innerCol, call->paint.innerColor);
+				ubo->texType = tex->type == NVG_TEXTURE_RGBA ? 0 : 1;
+				ubo->type = NSVG_SHADER_IMG;
+				buff += gl->uboPosAlignment;
+			}
+		}
+		glUnmapBuffer(GL_UNIFORM_BUFFER);
 
 		// Upload vertex data
 		glBindVertexArray(gl->vertArr);
@@ -784,15 +836,24 @@ static void glnvg__renderFlush(void* uptr)
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)0);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(0 + 2*sizeof(float)));
+        
+		// once per frame set ubo for view
+		glBindBuffer(GL_UNIFORM_BUFFER, gl->uboViewBuf);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(gl->view), 0, GL_STREAM_DRAW);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(gl->view), gl->view, GL_STREAM_DRAW);
+		glBindBufferBase(GL_UNIFORM_BUFFER, GLNVG_UBO_VIEW_BINDING, gl->uboViewBuf);
+
+		glBindBuffer(GL_UNIFORM_BUFFER, gl->uboFragBuf);
+		uboPos = 0;
 
 		for (i = 0; i < gl->ncalls; i++) {
 			struct GLNVGcall* call = &gl->calls[i];
 			if (call->type == GLNVG_FILL)
-				glnvg__fill(gl, call);
+				glnvg__fill(gl, call, &uboPos);
 			else if (call->type == GLNVG_STROKE)
-				glnvg__stroke(gl, call);
+				glnvg__stroke(gl, call, &uboPos);
 			else if (call->type == GLNVG_TRIANGLES)
-				glnvg__triangles(gl, call);
+				glnvg__triangles(gl, call, &uboPos);
 		}
 
 		glDisableVertexAttribArray(0);
