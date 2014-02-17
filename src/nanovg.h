@@ -437,7 +437,14 @@ struct NVGparams {
 struct NVGcontext* nvgCreateInternal(struct NVGparams* params);
 void nvgDeleteInternal(struct NVGcontext* ctx);
 
-#define NVG_NOTUSED(v)  (void)sizeof(v)
+// Compiler references
+// http://sourceforge.net/p/predef/wiki/Compilers/
+#if _MSC_VER >= 1800
+	// VS 2013 seems to be too smart for school, it will still list the variable as unused if passed into sizeof().
+	#define NVG_NOTUSED(v) do { (void)(v); } while(0)
+#else
+	#define NVG_NOTUSED(v)  (void)sizeof(v)
+#endif
 
 #ifdef __cplusplus
 }
