@@ -798,7 +798,7 @@ static void glnvg__renderFlush(void* uptr)
 		// upload ubo for frag shaders - maximum ubos is 2x num calls
 		glBindBuffer(GL_UNIFORM_BUFFER, gl->uboFragBuf);
 		glBufferData(GL_UNIFORM_BUFFER, 2 * gl->ncalls * sizeof(struct GLNVGuboFrag), 0, GL_STREAM_DRAW);
-		char* buff =  glMapBuffer( GL_UNIFORM_BUFFER, GL_WRITE_ONLY );
+		char* buff =  (char*)glMapBuffer( GL_UNIFORM_BUFFER, GL_WRITE_ONLY );
 		for (i = 0; i < gl->ncalls; i++) {
 			struct GLNVGcall* call = &gl->calls[i];
 			struct GLNVGuboFrag* ubo = (struct GLNVGuboFrag*)buff;
