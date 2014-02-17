@@ -46,6 +46,7 @@ enum NVGpointFlags
 	NVG_PT_BEVEL = 0x01,
 	NVG_PT_LEFT = 0x02,
 	NVG_PT_CUSP = 0x04,
+	NVG_PT_CORNER = 0x08,
 };
 
 enum NVGexpandFeatures {
@@ -833,7 +834,7 @@ static struct NVGpoint* nvg__lastPoint(struct NVGcontext* ctx)
 	return NULL;
 }
 
-static void nvg__addPoint(struct NVGcontext* ctx, float x, float y)
+static void nvg__addPoint(struct NVGcontext* ctx, float x, float y, int flags)
 {
 	struct NVGpath* path = nvg__lastPath(ctx);
 	struct NVGpoint* pt;
@@ -841,8 +842,10 @@ static void nvg__addPoint(struct NVGcontext* ctx, float x, float y)
 
 	if (ctx->cache->npoints > 0) {
 		pt = nvg__lastPoint(ctx);
-		if (nvg__ptEquals(pt->x,pt->y, x,y, ctx->distTol))
+		if (nvg__ptEquals(pt->x,pt->y, x,y, ctx->distTol)) {
+			pt->flags |= flags;
 			return;
+		}
 	}
 
 	if (ctx->cache->npoints+1 > ctx->cache->cpoints) {
@@ -855,6 +858,7 @@ static void nvg__addPoint(struct NVGcontext* ctx, float x, float y)
 	memset(pt, 0, sizeof(*pt));
 	pt->x = x;
 	pt->y = y;
+	pt->flags = flags;
 
 	ctx->cache->npoints++;
 	path->count++;
@@ -940,14 +944,14 @@ static void nvg__vset(struct NVGvertex* vtx, float x, float y, float u, float v)
 static void nvg__tesselateBezier(struct NVGcontext* ctx,
 								 float x1, float y1, float x2, float y2,
 								 float x3, float y3, float x4, float y4,
-								 int level)
+								 int level, int type)
 {
 	float x12,y12,x23,y23,x34,y34,x123,y123,x234,y234,x1234,y1234;
 	
 	if (level > 10) return;
 
 	if (nvg__absf(x1+x3-x2-x2) + nvg__absf(y1+y3-y2-y2) + nvg__absf(x2+x4-x3-x3) + nvg__absf(y2+y4-y3-y3) < ctx->tessTol) {
-		nvg__addPoint(ctx, x4, y4);
+		nvg__addPoint(ctx, x4, y4, type);
 		return;
 	}
 
@@ -964,8 +968,8 @@ static void nvg__tesselateBezier(struct NVGcontext* ctx,
 	x1234 = (x123+x234)*0.5f;
 	y1234 = (y123+y234)*0.5f;
 
-	nvg__tesselateBezier(ctx, x1,y1, x12,y12, x123,y123, x1234,y1234, level+1); 
-	nvg__tesselateBezier(ctx, x1234,y1234, x234,y234, x34,y34, x4,y4, level+1); 
+	nvg__tesselateBezier(ctx, x1,y1, x12,y12, x123,y123, x1234,y1234, level+1, 0); 
+	nvg__tesselateBezier(ctx, x1234,y1234, x234,y234, x34,y34, x4,y4, level+1, type); 
 }
 
 static void nvg__flattenPaths(struct NVGcontext* ctx, int lineCap, int lineJoin, float miterLimit)
@@ -994,12 +998,12 @@ static void nvg__flattenPaths(struct NVGcontext* ctx, int lineCap, int lineJoin,
 		case NVG_MOVETO:
 			nvg__addPath(ctx);
 			p = &ctx->commands[i+1];
-			nvg__addPoint(ctx, p[0], p[1]);
+			nvg__addPoint(ctx, p[0], p[1], NVG_PT_CORNER);
 			i += 3;
 			break;
 		case NVG_LINETO:
 			p = &ctx->commands[i+1];
-			nvg__addPoint(ctx, p[0], p[1]);
+			nvg__addPoint(ctx, p[0], p[1], NVG_PT_CORNER);
 			i += 3;
 			break;
 		case NVG_BEZIERTO:
@@ -1008,7 +1012,7 @@ static void nvg__flattenPaths(struct NVGcontext* ctx, int lineCap, int lineJoin,
 				cp1 = &ctx->commands[i+1];
 				cp2 = &ctx->commands[i+3];
 				p = &ctx->commands[i+5];
-				nvg__tesselateBezier(ctx, last->x,last->y, cp1[0],cp1[1], cp2[0],cp2[1], p[0],p[1], 0);
+				nvg__tesselateBezier(ctx, last->x,last->y, cp1[0],cp1[1], cp2[0],cp2[1], p[0],p[1], 0, NVG_PT_CORNER);
 			}
 			i += 7;
 			break;
@@ -1107,8 +1111,10 @@ static void nvg__flattenPaths(struct NVGcontext* ctx, int lineCap, int lineJoin,
 			}
 
 			// Check to see if the corner needs to be beveled.
-			if ((dmr2 * miterLimit*miterLimit) < 1.0f || lineJoin == NVG_BEVEL || lineJoin == NVG_ROUND) {
-				p1->flags |= NVG_PT_BEVEL;
+			if (p1->flags & NVG_PT_CORNER) {
+				if ((dmr2 * miterLimit*miterLimit) < 1.0f || lineJoin == NVG_BEVEL || lineJoin == NVG_ROUND) {
+					p1->flags |= NVG_PT_BEVEL;
+				}
 			}
 
 			if ((p1->flags & (NVG_PT_BEVEL | NVG_PT_CUSP)) != 0)
