@@ -93,6 +93,7 @@ struct GLNVGtexture {
 
 enum GLNVGcallType {
 	GLNVG_FILL,
+	GLNVG_CONVEXFILL,
 	GLNVG_STROKE,
 	GLNVG_TRIANGLES,
 };
@@ -106,6 +107,7 @@ struct GLNVGcall {
 	float strokeWidth;
 	int triangleOffset;
 	int triangleCount;
+	int uboOffset;
 };
 
 struct GLNVGpath {
@@ -113,7 +115,6 @@ struct GLNVGpath {
 	int fillCount;
 	int strokeOffset;
 	int strokeCount;
-	int convex;
 };
 
 struct GLNVGuboFrag {
@@ -656,10 +657,9 @@ static int glnvg__setupPaintUBO(struct GLNVGcontext* gl, struct NVGpaint* paint,
 	return 1;
 }
 
-static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, int* uboPos)
+static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, int uboOffset)
 {
-	glBindBufferRange(GL_UNIFORM_BUFFER, GLNVG_UBO_FRAG_BINDING, gl->uboFragBuf, *uboPos, sizeof(struct GLNVGuboFrag));
-	*uboPos += gl->uboPosAlignment;
+	glBindBufferRange(GL_UNIFORM_BUFFER, GLNVG_UBO_FRAG_BINDING, gl->uboFragBuf, uboOffset, sizeof(struct GLNVGuboFrag));
 	if (paint->image != 0) {
 		struct GLNVGtexture* tex = glnvg__findTexture(gl, paint->image);
 		if (tex == NULL) return 0;
@@ -676,81 +676,87 @@ static void glnvg__renderViewport(void* uptr, int width, int height)
 	gl->view[1] = (float)height;
 }
 
-static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call, int* uboPos )
+static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 {
 	struct GLNVGpath* paths = &gl->paths[call->pathOffset];
 	int npaths = call->pathCount, i;
 
-	if (npaths == 1 && paths[0].convex) {
-		glnvg__setupPaint(gl, &call->paint, uboPos);
+	// Draw shapes
+	glDisable(GL_BLEND);
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(0xff);
+	glStencilFunc(GL_ALWAYS, 0, ~0L);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	// set bindpoint for solid loc
+	glBindBufferRange(GL_UNIFORM_BUFFER, GLNVG_UBO_FRAG_BINDING, gl->uboFragBuf, call->uboOffset, sizeof(struct GLNVGuboFrag));
+	glnvg__checkError("fill solid loc");
+
+	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
+	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
+	glDisable(GL_CULL_FACE);
+	for (i = 0; i < npaths; i++)
+		glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
+	glEnable(GL_CULL_FACE);
+
+	// Draw aliased off-pixels
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glEnable(GL_BLEND);
+
+	glnvg__setupPaint(gl, &call->paint, call->uboOffset + gl->uboPosAlignment);
+
+	if (gl->edgeAntiAlias) {
+		glStencilFunc(GL_EQUAL, 0x00, 0xff);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		// Draw fringes
 		for (i = 0; i < npaths; i++)
-			glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
-		if (gl->edgeAntiAlias) {
-			// Draw fringes
-			for (i = 0; i < npaths; i++)
-				glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
-		}
-	} else {
+			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
+	}
 
-		// Draw shapes
-		glDisable(GL_BLEND);
-		glEnable(GL_STENCIL_TEST);
-		glStencilMask(0xff);
-		glStencilFunc(GL_ALWAYS, 0, ~0L);
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	// Draw fill
+	glStencilFunc(GL_NOTEQUAL, 0x0, 0xff);
+	glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
+	glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
 
-		// set bindpoint for solid loc
-		glBindBufferRange(GL_UNIFORM_BUFFER, GLNVG_UBO_FRAG_BINDING, gl->uboFragBuf, *uboPos, sizeof(struct GLNVGuboFrag));
-		*uboPos += gl->uboPosAlignment;
-		glnvg__checkError("fill solid loc");
+	glDisable(GL_STENCIL_TEST);
+}
 
-		glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
-		glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
-		glDisable(GL_CULL_FACE);
+static void glnvg__convexFill(struct GLNVGcontext* gl, struct GLNVGcall* call)
+{
+	struct GLNVGpath* paths = &gl->paths[call->pathOffset];
+	int npaths = call->pathCount, i;
+
+	glnvg__setupPaint(gl, &call->paint, call->uboOffset);
+
+	for (i = 0; i < npaths; i++)
+		glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
+	if (gl->edgeAntiAlias) {
+		// Draw fringes
 		for (i = 0; i < npaths; i++)
-			glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
-		glEnable(GL_CULL_FACE);
-
-		// Draw aliased off-pixels
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glEnable(GL_BLEND);
-
-		glnvg__setupPaint(gl, &call->paint, uboPos);
-
-		if (gl->edgeAntiAlias) {
-			glStencilFunc(GL_EQUAL, 0x00, 0xff);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-			// Draw fringes
-			for (i = 0; i < npaths; i++)
-				glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
-		}
-
-		// Draw fill
-		glStencilFunc(GL_NOTEQUAL, 0x0, 0xff);
-		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
-		glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
-
-		glDisable(GL_STENCIL_TEST);
+			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 	}
 }
 
-static void glnvg__stroke(struct GLNVGcontext* gl, struct GLNVGcall* call, int* uboPos)
+static void glnvg__stroke(struct GLNVGcontext* gl, struct GLNVGcall* call)
 {
 	struct GLNVGpath* paths = &gl->paths[call->pathOffset];
 	int npaths = call->pathCount, i;
-	glnvg__setupPaint(gl, &call->paint, uboPos);
+
+	glnvg__setupPaint(gl, &call->paint, call->uboOffset);
+
 	// Draw Strokes
 	for (i = 0; i < npaths; i++)
 		glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 }
 
-static void glnvg__triangles(struct GLNVGcontext* gl, struct GLNVGcall* call, int* uboPos)
+static void glnvg__triangles(struct GLNVGcontext* gl, struct GLNVGcall* call)
 {
 	struct GLNVGtexture* tex = glnvg__findTexture(gl, call->paint.image);
 	if (tex != NULL)
 		glBindTexture(GL_TEXTURE_2D, tex->tex);
-	glBindBufferRange(GL_UNIFORM_BUFFER, GLNVG_UBO_FRAG_BINDING, gl->uboFragBuf, *uboPos, sizeof(struct GLNVGuboFrag));
-	*uboPos += gl->uboPosAlignment;
+
+	glBindBufferRange(GL_UNIFORM_BUFFER, GLNVG_UBO_FRAG_BINDING, gl->uboFragBuf, call->uboOffset, sizeof(struct GLNVGuboFrag));
+
 	glnvg__checkError("tris solid img loc");
 	glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
 }
@@ -758,7 +764,8 @@ static void glnvg__triangles(struct GLNVGcontext* gl, struct GLNVGcall* call, in
 static void glnvg__renderFlush(void* uptr)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	int i, uboPos;
+	int i, offset;
+	char* buff;
 
 	if (gl->ncalls > 0) {
 
@@ -767,28 +774,31 @@ static void glnvg__renderFlush(void* uptr)
 
 		// upload ubo for frag shaders - maximum ubos is 2x num calls
 		glBindBuffer(GL_UNIFORM_BUFFER, gl->uboFragBuf);
-		glBufferData(GL_UNIFORM_BUFFER, 3 * gl->ncalls * sizeof(struct GLNVGuboFrag), 0, GL_STREAM_DRAW);
-		char* buff =  (char*)glMapBuffer( GL_UNIFORM_BUFFER, GL_WRITE_ONLY );
+		glBufferData(GL_UNIFORM_BUFFER, 2 * gl->ncalls * gl->uboPosAlignment, 0, GL_STREAM_DRAW);
+		buff = (char*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+		offset = 0;
 		for (i = 0; i < gl->ncalls; i++) {
 			struct GLNVGcall* call = &gl->calls[i];
-			struct GLNVGuboFrag* ubo = (struct GLNVGuboFrag*)buff;
+			struct GLNVGuboFrag* ubo = (struct GLNVGuboFrag*)&buff[offset];
+			call->uboOffset = offset;
 			if (call->type == GLNVG_FILL) {
-				if (!(call->pathCount == 1 && gl->paths[call->pathOffset].convex)) {
-					ubo->type = NSVG_SHADER_SIMPLE;
-					buff += gl->uboPosAlignment;
-					ubo = (struct GLNVGuboFrag*)buff;
-				}
+				ubo->type = NSVG_SHADER_SIMPLE;
+				offset += gl->uboPosAlignment;
+				ubo = (struct GLNVGuboFrag*)&buff[offset];
 				glnvg__setupPaintUBO(gl, &call->paint, &call->scissor, 1.0001f, ubo);
-				buff += gl->uboPosAlignment;
+				offset += gl->uboPosAlignment;
+			} else if (call->type == GLNVG_CONVEXFILL) {
+				glnvg__setupPaintUBO(gl, &call->paint, &call->scissor, 1.0001f, ubo);
+				offset += gl->uboPosAlignment;
 			} else if (call->type == GLNVG_STROKE) {
 				glnvg__setupPaintUBO(gl, &call->paint, &call->scissor, call->strokeWidth, ubo);
-				buff += gl->uboPosAlignment;
+				offset += gl->uboPosAlignment;
 			} else if (call->type == GLNVG_TRIANGLES) {
 				struct GLNVGtexture* tex = glnvg__findTexture(gl, call->paint.image);
 				glnvg__toFloatColor(ubo->innerCol, call->paint.innerColor);
 				ubo->texType = tex->type == NVG_TEXTURE_RGBA ? 0 : 1;
 				ubo->type = NSVG_SHADER_IMG;
-				buff += gl->uboPosAlignment;
+				offset += gl->uboPosAlignment;
 			}
 		}
 		glUnmapBuffer(GL_UNIFORM_BUFFER);
@@ -809,16 +819,17 @@ static void glnvg__renderFlush(void* uptr)
 		glBindBufferBase(GL_UNIFORM_BUFFER, GLNVG_UBO_VIEW_BINDING, gl->uboViewBuf);
 
 		glBindBuffer(GL_UNIFORM_BUFFER, gl->uboFragBuf);
-		uboPos = 0;
 
 		for (i = 0; i < gl->ncalls; i++) {
 			struct GLNVGcall* call = &gl->calls[i];
 			if (call->type == GLNVG_FILL)
-				glnvg__fill(gl, call, &uboPos);
+				glnvg__fill(gl, call);
+			else if (call->type == GLNVG_CONVEXFILL)
+				glnvg__convexFill(gl, call);
 			else if (call->type == GLNVG_STROKE)
-				glnvg__stroke(gl, call, &uboPos);
+				glnvg__stroke(gl, call);
 			else if (call->type == GLNVG_TRIANGLES)
-				glnvg__triangles(gl, call, &uboPos);
+				glnvg__triangles(gl, call);
 		}
 
 		glDisableVertexAttribArray(0);
@@ -902,6 +913,9 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 	call->paint = *paint;
 	call->scissor = *scissor;
 
+	if (npaths == 1 && paths[0].convex)
+		call->type = GLNVG_CONVEXFILL;
+
 	// Allocate vertices for all the paths.
 	maxverts = glnvg__maxVertCount(paths, npaths);
 	vertsoff = glnvg__allocVerts(gl, maxverts + 6);
@@ -910,7 +924,6 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 		struct GLNVGpath* copy = &gl->paths[call->pathOffset + i];
 		const struct NVGpath* path = &paths[i];
 		memset(copy, 0, sizeof(struct GLNVGpath));
-		copy->convex = path->convex;
 		if (path->nfill) {
 			copy->fillOffset = vertsoff;
 			copy->fillCount = path->nfill;
