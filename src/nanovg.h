@@ -158,7 +158,12 @@ void nvgMiterLimit(struct NVGcontext* ctx, float limit);
 // Sets the stroke witdth of the stroke style.
 void nvgStrokeWidth(struct NVGcontext* ctx, float size);
 
+// Sets how the end of the line (cap) is drawn,
+// Can be one of: NVG_BUTT (default), NVG_ROUND, NVG_SQUARE.
 void nvgLineCap(struct NVGcontext* ctx, int cap);
+
+// Sets how sharp path corners are drawn.
+// Can be one of NVG_MITER (default), NVG_ROUND, NVG_BEVEL.
 void nvgLineJoin(struct NVGcontext* ctx, int join);
 
 //

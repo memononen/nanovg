@@ -19,7 +19,7 @@ The NanoVG API is modeled loosely on HTML5 canvas API. If you know canvas, you'r
 
 The drawing context is created using platform specific constructor function. If you're using the default OpenGL 2.0 back-end the context is created as follows:
 ```C
-struct NVGcontext* vg = nvgCreateGL2(512, 512);
+struct NVGcontext* vg = nvgCreateGL2(512, 512, NVG_ANTIALIAS);
 ```
 The two values passed to the constructor define the size of the texture atlas used for text rendering, 512x512 is a good starting point. If you're rendering retina sized text or plan to use a lot of different fonts, 1024x1024 is better choice.
 
