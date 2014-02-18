@@ -862,7 +862,12 @@ void updateFPS(struct FPScounter* fps, float frameTime)
 
 #define AVG_SIZE 20
 
-void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps, enum FPSRenderStyle style, const char* name)
+void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps)
+{
+	renderFPSEx(vg,x,y,fps,RENDER_FPS,NULL);
+}
+
+void renderFPSEx(struct NVGcontext* vg, float x, float y, struct FPScounter* fps, enum FPSRenderStyle style, const char* name)
 {
 	int i, head;
 	float avg, w, h;
