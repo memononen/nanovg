@@ -720,6 +720,10 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 		glDisableVertexAttribArray(1);
 
 	} else {
+		float quad[6*2] = {
+			bounds[0], bounds[3], bounds[2], bounds[3], bounds[2], bounds[1],
+			bounds[0], bounds[3], bounds[2], bounds[1], bounds[0], bounds[1],
+		};
 
 		glEnable(GL_CULL_FACE);
 
@@ -782,10 +786,6 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 
 		glDisableVertexAttribArray(1);
 
-		float quad[6*2] = {
-			bounds[0], bounds[3], bounds[2], bounds[3], bounds[2], bounds[1],
-			bounds[0], bounds[3], bounds[2], bounds[1], bounds[0], bounds[1],
-		};
 		glBufferSubData(GL_ARRAY_BUFFER, 0, 6 * 2*sizeof(float), quad);
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (const GLvoid*)0);
 		glVertexAttrib2f(1, 0.5f, 1.0f);

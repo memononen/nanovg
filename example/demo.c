@@ -491,6 +491,7 @@ void drawThumbnails(struct NVGcontext* vg, float x, float y, float w, float h, c
 	float stackh = (nimages/2) * (thumb+10) + 10;
 	int i;
 	float u = (1+cosf(t*0.5f))*0.5f;
+	float scrollh;
 
 	nvgSave(vg);
 //	nvgClearState(vg);
@@ -578,7 +579,7 @@ void drawThumbnails(struct NVGcontext* vg, float x, float y, float w, float h, c
 //	nvgFillColor(vg, nvgRGBA(255,0,0,128));
 	nvgFill(vg);
 
-	float scrollh = (h/stackh) * (h-8);
+	scrollh = (h/stackh) * (h-8);
 	shadowPaint = nvgBoxGradient(vg, x+w-12-1,y+4+(h-8-scrollh)*u-1, 8,scrollh, 3,4, nvgRGBA(220,220,220,255), nvgRGBA(128,128,128,255));
 	nvgBeginPath(vg);
 	nvgRoundedRect(vg, x+w-12+1,y+4+1 + (h-8-scrollh)*u, 8-2,scrollh-2, 2);
