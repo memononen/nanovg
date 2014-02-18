@@ -29,7 +29,7 @@ struct FPScounter
 
 void initFPS(struct FPScounter* fps);
 void updateFPS(struct FPScounter* fps, float frameTime);
-void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps, enum FPSRenderStyle style );
+void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps, enum FPSRenderStyle style, const char* name );
 
 #ifdef __cplusplus
 }

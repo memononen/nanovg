@@ -159,9 +159,9 @@ int main()
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
-		renderFPS(vg, 5,5, &fps, RENDER_FPS);
-		renderFPS(vg, 310,5, &cpuTimes, RENDER_MS);
-		renderFPS(vg, 615,5, &gpuTimes, RENDER_MS);
+		renderFPS(vg, 5,5, &fps, RENDER_FPS, NULL );
+		renderFPS(vg, 310,5, &cpuTimes, RENDER_MS, "CPU Time");
+		renderFPS(vg, 615,5, &gpuTimes, RENDER_MS, "GPU Time");
 
 		nvgEndFrame(vg);
 
