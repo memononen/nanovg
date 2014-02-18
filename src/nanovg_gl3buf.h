@@ -531,12 +531,12 @@ static void glnvg__xformIdentity(float* t)
 
 static void glnvg__xformInverse(float* inv, float* t)
 {
-	double det = (double)t[0] * t[3] - (double)t[2] * t[1];
+	double invdet, det = (double)t[0] * t[3] - (double)t[2] * t[1];
 	if (det > -1e-6 && det < 1e-6) {
 		glnvg__xformIdentity(t);
 		return;
 	}
-	double invdet = 1.0 / det;
+	invdet = 1.0 / det;
 	inv[0] = (float)(t[3] * invdet);
 	inv[2] = (float)(-t[2] * invdet);
 	inv[4] = (float)(((double)t[2] * t[5] - (double)t[3] * t[4]) * invdet);

@@ -539,12 +539,12 @@ static void glnvg__xformIdentity(float* t)
 
 static void glnvg__xformInverse(float* inv, float* t)
 {
-	double det = (double)t[0] * t[3] - (double)t[2] * t[1];
+	double invdet, det = (double)t[0] * t[3] - (double)t[2] * t[1];
 	if (det > -1e-6 && det < 1e-6) {
 		glnvg__xformIdentity(t);
 		return;
 	}
-	double invdet = 1.0 / det;
+	invdet = 1.0 / det;
 	inv[0] = (float)(t[3] * invdet);
 	inv[2] = (float)(-t[2] * invdet);
 	inv[4] = (float)(((double)t[2] * t[5] - (double)t[3] * t[4]) * invdet);
@@ -570,12 +570,13 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 {
 	float innerCol[4];
 	float outerCol[4];
-	glnvg__toFloatColor(innerCol, paint->innerColor);
-	glnvg__toFloatColor(outerCol, paint->outerColor);
 	struct GLNVGtexture* tex = NULL;
 	float invxform[6], paintMat[9], scissorMat[9];
 	float scissorx = 0, scissory = 0;
 	float scissorsx = 0, scissorsy = 0;
+
+	glnvg__toFloatColor(innerCol, paint->innerColor);
+	glnvg__toFloatColor(outerCol, paint->outerColor);
 
 	glnvg__xformInverse(invxform, paint->xform);
 	glnvg__xformToMat3x3(paintMat, invxform);

@@ -322,15 +322,17 @@ static float nvg__hue(float h, float m1, float m2)
 
 unsigned int nvgHSLA(float h, float s, float l, unsigned char a)
 {
+	float m1, m2;
+	unsigned char r,g,b;
 	h = nvg__modf(h, 1.0f);
 	if (h < 0.0f) h += 1.0f;
 	s = nvg__clampf(s, 0.0f, 1.0f);
 	l = nvg__clampf(l, 0.0f, 1.0f);
-	float m2 = l <= 0.5f ? (l * (1 + s)) : (l + s - l * s);
-	float m1 = 2 * l - m2;
-	unsigned char r = (unsigned char)nvg__clampf(nvg__hue(h + 1.0f/3.0f, m1, m2) * 255.0f, 0, 255);
-	unsigned char g = (unsigned char)nvg__clampf(nvg__hue(h, m1, m2) * 255.0f, 0, 255);
-	unsigned char b = (unsigned char)nvg__clampf(nvg__hue(h - 1.0f/3.0f, m1, m2) * 255.0f, 0, 255);
+	m2 = l <= 0.5f ? (l * (1 + s)) : (l + s - l * s);
+	m1 = 2 * l - m2;
+	r = (unsigned char)nvg__clampf(nvg__hue(h + 1.0f/3.0f, m1, m2) * 255.0f, 0, 255);
+	g = (unsigned char)nvg__clampf(nvg__hue(h, m1, m2) * 255.0f, 0, 255);
+	b = (unsigned char)nvg__clampf(nvg__hue(h - 1.0f/3.0f, m1, m2) * 255.0f, 0, 255);
 	return nvgRGBA(r,g,b,a);
 }
 
