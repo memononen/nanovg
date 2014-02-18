@@ -862,7 +862,7 @@ void updateFPS(struct FPScounter* fps, float frameTime)
 
 #define AVG_SIZE 20
 
-void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps)
+void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps, enum FPSRenderStyle style)
 {
 	int i, head;
 	float avg, w, h;
@@ -886,29 +886,54 @@ void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps)
 
 	nvgBeginPath(vg);
 	nvgMoveTo(vg, x, y+h);
-	for (i = 0; i < FPS_HISTORY_COUNT; i++) {
-		float v = 1.0f / (0.00001f + fps->values[(fps->head+i) % FPS_HISTORY_COUNT]);
-		if (v > 80.0f) v = 80.0f;
-		float vx = x + ((float)i/(FPS_HISTORY_COUNT-1)) * w;
-		float vy = y + h - ((v / 80.0f) * h);
-		nvgLineTo(vg, vx, vy);
-	}
+    if( RENDER_FPS == style )
+    {
+	    for (i = 0; i < FPS_HISTORY_COUNT; i++) {
+		    float v = 1.0f / (0.00001f + fps->values[(fps->head+i) % FPS_HISTORY_COUNT]);
+		    if (v > 80.0f) v = 80.0f;
+		    float vx = x + ((float)i/(FPS_HISTORY_COUNT-1)) * w;
+		    float vy = y + h - ((v / 80.0f) * h);
+		    nvgLineTo(vg, vx, vy);
+	    }
+    }
+    else
+    {
+	    for (i = 0; i < FPS_HISTORY_COUNT; i++) {
+		    float v = fps->values[(fps->head+i) % FPS_HISTORY_COUNT] * 1000.0f;
+		    if (v > 20.0f) v = 20.0f;
+		    float vx = x + ((float)i/(FPS_HISTORY_COUNT-1)) * w;
+		    float vy = y + h - ((v / 20.0f) * h);
+		    nvgLineTo(vg, vx, vy);
+	    }
+    }
 	nvgLineTo(vg, x+w, y+h);
 	nvgFillColor(vg, nvgRGBA(255,192,0,128));
 	nvgFill(vg);
 
 	nvgFontFace(vg, "sans");
-	nvgFontSize(vg, 18.0f);
-	nvgTextAlign(vg,NVG_ALIGN_RIGHT|NVG_ALIGN_MIDDLE);
-	nvgFillColor(vg, nvgRGBA(240,240,240,255));
-	sprintf(str, "%.2f FPS", 1.0f / avg);
-	nvgText(vg, x+w-5,y+h/2, str, NULL);
+    if( RENDER_FPS == style )
+    {
+	    nvgFontSize(vg, 18.0f);
+	    nvgTextAlign(vg,NVG_ALIGN_RIGHT|NVG_ALIGN_MIDDLE);
+	    nvgFillColor(vg, nvgRGBA(240,240,240,255));
+	    sprintf(str, "%.2f FPS", 1.0f / avg);
+	    nvgText(vg, x+w-5,y+h/2, str, NULL);
 
-	nvgFontSize(vg, 15.0f);
-	nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_MIDDLE);
-	nvgFillColor(vg, nvgRGBA(240,240,240,160));
-	sprintf(str, "%.2f ms", avg * 1000.0f);
-	nvgText(vg, x+5,y+h/2, str, NULL);
+        nvgFontSize(vg, 15.0f);
+	    nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_MIDDLE);
+	    nvgFillColor(vg, nvgRGBA(240,240,240,160));
+	    sprintf(str, "%.2f ms", avg * 1000.0f);
+	    nvgText(vg, x+5,y+h/2, str, NULL);
+    }
+    else
+    {
+	    nvgFontSize(vg, 18.0f);
+	    nvgTextAlign(vg,NVG_ALIGN_RIGHT|NVG_ALIGN_MIDDLE);
+	    nvgFillColor(vg, nvgRGBA(240,240,240,255));
+	    sprintf(str, "%.2f ms", avg * 1000.0f);
+	    nvgText(vg, x+w-5,y+h/2, str, NULL);
+    }
+
 
 }
 

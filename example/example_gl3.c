@@ -55,7 +55,8 @@ int main()
 	struct DemoData data;
 	struct NVGcontext* vg = NULL;
 	struct FPScounter fps;
-	double prevt = 0;
+	struct FPScounter cpuTimes;
+	double prevt = 0, cpuTime = 0;
 
 	if (!glfwInit()) {
 		printf("Failed to init GLFW.");
@@ -63,6 +64,7 @@ int main()
 	}
 
 	initFPS(&fps);
+	initFPS(&cpuTimes);
 
 	glfwSetErrorCallback(errorcb);
 #ifndef _WIN32 // don't require this on win32, and works with more cards
@@ -122,6 +124,7 @@ int main()
 		dt = t - prevt;
 		prevt = t;
 		updateFPS(&fps, dt);
+        updateFPS(&cpuTimes, cpuTime);
 
 		glfwGetCursorPos(window, &mx, &my);
 		glfwGetWindowSize(window, &winWidth, &winHeight);
@@ -142,12 +145,13 @@ int main()
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
-		renderFPS(vg, 5,5, &fps);
+		renderFPS(vg, 5,5, &fps, RENDER_FPS);
+		renderFPS(vg, 310,5, &cpuTimes, RENDER_MS);
 
 		nvgEndFrame(vg);
 
 		glEnable(GL_DEPTH_TEST);
-
+        cpuTime = glfwGetTime() - t;
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

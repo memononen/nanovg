@@ -17,6 +17,10 @@ void freeDemoData(struct NVGcontext* vg, struct DemoData* data);
 void renderDemo(struct NVGcontext* vg, float mx, float my, float width, float height, float t, int blowup, struct DemoData* data);
 
 #define FPS_HISTORY_COUNT 100
+enum FPSRenderStyle {
+    RENDER_FPS,
+    RENDER_MS,
+};
 struct FPScounter
 {
 	float values[FPS_HISTORY_COUNT];
@@ -25,7 +29,7 @@ struct FPScounter
 
 void initFPS(struct FPScounter* fps);
 void updateFPS(struct FPScounter* fps, float frameTime);
-void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps);
+void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps, enum FPSRenderStyle style );
 
 #ifdef __cplusplus
 }
