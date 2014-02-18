@@ -16,7 +16,7 @@ solution "nanovg"
 	project "example_gl2"
 		kind "ConsoleApp"
 		language "C"
-		files { "example/example_gl2.c", "example/demo.c" }
+		files { "example/example_gl2.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
@@ -43,7 +43,7 @@ solution "nanovg"
 	project "example_gl3"
 		kind "ConsoleApp"
 		language "C"
-		files { "example/example_gl3.c", "example/demo.c" }
+		files { "example/example_gl3.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
@@ -71,7 +71,7 @@ solution "nanovg"
 		kind "ConsoleApp"
 		language "C"
 		defines { "DEMO_MSAA" }
-		files { "example/example_gl2.c", "example/demo.c" }
+		files { "example/example_gl2.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
@@ -99,7 +99,7 @@ solution "nanovg"
 		kind "ConsoleApp"
 		language "C"
 		defines { "DEMO_MSAA" }
-		files { "example/example_gl3.c", "example/demo.c" }
+		files { "example/example_gl3.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
@@ -126,7 +126,7 @@ solution "nanovg"
 	project "example_gles2"
 		kind "ConsoleApp"
 		language "C"
-		files { "example/example_gles2.c", "example/demo.c" }
+		files { "example/example_gles2.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
@@ -152,7 +152,7 @@ solution "nanovg"
 	project "example_gles3"
 		kind "ConsoleApp"
 		language "C"
-		files { "example/example_gles3.c", "example/demo.c" }
+		files { "example/example_gles3.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }

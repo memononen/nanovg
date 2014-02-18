@@ -23,6 +23,7 @@
 #define NANOVG_GLES3_IMPLEMENTATION
 #include "nanovg_gl3.h"
 #include "demo.h"
+#include "perf.h"
 
 
 void errorcb(int error, const char* desc)
@@ -55,7 +56,7 @@ int main()
 		return -1;
 	}
 
-	initFPS(&fps);
+	initFPS(&fps, FPS_RENDER_FPS, "Frame Time");
 
 	glfwSetErrorCallback(errorcb);
 
