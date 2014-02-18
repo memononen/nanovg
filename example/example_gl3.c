@@ -31,7 +31,6 @@
 #include "nanovg_gl3buf.h"
 #include "demo.h"
 
-
 void errorcb(int error, const char* desc)
 {
 	printf("GLFW error %d: %s\n", error, desc);
@@ -49,14 +48,19 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 		blowup = !blowup;
 }
 
+enum numqueries {
+    NUM_QUERIES = 5
+};
+
 int main()
 {
 	GLFWwindow* window;
 	struct DemoData data;
 	struct NVGcontext* vg = NULL;
-	struct FPScounter fps;
-	struct FPScounter cpuTimes;
+	struct FPScounter fps, cpuTimes, gpuTimes;
 	double prevt = 0, cpuTime = 0;
+    int timerquery = GL_FALSE, currquery = 0, retquery = 0;
+    GLuint timerqueryid[NUM_QUERIES];
 
 	if (!glfwInit()) {
 		printf("Failed to init GLFW.");
@@ -65,6 +69,7 @@ int main()
 
 	initFPS(&fps);
 	initFPS(&cpuTimes);
+	initFPS(&gpuTimes);
 
 	glfwSetErrorCallback(errorcb);
 #ifndef _WIN32 // don't require this on win32, and works with more cards
@@ -110,6 +115,11 @@ int main()
 
 	glfwSwapInterval(0);
 
+	timerquery = glfwExtensionSupported("GL_ARB_timer_query");
+	if( timerquery ) {
+		glGenQueries(NUM_QUERIES, timerqueryid);
+	}
+
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
@@ -125,6 +135,10 @@ int main()
 		prevt = t;
 		updateFPS(&fps, dt);
         updateFPS(&cpuTimes, cpuTime);
+		if( timerquery ) {
+            glBeginQuery(GL_TIME_ELAPSED, timerqueryid[currquery % NUM_QUERIES] );
+			currquery = ++currquery;
+		}
 
 		glfwGetCursorPos(window, &mx, &my);
 		glfwGetWindowSize(window, &winWidth, &winHeight);
@@ -147,11 +161,32 @@ int main()
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
 		renderFPS(vg, 5,5, &fps, RENDER_FPS);
 		renderFPS(vg, 310,5, &cpuTimes, RENDER_MS);
+		renderFPS(vg, 615,5, &gpuTimes, RENDER_MS);
 
 		nvgEndFrame(vg);
 
 		glEnable(GL_DEPTH_TEST);
+
+        // Measure the CPU time taken excluding swap buffers (as the swap may wait for GPU)
         cpuTime = glfwGetTime() - t;
+
+		if( timerquery ) {
+			GLint available = 1;
+			glEndQuery(GL_TIME_ELAPSED);
+			while( available && retquery <= currquery ) {
+				// check for results if there are any
+				glGetQueryObjectiv(timerqueryid[retquery], GL_QUERY_RESULT_AVAILABLE, &available);
+				if( available ) {
+					GLuint64 timeElapsed = 0;
+					double gpuTime;
+					glGetQueryObjectui64v(timerqueryid[retquery % NUM_QUERIES], GL_QUERY_RESULT, &timeElapsed);
+					retquery = ++retquery ;
+					gpuTime = (double)timeElapsed * 1e-9;
+					updateFPS(&gpuTimes, (float)gpuTime);
+				}
+			}
+
+		}
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
