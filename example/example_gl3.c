@@ -31,6 +31,14 @@
 #include "nanovg_gl3buf.h"
 #include "demo.h"
 
+
+// timer query support
+#ifndef GL_ARB_timer_query
+#define GL_TIME_ELAPSED                   0x88BF
+typedef void (APIENTRY *pfnGLGETQUERYOBJECTUI64V)(GLuint id, GLenum pname, GLuint64* params);
+pfnGLGETQUERYOBJECTUI64V glGetQueryObjectui64v = 0;
+#endif
+
 void errorcb(int error, const char* desc)
 {
 	printf("GLFW error %d: %s\n", error, desc);
@@ -117,6 +125,13 @@ int main()
 
 	timerquery = glfwExtensionSupported("GL_ARB_timer_query");
 	if( timerquery ) {
+#ifndef GL_ARB_timer_query
+		glGetQueryObjectui64v = (pfnGLGETQUERYOBJECTUI64V)glfwGetProcAddress("glGetQueryObjectui64v");
+		if( !glGetQueryObjectui64v )
+		{
+			timerquery = GL_FALSE;
+		}
+#endif
 		glGenQueries(NUM_QUERIES, timerqueryid);
 	}
 
