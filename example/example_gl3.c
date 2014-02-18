@@ -175,7 +175,7 @@ int main()
 			glEndQuery(GL_TIME_ELAPSED);
 			while( available && retquery <= currquery ) {
 				// check for results if there are any
-				glGetQueryObjectiv(timerqueryid[retquery], GL_QUERY_RESULT_AVAILABLE, &available);
+				glGetQueryObjectiv(timerqueryid[retquery % NUM_QUERIES], GL_QUERY_RESULT_AVAILABLE, &available);
 				if( available ) {
 					GLuint64 timeElapsed = 0;
 					double gpuTime;
