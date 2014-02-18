@@ -55,7 +55,7 @@ int main()
 	struct DemoData data;
 	struct NVGcontext* vg = NULL;
 	struct GPUtimer gpuTimer;
-	struct FPScounter fps, cpuGraph, gpuGraph;
+	struct PerfGraph fps, cpuGraph, gpuGraph;
 	double prevt = 0, cpuTime = 0;
 
 	if (!glfwInit()) {
@@ -63,9 +63,9 @@ int main()
 		return -1;
 	}
 
-	initFPS(&fps, FPS_RENDER_FPS, "Frame Time");
-	initFPS(&cpuGraph, FPS_RENDER_MS, "CPU Time");
-	initFPS(&gpuGraph, FPS_RENDER_MS, "GPU Time");
+	initGraph(&fps, GRAPH_RENDER_FPS, "Frame Time");
+	initGraph(&cpuGraph, GRAPH_RENDER_MS, "CPU Time");
+	initGraph(&gpuGraph, GRAPH_RENDER_MS, "GPU Time");
 
 	glfwSetErrorCallback(errorcb);
 #ifndef _WIN32 // don't require this on win32, and works with more cards
@@ -151,10 +151,10 @@ int main()
 
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
 
-		renderFPS(vg, 5,5, &fps);
-		renderFPS(vg, 5+200+5,5, &cpuGraph);
+		renderGraph(vg, 5,5, &fps);
+		renderGraph(vg, 5+200+5,5, &cpuGraph);
 		if (gpuTimer.supported)
-			renderFPS(vg, 5+200+5+200+5,5, &gpuGraph);
+			renderGraph(vg, 5+200+5+200+5,5, &gpuGraph);
 
 		nvgEndFrame(vg);
 
@@ -163,13 +163,13 @@ int main()
 		// Measure the CPU time taken excluding swap buffers (as the swap may wait for GPU)
 		cpuTime = glfwGetTime() - t;
 
-		updateFPS(&fps, dt);
-		updateFPS(&cpuGraph, cpuTime);
+		updateGraph(&fps, dt);
+		updateGraph(&cpuGraph, cpuTime);
 
 		// We may get multiple results.
 		n = stopGPUTimer(&gpuTimer, gpuTimes, 3);
 		for (i = 0; i < n; i++)
-			updateFPS(&gpuGraph, gpuTimes[i]);
+			updateGraph(&gpuGraph, gpuTimes[i]);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -178,6 +178,10 @@ int main()
 	freeDemoData(vg, &data);
 
 	nvgDeleteGL3(vg);
+
+	printf("Average Frame Time: %.2f ms\n", getGraphAverage(&fps) * 1000.0f);
+	printf("          CPU Time: %.2f ms\n", getGraphAverage(&cpuGraph) * 1000.0f);
+	printf("          GPU Time: %.2f ms\n", getGraphAverage(&gpuGraph) * 1000.0f);
 
 	glfwTerminate();
 	return 0;

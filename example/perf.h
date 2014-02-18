@@ -7,22 +7,23 @@
 extern "C" {
 #endif
 
-enum FPSrenderStyle {
-    FPS_RENDER_FPS,
-    FPS_RENDER_MS,
+enum GraphrenderStyle {
+    GRAPH_RENDER_FPS,
+    GRAPH_RENDER_MS,
 };
 
-#define FPS_HISTORY_COUNT 100
-struct FPScounter {
+#define GRAPH_HISTORY_COUNT 100
+struct PerfGraph {
 	int style;
 	char name[32];
-	float values[FPS_HISTORY_COUNT];
+	float values[GRAPH_HISTORY_COUNT];
 	int head;
 };
 
-void initFPS(struct FPScounter* fps, int style, const char* name);
-void updateFPS(struct FPScounter* fps, float frameTime);
-void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps);
+void initGraph(struct PerfGraph* fps, int style, const char* name);
+void updateGraph(struct PerfGraph* fps, float frameTime);
+void renderGraph(struct NVGcontext* vg, float x, float y, struct PerfGraph* fps);
+float getGraphAverage(struct PerfGraph* fps);
 
 #define GPU_QUERY_COUNT 5
 struct GPUtimer {

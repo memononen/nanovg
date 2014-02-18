@@ -71,40 +71,37 @@ int stopGPUTimer(struct GPUtimer* timer, float* times, int maxTimes)
 }
 
 
-void initFPS(struct FPScounter* fps, int style, const char* name)
+void initGraph(struct PerfGraph* fps, int style, const char* name)
 {
-	memset(fps, 0, sizeof(struct FPScounter));
+	memset(fps, 0, sizeof(struct PerfGraph));
 	fps->style = style;
 	strncpy(fps->name, name, sizeof(fps->name));
 	fps->name[sizeof(fps->name)-1] = '\0';
 }
 
-void updateFPS(struct FPScounter* fps, float frameTime)
+void updateGraph(struct PerfGraph* fps, float frameTime)
 {
-	fps->head = (fps->head+1) % FPS_HISTORY_COUNT;
+	fps->head = (fps->head+1) % GRAPH_HISTORY_COUNT;
 	fps->values[fps->head] = frameTime;
 }
 
-#define AVG_SIZE 20
-
-static float getAvg(struct FPScounter* fps)
+float getGraphAverage(struct PerfGraph* fps)
 {
-	int i, head = fps->head;
+	int i;
 	float avg = 0;
-	for (i = 0; i < AVG_SIZE; i++) {
-		avg += fps->values[head];
-		head = (head+FPS_HISTORY_COUNT-1) % FPS_HISTORY_COUNT;
+	for (i = 0; i < GRAPH_HISTORY_COUNT; i++) {
+		avg += fps->values[i];
 	}
-	return avg / (float)AVG_SIZE;
+	return avg / (float)GRAPH_HISTORY_COUNT;
 }
 
-void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps)
+void renderGraph(struct NVGcontext* vg, float x, float y, struct PerfGraph* fps)
 {
 	int i;
 	float avg, w, h;
 	char str[64];
 
-	avg = getAvg(fps);
+	avg = getGraphAverage(fps);
 
 	w = 200;
 	h = 35;
@@ -116,19 +113,19 @@ void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps)
 
 	nvgBeginPath(vg);
 	nvgMoveTo(vg, x, y+h);
-	if (fps->style == FPS_RENDER_FPS) {
-		for (i = 0; i < FPS_HISTORY_COUNT; i++) {
-			float v = 1.0f / (0.00001f + fps->values[(fps->head+i) % FPS_HISTORY_COUNT]);
+	if (fps->style == GRAPH_RENDER_FPS) {
+		for (i = 0; i < GRAPH_HISTORY_COUNT; i++) {
+			float v = 1.0f / (0.00001f + fps->values[(fps->head+i) % GRAPH_HISTORY_COUNT]);
 			if (v > 80.0f) v = 80.0f;
-			float vx = x + ((float)i/(FPS_HISTORY_COUNT-1)) * w;
+			float vx = x + ((float)i/(GRAPH_HISTORY_COUNT-1)) * w;
 			float vy = y + h - ((v / 80.0f) * h);
 			nvgLineTo(vg, vx, vy);
 		}
 	} else {
-		for (i = 0; i < FPS_HISTORY_COUNT; i++) {
-			float v = fps->values[(fps->head+i) % FPS_HISTORY_COUNT] * 1000.0f;
+		for (i = 0; i < GRAPH_HISTORY_COUNT; i++) {
+			float v = fps->values[(fps->head+i) % GRAPH_HISTORY_COUNT] * 1000.0f;
 			if (v > 20.0f) v = 20.0f;
-			float vx = x + ((float)i/(FPS_HISTORY_COUNT-1)) * w;
+			float vx = x + ((float)i/(GRAPH_HISTORY_COUNT-1)) * w;
 			float vy = y + h - ((v / 20.0f) * h);
 			nvgLineTo(vg, vx, vy);
 		}
@@ -146,7 +143,7 @@ void renderFPS(struct NVGcontext* vg, float x, float y, struct FPScounter* fps)
 		nvgText(vg, x+3,y+1, fps->name, NULL);
 	}
 
-	if (fps->style == FPS_RENDER_FPS) {
+	if (fps->style == GRAPH_RENDER_FPS) {
 		nvgFontSize(vg, 18.0f);
 		nvgTextAlign(vg,NVG_ALIGN_RIGHT|NVG_ALIGN_TOP);
 		nvgFillColor(vg, nvgRGBA(240,240,240,255));
