@@ -856,7 +856,7 @@ static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NV
 	glUniform1i(gl->shader.loc[GLNVG_LOC_TYPE], NSVG_SHADER_IMG);
 	glUniform2f(gl->shader.loc[GLNVG_LOC_VIEWSIZE], gl->viewWidth, gl->viewHeight);
 	glUniform1i(gl->shader.loc[GLNVG_LOC_TEX], 0);
-	glUniform1i(gl->shader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
+	glUniform1i(gl->shader.loc[GLNVG_LOC_TEXTYPE], (tex != NULL && tex->type == NVG_TEXTURE_RGBA) ? 0 : 1);
 	glnvg__checkError("tris solid img loc");
 
 	glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
