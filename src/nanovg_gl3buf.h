@@ -487,9 +487,15 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
+	int align,length,pixels,rows;
 
 	if (tex == NULL) return 0;
 	glBindTexture(GL_TEXTURE_2D, tex->tex);
+
+	glGetIntegerv(GL_UNPACK_ALIGNMENT,&align);
+	glGetIntegerv(GL_UNPACK_ROW_LENGTH,&length);
+	glGetIntegerv(GL_UNPACK_SKIP_PIXELS,&pixels);
+	glGetIntegerv(GL_UNPACK_SKIP_ROWS,&rows);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->width);
@@ -500,6 +506,11 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	else
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RED, GL_UNSIGNED_BYTE, data);
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT,align);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH,length);
+	glPixelStorei(GL_UNPACK_SKIP_PIXELS,pixels);
+	glPixelStorei(GL_UNPACK_SKIP_ROWS,rows);
 
 	return 1;
 }
