@@ -116,17 +116,19 @@ void renderGraph(struct NVGcontext* vg, float x, float y, struct PerfGraph* fps)
 	if (fps->style == GRAPH_RENDER_FPS) {
 		for (i = 0; i < GRAPH_HISTORY_COUNT; i++) {
 			float v = 1.0f / (0.00001f + fps->values[(fps->head+i) % GRAPH_HISTORY_COUNT]);
+			float vx, vy;
 			if (v > 80.0f) v = 80.0f;
-			float vx = x + ((float)i/(GRAPH_HISTORY_COUNT-1)) * w;
-			float vy = y + h - ((v / 80.0f) * h);
+			vx = x + ((float)i/(GRAPH_HISTORY_COUNT-1)) * w;
+			vy = y + h - ((v / 80.0f) * h);
 			nvgLineTo(vg, vx, vy);
 		}
 	} else {
 		for (i = 0; i < GRAPH_HISTORY_COUNT; i++) {
 			float v = fps->values[(fps->head+i) % GRAPH_HISTORY_COUNT] * 1000.0f;
+			float vx, vy;
 			if (v > 20.0f) v = 20.0f;
-			float vx = x + ((float)i/(GRAPH_HISTORY_COUNT-1)) * w;
-			float vy = y + h - ((v / 20.0f) * h);
+			vx = x + ((float)i/(GRAPH_HISTORY_COUNT-1)) * w;
+			vy = y + h - ((v / 20.0f) * h);
 			nvgLineTo(vg, vx, vy);
 		}
 	}
