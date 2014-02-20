@@ -1082,7 +1082,7 @@ static void nvg__flattenPaths(struct NVGcontext* ctx, int lineCap, int lineJoin,
 		p0 = &pts[path->count-1];
 		p1 = &pts[0];
 		for(i = 0; i < path->count; ++i) {
-			float dlx0, dly0, dlx1, dly1, dmr2, scale, cross, dot, d0, d1;
+			float dlx0, dly0, dlx1, dly1, dmr2, scale, cross, dot;
 			dlx0 = p0->dy;
 			dly0 = -p0->dx;
 			dlx1 = p1->dy;
@@ -1398,7 +1398,7 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w, 
 					if (lineCap == NVG_BUTT) {
 						px = p0->x;
 						py = p0->y;
-					} else if (lineCap == NVG_SQUARE) {
+					} else /*if (lineCap == NVG_SQUARE)*/ {
 						px = p0->x - dx*w;
 						py = p0->y - dy*w;
 					}
@@ -1450,7 +1450,7 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w, 
 					if (lineCap == NVG_BUTT) {
 						px = p1->x;
 						py = p1->y;
-					} else if (lineCap == NVG_SQUARE) {
+					} else /*if (lineCap == NVG_SQUARE)*/ {
 						px = p1->x + dx*w;
 						py = p1->y + dy*w;
 					}
