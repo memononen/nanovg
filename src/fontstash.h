@@ -614,7 +614,7 @@ int fonsAddFont(struct FONScontext* stash, const char* name, const char* path)
 error:
 	if (data) free(data);
 	if (fp) fclose(fp);
-	return 0;
+	return FONS_INVALID;
 }
 
 int fonsAddFontMem(struct FONScontext* stash, const char* name, unsigned char* data, int dataSize, int freeData)
