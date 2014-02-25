@@ -16,6 +16,8 @@ int loadDemoData(struct NVGcontext* vg, struct DemoData* data);
 void freeDemoData(struct NVGcontext* vg, struct DemoData* data);
 void renderDemo(struct NVGcontext* vg, float mx, float my, float width, float height, float t, int blowup, struct DemoData* data);
 
+void saveScreenShot(int w, int h, int premult, const char* name);
+
 #ifdef __cplusplus
 }
 #endif

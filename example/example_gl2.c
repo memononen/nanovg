@@ -34,6 +34,8 @@ void errorcb(int error, const char* desc)
 }
 
 int blowup = 0;
+int screenshot = 0;
+int premult = 0;
 
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -43,6 +45,10 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 		blowup = !blowup;
+	if (key == GLFW_KEY_S && action == GLFW_PRESS)
+		screenshot = 1;
+	if (key == GLFW_KEY_P && action == GLFW_PRESS)
+		premult = !premult;
 }
 
 int main()
@@ -124,7 +130,10 @@ int main()
 
 		// Update and render
 		glViewport(0, 0, fbWidth, fbHeight);
-		glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
+		if (premult)
+			glClearColor(0,0,0,0);
+		else
+			glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 		glEnable(GL_BLEND);
@@ -132,7 +141,7 @@ int main()
 		glEnable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);
 
-		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
+		nvgBeginFrame(vg, winWidth, winHeight, pxRatio, premult ? NVG_PREMULTIPLIED_ALPHA : NVG_STRAIGHT_ALPHA);
 
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
 		renderGraph(vg, 5,5, &fps);
@@ -141,6 +150,11 @@ int main()
 
 		glEnable(GL_DEPTH_TEST);
 
+		if (screenshot) {
+			screenshot = 0;
+			saveScreenShot(fbWidth, fbHeight, premult, "dump.png");
+		}
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

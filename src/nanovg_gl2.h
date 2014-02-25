@@ -626,17 +626,24 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 	return 1;
 }
 
-static void glnvg__renderViewport(void* uptr, int width, int height)
+static void glnvg__renderViewport(void* uptr, int width, int height, int alphaBlend)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	gl->viewWidth = (float)width;
 	gl->viewHeight = (float)height;
+
+	if (alphaBlend == NVG_PREMULTIPLIED_ALPHA)
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	else
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-static void glnvg__renderFlush(void* uptr)
+
+static void glnvg__renderFlush(void* uptr, int alphaBlend)
 {
 //	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	NVG_NOTUSED(uptr);
+	NVG_NOTUSED(alphaBlend);
 }
 
 static int glnvg__maxVertCount(const struct NVGpath* paths, int npaths)

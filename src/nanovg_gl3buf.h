@@ -636,9 +636,10 @@ static void glnvg__setUniforms(struct GLNVGcontext* gl, int uniformOffset, int i
 	}
 }
 
-static void glnvg__renderViewport(void* uptr, int width, int height)
+static void glnvg__renderViewport(void* uptr, int width, int height, int alphaBlend)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
+	NVG_NOTUSED(alphaBlend);
 	gl->view[0] = (float)width;
 	gl->view[1] = (float)height;
 }
@@ -727,7 +728,7 @@ static void glnvg__triangles(struct GLNVGcontext* gl, struct GLNVGcall* call)
 	glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
 }
 
-static void glnvg__renderFlush(void* uptr)
+static void glnvg__renderFlush(void* uptr, int alphaBlend)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	int i;
@@ -736,6 +737,10 @@ static void glnvg__renderFlush(void* uptr)
 
 		glUseProgram(gl->shader.prog);
 		glEnable(GL_CULL_FACE);
+		if (alphaBlend == NVG_PREMULTIPLIED_ALPHA)
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		else
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		// Upload ubo for frag shaders
 		glBindBuffer(GL_UNIFORM_BUFFER, gl->fragBuf);

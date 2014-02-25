@@ -62,7 +62,7 @@ enum NVGpatternRepeat {
 	NVG_REPEATY = 0x02,		// Repeat image pattern in Y direction
 };
 
-enum NVGaling {
+enum NVGalign {
 	// Horizontal align
 	NVG_ALIGN_LEFT 		= 1<<0,	// Default, align text horizontally to left.
 	NVG_ALIGN_CENTER 	= 1<<1,	// Align text horizontally to center.
@@ -74,6 +74,10 @@ enum NVGaling {
 	NVG_ALIGN_BASELINE	= 1<<6, // Default, align text vertically to baseline. 
 };
 
+enum NVGalpha {
+	NVG_STRAIGHT_ALPHA,
+	NVG_PREMULTIPLIED_ALPHA,
+};
 
 // Begin drawing a new frame
 // Calls to nanovg drawing API should be wrapped in nvgBeginFrame() & nvgEndFrame()
@@ -83,7 +87,11 @@ enum NVGaling {
 // For example, GLFW returns two dimension for an opened window: window size and
 // frame buffer size. In that case you would set windowWidth/Height to the window size
 // devicePixelRatio to: frameBufferWidth / windowWidth.
-void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, float devicePixelRatio);
+// AlphaBlend controls if drawing the shapes to the render target should be done using straight or
+// premultiplied alpha. If rendering directly to framebuffer you probably want to use NVG_STRAIGHT_ALPHA,
+// if rendering to texture which should contain transparent regions NVG_PREMULTIPLIED_ALPHA is the
+// right choice.
+void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, float devicePixelRatio, int alphaBlend);
 
 // Ends drawing flushing remaining render state.
 void nvgEndFrame(struct NVGcontext* ctx);
@@ -430,8 +438,8 @@ struct NVGparams {
 	int (*renderDeleteTexture)(void* uptr, int image);
 	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
-	void (*renderViewport)(void* uptr, int width, int height);
-	void (*renderFlush)(void* uptr);
+	void (*renderViewport)(void* uptr, int width, int height, int alphaBlend);
+	void (*renderFlush)(void* uptr, int alphaBlend);
 	void (*renderFill)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, const float* bounds, const struct NVGpath* paths, int npaths);
 	void (*renderStroke)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float strokeWidth, const struct NVGpath* paths, int npaths);
 	void (*renderTriangles)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, const struct NVGvertex* verts, int nverts);
