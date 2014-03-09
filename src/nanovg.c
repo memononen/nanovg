@@ -181,7 +181,7 @@ error:
 
 static void nvg__setDevicePixelRatio(struct NVGcontext* ctx, float ratio)
 {
-	ctx->tessTol = 0.3f * 4.0f / ratio;
+	ctx->tessTol = 0.25f * 4.0f / ratio;
 	ctx->distTol = 0.01f / ratio;
 	ctx->fringeWidth = 1.0f / ratio;
 	ctx->devicePxRatio = ratio;
@@ -1755,7 +1755,7 @@ void nvgFill(struct NVGcontext* ctx)
 	else
 		nvg__expandStrokeAndFill(ctx, NVG_FILL, 0.0f, NVG_BUTT, NVG_MITER, 1.2f);
 
-	ctx->params.renderFill(ctx->params.userPtr, &state->fill, &state->scissor,
+	ctx->params.renderFill(ctx->params.userPtr, &state->fill, &state->scissor, ctx->fringeWidth,
 						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
@@ -1777,11 +1777,11 @@ void nvgStroke(struct NVGcontext* ctx)
 
 	nvg__flattenPaths(ctx);
 	if (ctx->params.edgeAntiAlias)
-		nvg__expandStrokeAndFill(ctx, NVG_STROKE|NVG_CAPS, strokeWidth*0.5f + ctx->fringeWidth/2.0f, state->lineCap, state->lineJoin, state->miterLimit);
+		nvg__expandStrokeAndFill(ctx, NVG_STROKE|NVG_CAPS, strokeWidth*0.5f + ctx->fringeWidth*0.5f, state->lineCap, state->lineJoin, state->miterLimit);
 	else
 		nvg__expandStrokeAndFill(ctx, NVG_STROKE|NVG_CAPS, strokeWidth*0.5f, state->lineCap, state->lineJoin, state->miterLimit);
 
-	ctx->params.renderStroke(ctx->params.userPtr, &state->stroke, &state->scissor,
+	ctx->params.renderStroke(ctx->params.userPtr, &state->stroke, &state->scissor, ctx->fringeWidth,
 							 strokeWidth, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles

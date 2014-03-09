@@ -566,7 +566,7 @@ static void glnvg__xformToMat3x3(float* m3, float* t)
 	m3[8] = 1.0f;
 }
 
-static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, struct NVGscissor* scissor, float width)
+static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, struct NVGscissor* scissor, float width, float fringe)
 {
 	float innerCol[4];
 	float outerCol[4];
@@ -592,8 +592,8 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		glnvg__xformToMat3x3(scissorMat, invxform);
 		scissorx = scissor->extent[0];
 		scissory = scissor->extent[1];
-		scissorsx = sqrtf(scissor->xform[0]*scissor->xform[0] + scissor->xform[2]*scissor->xform[2]);
-		scissorsy = sqrtf(scissor->xform[1]*scissor->xform[1] + scissor->xform[3]*scissor->xform[3]);
+		scissorsx = sqrtf(scissor->xform[0]*scissor->xform[0] + scissor->xform[2]*scissor->xform[2]) / fringe;
+		scissorsy = sqrtf(scissor->xform[1]*scissor->xform[1] + scissor->xform[3]*scissor->xform[3]) / fringe;
 	}
 
 	if (paint->image != 0) {
@@ -607,7 +607,7 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		glUniform2f(gl->shader.loc[GLNVG_LOC_SCISSORSCALE], scissorsx, scissorsy);
 		glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_PAINTMAT], 1, GL_FALSE, paintMat);
 		glUniform2f(gl->shader.loc[GLNVG_LOC_EXTENT], paint->extent[0], paint->extent[1]);
-		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + 0.5f);
+		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], (width*0.5f + fringe*0.5f)/fringe);
 		glUniform1i(gl->shader.loc[GLNVG_LOC_TEX], 0);
 		glUniform1i(gl->shader.loc[GLNVG_LOC_TEXTYPE], tex->type == NVG_TEXTURE_RGBA ? 0 : 1);
 		glnvg__checkError("tex paint loc");
@@ -626,7 +626,7 @@ static int glnvg__setupPaint(struct GLNVGcontext* gl, struct NVGpaint* paint, st
 		glUniform1f(gl->shader.loc[GLNVG_LOC_FEATHER], paint->feather);
 		glUniform4fv(gl->shader.loc[GLNVG_LOC_INNERCOL], 1, innerCol);
 		glUniform4fv(gl->shader.loc[GLNVG_LOC_OUTERCOL], 1, outerCol);
-		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], width*0.5f + 0.5f);
+		glUniform1f(gl->shader.loc[GLNVG_LOC_STROKEMULT], (width*0.5f + fringe*0.5f)/fringe);
 		glnvg__checkError("grad paint loc");
 	}
 	return 1;
@@ -648,6 +648,7 @@ static void glnvg__renderFlush(void* uptr, int alphaBlend)
 {
 //	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	NVG_NOTUSED(uptr);
+	NVG_NOTUSED(alphaBlend);
 }
 
 static int glnvg__maxVertCount(const struct NVGpath* paths, int npaths)
@@ -677,7 +678,7 @@ static void glnvg__uploadPaths(const struct NVGpath* paths, int npaths)
 	}
 }
 
-static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor,
+static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float fringe,
 							  const float* bounds, const struct NVGpath* paths, int npaths)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
@@ -699,7 +700,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
-		glnvg__setupPaint(gl, paint, scissor, 1.0001f);
+		glnvg__setupPaint(gl, paint, scissor, fringe, fringe);
 
 		glDisable(GL_CULL_FACE);
 		n = 0;
@@ -771,7 +772,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 		glEnable(GL_BLEND);
 
 		glEnableVertexAttribArray(1);
-		glnvg__setupPaint(gl, paint, scissor, 1.0001f);
+		glnvg__setupPaint(gl, paint, scissor, fringe, fringe);
 
 		if (gl->edgeAntiAlias) {
 			glStencilFunc(GL_EQUAL, 0x00, 0xff);
@@ -812,7 +813,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 	}
 }
 
-static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor,
+static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float fringe,
 								float width, const struct NVGpath* paths, int npaths)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
@@ -822,7 +823,7 @@ static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGsc
 	if (gl->shader.prog == 0)
 		return;
 
-	glnvg__setupPaint(gl, paint, scissor, width);
+	glnvg__setupPaint(gl, paint, scissor, width, fringe);
 
 	glEnable(GL_CULL_FACE);
 
