@@ -298,7 +298,7 @@ unsigned int nvgTransRGBA(unsigned int c, unsigned char a)
 
 unsigned int nvgLerpRGBA(unsigned int c0, unsigned int c1, float u)
 {
-	int iu = (float)(nvg__clampf(u, 0.0f, 1.0f) * 256.0f);
+	int iu = (int)(nvg__clampf(u, 0.0f, 1.0f) * 256.0f);
 	int r = (((c0) & 0xff)*(256-iu) + (((c1) & 0xff)*iu)) >> 8;
 	int g = (((c0>>8) & 0xff)*(256-iu) + (((c1>>8) & 0xff)*iu)) >> 8;
 	int b = (((c0>>16) & 0xff)*(256-iu) + (((c1>>16) & 0xff)*iu)) >> 8;
@@ -987,7 +987,7 @@ static void nvg__flattenPaths(struct NVGcontext* ctx)
 	struct NVGpoint* p1;
 	struct NVGpoint* pts;
 	struct NVGpath* path;
-	int i, j, nleft;
+	int i, j;
 	float* cp1;
 	float* cp2;
 	float* p;
@@ -1164,7 +1164,6 @@ static struct NVGvertex* nvg__bevelJoin(struct NVGvertex* dst, struct NVGpoint* 
 	float rx0,ry0,rx1,ry1;
 	float lx0,ly0,lx1,ly1;
 	float mx,my,len,mu;
-	int i, n;
 	float dlx0 = p0->dy;
 	float dly0 = -p0->dx;
 	float dlx1 = p1->dy;
@@ -1254,7 +1253,7 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w, 
 	struct NVGpoint* p0;
 	struct NVGpoint* p1;
 	int cverts, convex, i, j, s, e;
-	float wo = 0, iw, aa = ctx->fringeWidth;
+	float wo = 0, iw = 0, aa = ctx->fringeWidth;
 	int ncap = nvg__curveDivs(w, NVG_PI, ctx->tessTol / 4.0f);
 	int nleft = 0;
 	struct NVGstate* state = nvg__getState(ctx);
@@ -1626,9 +1625,9 @@ void nvgPathWinding(struct NVGcontext* ctx, int dir)
 
 void nvgArc(struct NVGcontext* ctx, float cx, float cy, float r, float a0, float a1, int dir)
 {
-	float a, da, hda, kappa;
-	float dx, dy, x, y, tanx, tany;
-	float px, py, ptanx, ptany;
+	float a = 0, da = 0, hda = 0, kappa = 0;
+	float dx = 0, dy = 0, x = 0, y = 0, tanx = 0, tany = 0;
+	float px = 0, py = 0, ptanx = 0, ptany = 0;
 	float vals[3 + 5*7 + 100];
 	int i, ndivs, nvals;
 	int move = ctx->ncommands > 0 ? NVG_LINETO : NVG_MOVETO; 
@@ -1668,7 +1667,7 @@ void nvgArc(struct NVGcontext* ctx, float cx, float cy, float r, float a0, float
 		tany = dx*r*kappa;
 
 		if (i == 0) {
-			vals[nvals++] = move;
+			vals[nvals++] = (float)move;
 			vals[nvals++] = x;
 			vals[nvals++] = y;
 		} else {
