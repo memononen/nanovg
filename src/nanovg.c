@@ -1254,7 +1254,7 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w, 
 	struct NVGpoint* p0;
 	struct NVGpoint* p1;
 	int cverts, convex, i, j, s, e;
-	float wo = 0, iw, aa = ctx->fringeWidth;
+	float wo = 0, iw = 0, aa = ctx->fringeWidth;
 	int ncap = nvg__curveDivs(w, NVG_PI, ctx->tessTol / 4.0f);
 	int nleft = 0;
 	struct NVGstate* state = nvg__getState(ctx);
