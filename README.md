@@ -56,8 +56,11 @@ nvgFill(vg);
 See the header file [nanovg.h](/src/nanovg.h) for API reference.
 
 
-# License
+## License
 The library is licensed under [zlib license](LICENSE.txt)
+
+## Discussions
+[NanoVG mailing list](https://groups.google.com/forum/#!forum/nanovg)
 
 ## Links
 Uses [stb_truetype](http://nothings.org) for font rendering.
