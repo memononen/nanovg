@@ -38,11 +38,23 @@ enum FONSalign {
 	FONS_ALIGN_BASELINE	= 1<<6, // Default
 };
 
+enum FONSerrorCode {
+	// Font atlas is full.
+	FONS_ATLAS_FULL = 1,
+	// Scratch memory used to render glyphs is full, requested size reported in 'val', you may need to bump up FONS_SCRATCH_BUF_SIZE.		
+	FONS_SCRATCH_FULL = 2,
+	// Calls to fonsPushState has craeted too large stack, if you need deep state stack bump up FONS_MAX_STATES.
+	FONS_STATES_OVERFLOW = 3,
+	// Trying to pop too many states fonsPopState().
+	FONS_STATES_UNDERFLOW = 4,
+};
+
 struct FONSparams {
 	int width, height;
 	unsigned char flags;
 	void* userPtr;
 	int (*renderCreate)(void* uptr, int width, int height);
+	int (*renderResize)(void* uptr, int width, int height);
 	void (*renderUpdate)(void* uptr, int* rect, const unsigned char* data);
 	void (*renderDraw)(void* uptr, const float* verts, const float* tcoords, const unsigned int* colors, int nverts);
 	void (*renderDelete)(void* uptr);
@@ -67,6 +79,14 @@ struct FONStextIter {
 // Contructor and destructor.
 struct FONScontext* fonsCreateInternal(struct FONSparams* params);
 void fonsDeleteInternal(struct FONScontext* s);
+
+void fonsSetErrorCallback(struct FONScontext* s, void (*callback)(void* uptr, int error, int val), void* uptr);
+// Returns current atlas size.
+void fonsGetAtlasSize(struct FONScontext* s, int* width, int* height);
+// Expands the atlas size. 
+int fonsExpandAtlas(struct FONScontext* s, int width, int height);
+// Reseta the whole stash.
+int fonsResetAtlas(struct FONScontext* stash, int width, int height);
 
 // Add fonts
 int fonsAddFont(struct FONScontext* s, const char* name, const char* path);
@@ -377,6 +397,8 @@ struct FONScontext
 	int nscratch;
 	struct FONSstate states[FONS_MAX_STATES];
 	int nstates;
+	void (*handleError)(void* uptr, int error, int val);
+	void* errorUptr;
 };
 
 static void* fons__tmpalloc(size_t size, void* up)
@@ -384,8 +406,11 @@ static void* fons__tmpalloc(size_t size, void* up)
 	unsigned char* ptr;
 
 	struct FONScontext* stash = (struct FONScontext*)up;
-	if (stash->nscratch+(int)size > FONS_SCRATCH_BUF_SIZE)
+	if (stash->nscratch+(int)size > FONS_SCRATCH_BUF_SIZE) {
+		if (stash->handleError)
+			stash->handleError(stash->errorUptr, FONS_SCRATCH_FULL, stash->nscratch+(int)size);
 		return NULL;
+	}
 	ptr = stash->scratch + stash->nscratch;
 	stash->nscratch += (int)size;
 	return ptr;
@@ -507,6 +532,28 @@ static void fons__atlasRemoveNode(struct FONSatlas* atlas, int idx)
 	atlas->nnodes--;
 }
 
+static void fons__atlasExpand(struct FONSatlas* atlas, int w, int h)
+{
+	// Insert node for empty space
+	if (w > atlas->width)
+		fons__atlasInsertNode(atlas, atlas->nnodes, atlas->width, 0, w - atlas->width);
+	atlas->width = w;
+	atlas->height = h;
+}
+
+static void fons__atlasReset(struct FONSatlas* atlas, int w, int h)
+{
+	atlas->width = w;
+	atlas->height = h;
+	atlas->nnodes = 0;
+
+	// Init root node.
+	atlas->nodes[0].x = 0;
+	atlas->nodes[0].y = 0;
+	atlas->nodes[0].width = (short)w;
+	atlas->nnodes++;
+}
+
 static int fons__atlasAddSkylineLevel(struct FONSatlas* atlas, int idx, int x, int y, int w, int h)
 {
 	int i;
@@ -597,6 +644,26 @@ static int fons__atlasAddRect(struct FONSatlas* atlas, int rw, int rh, int* rx, 
 	return 1;
 }
 
+static void fons__addWhiteRect(struct FONScontext* stash, int w, int h)
+{
+	int x, y, gx, gy;
+	unsigned char* dst;
+	if (fons__atlasAddRect(stash->atlas, w, h, &gx, &gy) == 0)
+		return;
+
+	// Rasterize
+	dst = &stash->texData[gx + gy * stash->params.width];
+	for (y = 0; y < h; y++) {
+		for (x = 0; x < w; x++)
+			dst[x] = 0xff;
+		dst += stash->params.width;
+	}
+
+	stash->dirtyRect[0] = fons__mini(stash->dirtyRect[0], gx);
+	stash->dirtyRect[1] = fons__mini(stash->dirtyRect[1], gy);
+	stash->dirtyRect[2] = fons__maxi(stash->dirtyRect[2], gx+w);
+	stash->dirtyRect[3] = fons__maxi(stash->dirtyRect[3], gy+h);
+}
 
 struct FONScontext* fonsCreateInternal(struct FONSparams* params)
 {
@@ -638,6 +705,9 @@ struct FONScontext* fonsCreateInternal(struct FONSparams* params)
 	stash->dirtyRect[1] = stash->params.height;
 	stash->dirtyRect[2] = 0;
 	stash->dirtyRect[3] = 0;
+
+	// Add white rect at 0,0 for debug drawing.
+	fons__addWhiteRect(stash, 2,2);
 
 	fonsPushState(stash);
 	fonsClearState(stash);
@@ -686,8 +756,11 @@ void fonsSetFont(struct FONScontext* stash, int font)
 
 void fonsPushState(struct FONScontext* stash)
 {
-	if (stash->nstates >= FONS_MAX_STATES)
+	if (stash->nstates >= FONS_MAX_STATES) {
+		if (stash->handleError)
+			stash->handleError(stash->errorUptr, FONS_STATES_OVERFLOW, 0);
 		return;
+	}
 	if (stash->nstates > 0)
 		memcpy(&stash->states[stash->nstates], &stash->states[stash->nstates-1], sizeof(struct FONSstate));
 	stash->nstates++;
@@ -695,8 +768,11 @@ void fonsPushState(struct FONScontext* stash)
 
 void fonsPopState(struct FONScontext* stash)
 {
-	if (stash->nstates <= 1)
+	if (stash->nstates <= 1) {
+		if (stash->handleError)
+			stash->handleError(stash->errorUptr, FONS_STATES_UNDERFLOW, 0);
 		return;
+	}
 	stash->nstates--;
 }
 
@@ -911,7 +987,7 @@ static struct FONSglyph* fons__getGlyph(struct FONScontext* stash, struct FONSfo
 	struct FONSglyph* glyph = NULL;
 	unsigned int h;
 	float size = isize/10.0f;
-	int pad;
+	int pad, added;
 	unsigned char* bdst;
 	unsigned char* dst;
 
@@ -939,8 +1015,13 @@ static struct FONSglyph* fons__getGlyph(struct FONScontext* stash, struct FONSfo
 	gh = y1-y0 + pad*2;
 
 	// Find free spot for the rect in the atlas
-	if (fons__atlasAddRect(stash->atlas, gw, gh, &gx, &gy) == 0)
-		return NULL;
+	added = fons__atlasAddRect(stash->atlas, gw, gh, &gx, &gy);
+	if (added == 0 && stash->handleError != NULL) {
+		// Atlas is full, let the user to resize the atlas (or not), and try again.
+		stash->handleError(stash->errorUptr, FONS_ATLAS_FULL, 0);
+		added = fons__atlasAddRect(stash->atlas, gw, gh, &gx, &gy);
+	}
+	if (added == 0) return NULL;
 
 	// Init glyph.
 	glyph = fons__allocGlyph(font);
@@ -1133,6 +1214,9 @@ float fonsDrawText(struct FONScontext* stash,
 
 	scale = fons__tt_getPixelHeightScale(&font->font, (float)isize/10.0f);
 
+	if (end == NULL)
+		end = str + strlen(str);
+
 	// Align horizontally
 	if (state->align & FONS_ALIGN_LEFT) {
 		// empty
@@ -1146,10 +1230,7 @@ float fonsDrawText(struct FONScontext* stash,
 	// Align vertically.
 	y += fons__getVertAlign(stash, font, state->align, isize);
 
-	if (end == NULL)
-		end = str + strlen(str);
-
-	for (; *str; ++str) {
+	for (; str != end; ++str) {
 		if (fons__decutf8(&utf8state, &codepoint, *(const unsigned char*)str))
 			continue;
 		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur);
@@ -1243,11 +1324,25 @@ int fonsTextIterNext(struct FONScontext* stash, struct FONStextIter* iter, struc
 
 void fonsDrawDebug(struct FONScontext* stash, float x, float y)
 {
+	int i;
 	int w = stash->params.width;
 	int h = stash->params.height;
-	if (stash->nverts+6 > FONS_VERTEX_COUNT)
+	float u = w == 0 ? 0 : (1.0f / w);
+	float v = h == 0 ? 0 : (1.0f / h);
+
+	if (stash->nverts+6+6 > FONS_VERTEX_COUNT)
 		fons__flush(stash);
 
+	// Draw background
+	fons__vertex(stash, x+0, y+0, u, v, 0x0fffffff);
+	fons__vertex(stash, x+w, y+h, u, v, 0x0fffffff);
+	fons__vertex(stash, x+w, y+0, u, v, 0x0fffffff);
+
+	fons__vertex(stash, x+0, y+0, u, v, 0x0fffffff);
+	fons__vertex(stash, x+0, y+h, u, v, 0x0fffffff);
+	fons__vertex(stash, x+w, y+h, u, v, 0x0fffffff);
+
+	// Draw texture
 	fons__vertex(stash, x+0, y+0, 0, 0, 0xffffffff);
 	fons__vertex(stash, x+w, y+h, 1, 1, 0xffffffff);
 	fons__vertex(stash, x+w, y+0, 1, 0, 0xffffffff);
@@ -1255,6 +1350,24 @@ void fonsDrawDebug(struct FONScontext* stash, float x, float y)
 	fons__vertex(stash, x+0, y+0, 0, 0, 0xffffffff);
 	fons__vertex(stash, x+0, y+h, 0, 1, 0xffffffff);
 	fons__vertex(stash, x+w, y+h, 1, 1, 0xffffffff);
+
+	// Drawbug draw atlas
+	for (i = 0; i < stash->atlas->nnodes; i++) {
+		struct FONSatlasNode* n = &stash->atlas->nodes[i];
+
+		if (stash->nverts+6 > FONS_VERTEX_COUNT)
+			fons__flush(stash);
+
+		fons__vertex(stash, x+n->x+0, y+n->y+0, u, v, 0xc00000ff);
+		fons__vertex(stash, x+n->x+n->width, y+n->y+1, u, v, 0xc00000ff);
+		fons__vertex(stash, x+n->x+n->width, y+n->y+0, u, v, 0xc00000ff);
+
+		fons__vertex(stash, x+n->x+0, y+n->y+0, u, v, 0xc00000ff);
+		fons__vertex(stash, x+n->x+0, y+n->y+1, u, v, 0xc00000ff);
+		fons__vertex(stash, x+n->x+n->width, y+n->y+1, u, v, 0xc00000ff);
+	}
+
+	fons__flush(stash);
 }
 
 float fonsTextBounds(struct FONScontext* stash,
@@ -1289,7 +1402,7 @@ float fonsTextBounds(struct FONScontext* stash,
 	if (end == NULL)
 		end = str + strlen(str);
 
-	for (; *str; ++str) {
+	for (; str != end; ++str) {
 		if (fons__decutf8(&utf8state, &codepoint, *(const unsigned char*)str))
 			continue;
 		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur);
@@ -1387,5 +1500,123 @@ void fonsDeleteInternal(struct FONScontext* stash)
 	if (stash->texData) free(stash->texData);
 	free(stash);
 }
+
+void fonsSetErrorCallback(struct FONScontext* stash, void (*callback)(void* uptr, int error, int val), void* uptr)
+{
+	if (stash == NULL) return;
+	stash->handleError = callback;
+	stash->errorUptr = uptr;
+}
+
+void fonsGetAtlasSize(struct FONScontext* stash, int* width, int* height)
+{
+	if (stash == NULL) return;
+	*width = stash->params.width;
+	*height = stash->params.height;
+}
+
+int fonsExpandAtlas(struct FONScontext* stash, int width, int height)
+{
+	int i, maxy = 0;
+	unsigned char* data = NULL;
+	if (stash == NULL) return 0;
+
+	width = fons__maxi(width, stash->params.width);
+	height = fons__maxi(height, stash->params.height);
+
+	if (width == stash->params.width && height == stash->params.height)
+		return 1;	
+
+	// Flush pending glyphs.
+	fons__flush(stash);
+
+	// Create new texture
+	if (stash->params.renderResize != NULL) {
+		if (stash->params.renderResize(stash->params.userPtr, width, height) == 0)
+			return 0;
+	}
+	// Copy old texture data over.
+	data = (unsigned char*)malloc(width * height);
+	if (data == NULL)
+		return 0;
+	for (i = 0; i < stash->params.height; i++) {
+		unsigned char* dst = &data[i*width];
+		unsigned char* src = &stash->texData[i*stash->params.width];
+		memcpy(dst, src, stash->params.width);
+		if (width > stash->params.width)
+			memset(dst+stash->params.width, 0, width - stash->params.width);
+	}
+	if (height > stash->params.height)
+		memset(&data[stash->params.height * width], 0, (height - stash->params.height) * width);
+
+	free(stash->texData);
+	stash->texData = data;
+
+	// Increase atlas size
+	fons__atlasExpand(stash->atlas, width, height);
+
+	// Add axisting data as dirty.
+	for (i = 0; i < stash->atlas->nnodes; i++)
+		maxy = fons__maxi(maxy, stash->atlas->nodes[i].y);
+	stash->dirtyRect[0] = 0;
+	stash->dirtyRect[1] = 0;
+	stash->dirtyRect[2] = stash->params.width;
+	stash->dirtyRect[3] = maxy;
+
+	stash->params.width = width;
+	stash->params.height = height;
+	stash->itw = 1.0f/stash->params.width;
+	stash->ith = 1.0f/stash->params.height;
+
+	return 1;
+}
+
+int fonsResetAtlas(struct FONScontext* stash, int width, int height)
+{
+	int i, j;
+	if (stash == NULL) return 0;
+
+	// Flush pending glyphs.
+	fons__flush(stash);
+
+	// Create new texture
+	if (stash->params.renderResize != NULL) {
+		if (stash->params.renderResize(stash->params.userPtr, width, height) == 0)
+			return 0;
+	}
+
+	// Reset atlas
+	fons__atlasReset(stash->atlas, width, height);
+
+	// Clear texture data.
+	stash->texData = (unsigned char*)realloc(stash->texData, width * height);
+	if (stash->texData == NULL) return 0;
+	memset(stash->texData, 0, width * height);
+
+	// Reset dirty rect
+	stash->dirtyRect[0] = width;
+	stash->dirtyRect[1] = height;
+	stash->dirtyRect[2] = 0;
+	stash->dirtyRect[3] = 0;
+
+	// Reset cached glyphs
+	for (i = 0; i < stash->nfonts; i++) {
+		struct FONSfont* font = stash->fonts[i];
+		font->nglyphs = 0;
+		for (j = 0; j < FONS_HASH_LUT_SIZE; j++)
+			font->lut[j] = -1;
+	}
+
+	stash->params.width = width;
+	stash->params.height = height;
+	stash->itw = 1.0f/stash->params.width;
+	stash->ith = 1.0f/stash->params.height;
+
+	// Add white rect at 0,0 for debug drawing.
+	fons__addWhiteRect(stash, 2,2);
+
+	return 1;
+}
+
 
 #endif
