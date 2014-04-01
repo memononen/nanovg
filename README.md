@@ -56,6 +56,7 @@ nvgFill(vg);
 - make sure you have created NanoVG context using one of the `nvgCreatexxx()` calls
 - make sure you have initialised OpenGL with stencil buffer
 - make sure you have cleared stencil buffer
+- make sure all rendering calls happen between `nvgBeginFrame()` and `nvgEndFrame()`
 - make sure you have following OpenGL state between calls to `nvgBeginFrame()` and `nvgEndFrame()`:
   - `glEnable(GL_CULL_FACE)`
   - `glCullFace(GL_BACK)`
