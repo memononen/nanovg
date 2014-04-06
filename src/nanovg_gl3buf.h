@@ -118,8 +118,8 @@ struct GLNVGpath {
 struct GLNVGfragUniforms {
    float scissorMat[12]; // matrices are actually 3 vec4s
    float paintMat[12];
-   float innerCol[4];
-   float outerCol[4];
+   struct NVGcolor innerCol;
+   struct NVGcolor  outerCol;
    float scissorExt[2];
    float scissorScale[2];
    float extent[2];
@@ -591,8 +591,8 @@ static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms
 	struct GLNVGtexture* tex = NULL;
 	float invxform[6];
 
-	glnvg__toFloatColor(frag->innerCol, paint->innerColor);
-	glnvg__toFloatColor(frag->outerCol, paint->outerColor);
+	frag->innerCol = paint->innerColor;
+	frag->outerCol = paint->outerColor;
 
 	glnvg__xformInverse(invxform, paint->xform);
 	glnvg__xformToMat3x4(frag->paintMat, invxform);

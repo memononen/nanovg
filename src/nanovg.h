@@ -27,14 +27,26 @@ extern "C" {
 
 struct NVGcontext;
 
+struct NVGcolor
+{
+    union
+    {
+        float rgba[4];
+        struct
+        {
+            float r,g,b,a;
+        };
+    };
+};
+
 struct NVGpaint
 {
 	float xform[6];
 	float extent[2];
 	float radius;
 	float feather;
-	unsigned int innerColor;
-	unsigned int outerColor;
+	struct NVGcolor innerColor;
+	struct NVGcolor outerColor;
 	int image;
 	int repeat;
 };
@@ -102,24 +114,27 @@ void nvgEndFrame(struct NVGcontext* ctx);
 // Colors in NanoVG are stored as unsigned ints in ABGR format.
 
 // Returns a color value from red, green, blue values. Alpha will be set to 255.
-unsigned int nvgRGB(unsigned char r, unsigned char g, unsigned char b);
+struct NVGcolor nvgRGB(unsigned char r, unsigned char g, unsigned char b);
 
 // Returns a color value from red, green, blue and alpha values.
-unsigned int nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+struct NVGcolor nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 
 // Linearly interpoaltes from color c0 to c1, and returns resulting color value.
-unsigned int nvgLerpRGBA(unsigned int c0, unsigned int c1, float u);
+struct NVGcolor nvgLerpRGBA(struct NVGcolor c0, struct NVGcolor c1, float u);
 
 // Sets transparency of a color value.
-unsigned int nvgTransRGBA(unsigned int c0, unsigned char a);
+struct NVGcolor nvgTransRGBA(struct NVGcolor c0, unsigned char a);
 
 // Returns color value specified by hue, saturation and lightness.
 // HSL values are all in range [0..1], alpha will be set to 255.
-unsigned int nvgHSL(float h, float s, float l);
+struct NVGcolor nvgHSL(float h, float s, float l);
 
 // Returns color value specified by hue, saturation and lightness and alpha.
 // HSL values are all in range [0..1], alpha in range [0..255]
-unsigned int nvgHSLA(float h, float s, float l, unsigned char a);
+struct NVGcolor nvgHSLA(float h, float s, float l, unsigned char a);
+
+// Returns 1 if col.rgba is 0.0f,0.0f,0.0f,0.0f, 0 otherwise
+int nvgIsBlack( struct NVGcolor col );
 
 //
 // State Handling
@@ -148,13 +163,13 @@ void nvgReset(struct NVGcontext* ctx);
 // Current render style can be saved and restored using nvgSave() and nvgRestore(). 
 
 // Sets current stroke style to a solid color.
-void nvgStrokeColor(struct NVGcontext* ctx, unsigned int color);
+void nvgStrokeColor(struct NVGcontext* ctx, struct NVGcolor color);
 
 // Sets current stroke style to a paint, which can be a one of the gradients or a pattern.
 void nvgStrokePaint(struct NVGcontext* ctx, struct NVGpaint paint);
 
 // Sets current fill cstyle to a solid color.
-void nvgFillColor(struct NVGcontext* ctx, unsigned int color);
+void nvgFillColor(struct NVGcontext* ctx, struct NVGcolor color);
 
 // Sets current fill style to a paint, which can be a one of the gradients or a pattern.
 void nvgFillPaint(struct NVGcontext* ctx, struct NVGpaint paint);
@@ -247,7 +262,7 @@ void nvgDeleteImage(struct NVGcontext* ctx, int image);
 // of the linear gradient, icol specifies the start color and ocol the end color.
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 struct NVGpaint nvgLinearGradient(struct NVGcontext* ctx, float sx, float sy, float ex, float ey,
-								  unsigned int icol, unsigned int ocol);
+								  struct NVGcolor icol, struct NVGcolor ocol);
 
 // Creates and returns a box gradient. Box gradient is a feathered rounded rectangle, it is useful for rendering
 // drop shadows or hilights for boxes. Parameters (x,y) define the top-left corner of the rectangle,
@@ -255,13 +270,13 @@ struct NVGpaint nvgLinearGradient(struct NVGcontext* ctx, float sx, float sy, fl
 // the border of the rectangle is. Parameter icol specifies the inner color and ocol the outer color of the gradient.
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 struct NVGpaint nvgBoxGradient(struct NVGcontext* ctx, float x, float y, float w, float h,
-							   float r, float f, unsigned int icol, unsigned int ocol);
+							   float r, float f, struct NVGcolor icol, struct NVGcolor ocol);
 
 // Creates and returns a radial gradient. Parameters (cx,cy) specify the center, inr and outr specify
 // the inner and outer radius of the gradient, icol specifies the start color and ocol the end color.
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 struct NVGpaint nvgRadialGradient(struct NVGcontext* ctx, float cx, float cy, float inr, float outr,
-								  unsigned int icol, unsigned int ocol);
+								  struct NVGcolor icol, struct NVGcolor ocol);
 
 // Creates and returns an image patter. Parameters (ox,oy) specify the left-top location of the image pattern,
 // (ex,ey) the size of one image, angle rotation around the top-left corner, image is handle to the image to render,
