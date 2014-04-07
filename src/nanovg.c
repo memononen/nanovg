@@ -346,7 +346,7 @@ struct NVGcolor nvgHSLA(float h, float s, float l, unsigned char a)
 	return col;
 }
 
-nvgIsBlack( struct NVGcolor col )
+int nvgIsBlack( struct NVGcolor col )
 {
     if( col.r == 0.0f && col.g == 0.0f && col.b == 0.0f && col.a == 0.0f )
     {
