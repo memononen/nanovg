@@ -278,35 +278,57 @@ void nvgEndFrame(struct NVGcontext* ctx)
 	ctx->params.renderFlush(ctx->params.userPtr, ctx->alphaBlend);
 }
 
-unsigned int nvgRGB(unsigned char r, unsigned char g, unsigned char b)
+struct NVGcolor nvgRGB(unsigned char r, unsigned char g, unsigned char b)
 {
 	return nvgRGBA(r,g,b,255);
 }
 
-unsigned int nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+struct NVGcolor nvgRGBf(float r, float g, float b)
 {
-	return (r) | (g << 8) | (b << 16) | (a << 24);
+	return nvgRGBAf(r,g,b,1.0f);
 }
 
-unsigned int nvgTransRGBA(unsigned int c, unsigned char a)
+struct NVGcolor nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
-	int r = (c) & 0xff;
-	int g = (c>>8) & 0xff;
-	int b = (c>>16) & 0xff;
-	return nvgRGBA(r,g,b,a);
+	struct NVGcolor color = {r/255.0f, g/255.0f, b/255.0f, a/255.0f};
+	return color;
 }
 
-unsigned int nvgLerpRGBA(unsigned int c0, unsigned int c1, float u)
+struct NVGcolor nvgRGBAf(float r, float g, float b, float a)
 {
-	int iu = (int)(nvg__clampf(u, 0.0f, 1.0f) * 256.0f);
-	int r = (((c0) & 0xff)*(256-iu) + (((c1) & 0xff)*iu)) >> 8;
-	int g = (((c0>>8) & 0xff)*(256-iu) + (((c1>>8) & 0xff)*iu)) >> 8;
-	int b = (((c0>>16) & 0xff)*(256-iu) + (((c1>>16) & 0xff)*iu)) >> 8;
-	int a = (((c0>>24) & 0xff)*(256-iu) + (((c1>>24) & 0xff)*iu)) >> 8;
-	return nvgRGBA(r,g,b,a);
+	struct NVGcolor color = {r, g, b, a};
+	return color;
 }
 
-unsigned int nvgHSL(float h, float s, float l)
+struct NVGcolor nvgTransRGBA(struct NVGcolor c, unsigned char a)
+{
+	c.a = a / 255.0f;
+	return c;
+}
+
+struct NVGcolor nvgTransRGBAf(struct NVGcolor c, float a)
+{
+	c.a = a;
+	return c;
+}
+
+struct NVGcolor nvgLerpRGBA(struct NVGcolor c0, struct NVGcolor c1, float u)
+{
+	int i;
+	float oneminu;
+	struct NVGcolor cint;
+
+	u = nvg__clampf(u, 0.0f, 1.0f);
+	oneminu = 1.0f - u;
+	for( i = 0; i <4; ++i )
+	{
+		cint.rgba[i] = c0.rgba[i] * oneminu + c1.rgba[i] * u;
+	}
+	 
+	return cint;
+}
+
+struct NVGcolor nvgHSL(float h, float s, float l)
 {
 	return nvgHSLA(h,s,l,255);
 }
@@ -324,21 +346,23 @@ static float nvg__hue(float h, float m1, float m2)
 	return m1;
 }
 
-unsigned int nvgHSLA(float h, float s, float l, unsigned char a)
+struct NVGcolor nvgHSLA(float h, float s, float l, unsigned char a)
 {
 	float m1, m2;
-	unsigned char r,g,b;
+	struct NVGcolor col;
 	h = nvg__modf(h, 1.0f);
 	if (h < 0.0f) h += 1.0f;
 	s = nvg__clampf(s, 0.0f, 1.0f);
 	l = nvg__clampf(l, 0.0f, 1.0f);
 	m2 = l <= 0.5f ? (l * (1 + s)) : (l + s - l * s);
 	m1 = 2 * l - m2;
-	r = (unsigned char)nvg__clampf(nvg__hue(h + 1.0f/3.0f, m1, m2) * 255.0f, 0, 255);
-	g = (unsigned char)nvg__clampf(nvg__hue(h, m1, m2) * 255.0f, 0, 255);
-	b = (unsigned char)nvg__clampf(nvg__hue(h - 1.0f/3.0f, m1, m2) * 255.0f, 0, 255);
-	return nvgRGBA(r,g,b,a);
+	col.r = nvg__clampf(nvg__hue(h + 1.0f/3.0f, m1, m2), 0.0f, 1.0f);
+	col.g = nvg__clampf(nvg__hue(h, m1, m2), 0.0f, 1.0f);
+	col.b = nvg__clampf(nvg__hue(h - 1.0f/3.0f, m1, m2), 0.0f, 1.0f);
+	col.a = a/255.0f;
+	return col;
 }
+
 
 
 static struct NVGstate* nvg__getState(struct NVGcontext* ctx)
@@ -396,7 +420,7 @@ static void nvg__xformPremultiply(float* t, float* s)
 	memcpy(t, s2, sizeof(float)*6);
 }
 
-static void nvg__setPaintColor(struct NVGpaint* p, unsigned int color)
+static void nvg__setPaintColor(struct NVGpaint* p, struct NVGcolor color)
 {
 	memset(p, 0, sizeof(*p));
 	nvg__xformIdentity(p->xform);
@@ -511,7 +535,7 @@ void nvgScale(struct NVGcontext* ctx, float x, float y)
 }
 
 
-void nvgStrokeColor(struct NVGcontext* ctx, unsigned int color)
+void nvgStrokeColor(struct NVGcontext* ctx, struct NVGcolor color)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	nvg__setPaintColor(&state->stroke, color);
@@ -524,7 +548,7 @@ void nvgStrokePaint(struct NVGcontext* ctx, struct NVGpaint paint)
 	nvg__xformMultiply(state->stroke.xform, state->xform);
 }
 
-void nvgFillColor(struct NVGcontext* ctx, unsigned int color)
+void nvgFillColor(struct NVGcontext* ctx, struct NVGcolor color)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	nvg__setPaintColor(&state->fill, color);
@@ -587,7 +611,7 @@ void nvgDeleteImage(struct NVGcontext* ctx, int image)
 
 struct NVGpaint nvgLinearGradient(struct NVGcontext* ctx,
 								  float sx, float sy, float ex, float ey,
-								  unsigned int icol, unsigned int ocol)
+								  struct NVGcolor icol, struct NVGcolor ocol)
 {
 	struct NVGpaint p;
 	float dx, dy, d;
@@ -626,7 +650,7 @@ struct NVGpaint nvgLinearGradient(struct NVGcontext* ctx,
 
 struct NVGpaint nvgRadialGradient(struct NVGcontext* ctx,
 								  float cx, float cy, float inr, float outr,
-								  unsigned int icol, unsigned int ocol)
+								  struct NVGcolor icol, struct NVGcolor ocol)
 {
 	struct NVGpaint p;
 	float r = (inr+outr)*0.5f;
@@ -653,7 +677,7 @@ struct NVGpaint nvgRadialGradient(struct NVGcontext* ctx,
 
 struct NVGpaint nvgBoxGradient(struct NVGcontext* ctx,
 							   float x, float y, float w, float h, float r, float f,
-							   unsigned int icol, unsigned int ocol)
+							   struct NVGcolor icol, struct NVGcolor ocol)
 {
 	struct NVGpaint p;
 

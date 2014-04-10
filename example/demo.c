@@ -24,6 +24,16 @@
 #define ICON_LOGIN 0xE740
 #define ICON_TRASH 0xE729
 
+// Returns 1 if col.rgba is 0.0f,0.0f,0.0f,0.0f, 0 otherwise
+int isBlack( struct NVGcolor col )
+{
+	if( col.r == 0.0f && col.g == 0.0f && col.b == 0.0f && col.a == 0.0f )
+	{
+		return 1;
+	}
+	return 0;
+}
+
 static char* cpToUTF8(int cp, char* str)
 {
 	int n = 0;
@@ -254,17 +264,17 @@ void drawCheckBox(struct NVGcontext* vg, const char* text, float x, float y, flo
 	nvgText(vg, x+9+2, y+h*0.5f, cpToUTF8(ICON_CHECK,icon), NULL);
 }
 
-void drawButton(struct NVGcontext* vg, int preicon, const char* text, float x, float y, float w, float h, unsigned int col)
+void drawButton(struct NVGcontext* vg, int preicon, const char* text, float x, float y, float w, float h, struct NVGcolor col)
 {
 	struct NVGpaint bg;
 	char icon[8];
 	float cornerRadius = 4.0f;
 	float tw = 0, iw = 0;
 
-	bg = nvgLinearGradient(vg, x,y,x,y+h, nvgRGBA(255,255,255,col==0?16:32), nvgRGBA(0,0,0,col==0?16:32));
+	bg = nvgLinearGradient(vg, x,y,x,y+h, nvgRGBA(255,255,255,isBlack(col)?16:32), nvgRGBA(0,0,0,isBlack(col)?16:32));
 	nvgBeginPath(vg);
 	nvgRoundedRect(vg, x+1,y+1, w-2,h-2, cornerRadius-1);
-	if (col != 0) {
+	if (!isBlack(col)) {
 		nvgFillColor(vg, col);
 		nvgFill(vg);
 	}
