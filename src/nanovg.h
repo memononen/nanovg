@@ -29,14 +29,14 @@ struct NVGcontext;
 
 struct NVGcolor
 {
-    union
-    {
-        float rgba[4];
-        struct
-        {
-            float r,g,b,a;
-        };
-    };
+	union
+	{
+		float rgba[4];
+		struct
+		{
+			float r,g,b,a;
+		};
+	};
 };
 
 struct NVGpaint
