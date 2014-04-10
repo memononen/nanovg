@@ -306,6 +306,12 @@ struct NVGcolor nvgTransRGBA(struct NVGcolor c, unsigned char a)
 	return c;
 }
 
+struct NVGcolor nvgTransRGBAf(struct NVGcolor c, float a)
+{
+	c.a = a;
+	return c;
+}
+
 struct NVGcolor nvgLerpRGBA(struct NVGcolor c0, struct NVGcolor c1, float u)
 {
 	int i;

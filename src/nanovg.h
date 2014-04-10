@@ -133,6 +133,9 @@ struct NVGcolor nvgLerpRGBA(struct NVGcolor c0, struct NVGcolor c1, float u);
 // Sets transparency of a color value.
 struct NVGcolor nvgTransRGBA(struct NVGcolor c0, unsigned char a);
 
+// Sets transparency of a color value.
+struct NVGcolor nvgTransRGBAf(struct NVGcolor c0, float a);
+
 // Returns color value specified by hue, saturation and lightness.
 // HSL values are all in range [0..1], alpha will be set to 255.
 struct NVGcolor nvgHSL(float h, float s, float l);
