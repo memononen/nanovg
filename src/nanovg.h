@@ -113,11 +113,19 @@ void nvgEndFrame(struct NVGcontext* ctx);
 //
 // Colors in NanoVG are stored as unsigned ints in ABGR format.
 
-// Returns a color value from red, green, blue values. Alpha will be set to 255.
+// Returns a color value from red, green, blue values. Alpha will be set to 255 (1.0f).
 struct NVGcolor nvgRGB(unsigned char r, unsigned char g, unsigned char b);
+
+// Returns a color value from red, green, blue values. Alpha will be set to 1.0f.
+struct NVGcolor nvgRGBf(float r, float g, float b);
+
 
 // Returns a color value from red, green, blue and alpha values.
 struct NVGcolor nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+
+// Returns a color value from red, green, blue and alpha values.
+struct NVGcolor nvgRGBAf(float r, float g, float b, float a);
+
 
 // Linearly interpoaltes from color c0 to c1, and returns resulting color value.
 struct NVGcolor nvgLerpRGBA(struct NVGcolor c0, struct NVGcolor c1, float u);

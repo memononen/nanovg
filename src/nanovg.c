@@ -283,9 +283,20 @@ struct NVGcolor nvgRGB(unsigned char r, unsigned char g, unsigned char b)
 	return nvgRGBA(r,g,b,255);
 }
 
+struct NVGcolor nvgRGBf(float r, float g, float b)
+{
+	return nvgRGBA(r,g,b,1.0f);
+}
+
 struct NVGcolor nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
 	struct NVGcolor color = {r/255.0f, g/255.0f, b/255.0f, a/255.0f};
+	return color;
+}
+
+struct NVGcolor nvgRGBAf(float r, float g, float b, float a)
+{
+	struct NVGcolor color = {r, g, b, a};
 	return color;
 }
 
