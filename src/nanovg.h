@@ -144,9 +144,6 @@ struct NVGcolor nvgHSL(float h, float s, float l);
 // HSL values are all in range [0..1], alpha in range [0..255]
 struct NVGcolor nvgHSLA(float h, float s, float l, unsigned char a);
 
-// Returns 1 if col.rgba is 0.0f,0.0f,0.0f,0.0f, 0 otherwise
-int nvgIsBlack( struct NVGcolor col );
-
 //
 // State Handling
 //
