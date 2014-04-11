@@ -538,14 +538,6 @@ static int glnvg__renderGetTextureSize(void* uptr, int image, int* w, int* h)
 	return 1;
 }
 
-static void glnvg__toFloatColor(float* fc, unsigned int c)
-{
-	fc[0] = ((c) & 0xff) / 255.0f;
-	fc[1] = ((c>>8) & 0xff) / 255.0f;
-	fc[2] = ((c>>16) & 0xff) / 255.0f;
-	fc[3] = ((c>>24) & 0xff) / 255.0f;
-}
-
 static void glnvg__xformIdentity(float* t)
 {
 	t[0] = 1.0f; t[1] = 0.0f;
