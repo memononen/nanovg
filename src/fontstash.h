@@ -1303,7 +1303,7 @@ int fonsTextIterNext(struct FONScontext* stash, struct FONStextIter* iter, struc
 	unsigned int codepoint = 0;
 	const char* str = iter->str;
 
-	if (*str == '\0')
+	if (str == iter->end)
 		return 0;
 
 	for (; str != iter->end; str++) {
