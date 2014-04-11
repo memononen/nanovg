@@ -365,6 +365,7 @@ void nvgFill(struct NVGcontext* ctx);
 // Fills the current path with current stroke style.
 void nvgStroke(struct NVGcontext* ctx);
 
+
 //
 // Text
 //
@@ -472,6 +473,9 @@ struct NVGparams {
 // Contructor and destructor, called by the render back-end.
 struct NVGcontext* nvgCreateInternal(struct NVGparams* params);
 void nvgDeleteInternal(struct NVGcontext* ctx);
+
+// Debug function to dump cached path data.
+void nvgDebugDumpPathCache(struct NVGcontext* ctx);
 
 // Compiler references
 // http://sourceforge.net/p/predef/wiki/Compilers/

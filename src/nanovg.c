@@ -977,13 +977,10 @@ static void nvg__tesselateBezier(struct NVGcontext* ctx,
 								 int level, int type)
 {
 	float x12,y12,x23,y23,x34,y34,x123,y123,x234,y234,x1234,y1234;
+	float dx,dy,d2,d3;
+	float tol = 0.5f;
 	
 	if (level > 10) return;
-
-	if (nvg__absf(x1+x3-x2-x2) + nvg__absf(y1+y3-y2-y2) + nvg__absf(x2+x4-x3-x3) + nvg__absf(y2+y4-y3-y3) < ctx->tessTol) {
-		nvg__addPoint(ctx, x4, y4, type);
-		return;
-	}
 
 	x12 = (x1+x2)*0.5f;
 	y12 = (y1+y2)*0.5f;
@@ -993,6 +990,22 @@ static void nvg__tesselateBezier(struct NVGcontext* ctx,
 	y34 = (y3+y4)*0.5f;
 	x123 = (x12+x23)*0.5f;
 	y123 = (y12+y23)*0.5f;
+
+	dx = x3 - x1;
+	dy = y3 - y1;
+	d2 = nvg__absf(((x2 - x4) * dy - (y2 - y4) * dx));
+	d3 = nvg__absf(((x3 - x4) * dy - (y3 - y4) * dx));
+
+	if ((d2 + d3)*(d2 + d3) < tol * (dx*dx + dy*dy)) {
+		nvg__addPoint(ctx, x4, y4, type);
+		return;
+	}
+
+/*	if (nvg__absf(x1+x3-x2-x2) + nvg__absf(y1+y3-y2-y2) + nvg__absf(x2+x4-x3-x3) + nvg__absf(y2+y4-y3-y3) < ctx->tessTol) {
+		nvg__addPoint(ctx, x4, y4, type);
+		return;
+	}*/
+
 	x234 = (x23+x34)*0.5f;
 	y234 = (y23+y34)*0.5f;
 	x1234 = (x123+x234)*0.5f;
@@ -1765,6 +1778,28 @@ void nvgCircle(struct NVGcontext* ctx, float cx, float cy, float r)
 	nvgEllipse(ctx, cx,cy, r,r);
 }
 
+void nvgDebugDumpPathCache(struct NVGcontext* ctx)
+{
+	struct NVGstate* state = nvg__getState(ctx);
+	const struct NVGpath* path;
+	int i, j;
+
+	printf("Dumping %d cached paths\n", ctx->cache->npaths);
+	for (i = 0; i < ctx->cache->npaths; i++) {
+		path = &ctx->cache->paths[i];
+		printf(" - Path %d\n", i);
+		if (path->nfill) {
+			printf("   - fill: %d\n", path->nfill);
+			for (j = 0; j < path->nfill; j++)
+				printf("%f\t%f\n", path->fill[j].x, path->fill[j].y);
+		}
+		if (path->nstroke) {
+			printf("   - stroke: %d\n", path->nstroke);
+			for (j = 0; j < path->nstroke; j++)
+				printf("%f\t%f\n", path->stroke[j].x, path->stroke[j].y);
+		}
+	}
+}
 
 void nvgFill(struct NVGcontext* ctx)
 {
@@ -1774,7 +1809,7 @@ void nvgFill(struct NVGcontext* ctx)
 
 	nvg__flattenPaths(ctx);
 	if (ctx->params.edgeAntiAlias)
-		nvg__expandStrokeAndFill(ctx, NVG_FILL|NVG_STROKE, ctx->fringeWidth, NVG_BUTT, NVG_MITER, 3.6f); // 1.2f);
+		nvg__expandStrokeAndFill(ctx, NVG_FILL|NVG_STROKE, ctx->fringeWidth, NVG_BUTT, NVG_MITER, 3.6f);
 	else
 		nvg__expandStrokeAndFill(ctx, NVG_FILL, 0.0f, NVG_BUTT, NVG_MITER, 1.2f);
 
