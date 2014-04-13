@@ -818,6 +818,7 @@ void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float h
 	int nrows, i, nglyphs, j;
 	float lineh;
 	float caretx, px;
+	NVG_NOTUSED(height);
 
 	nvgSave(vg);
 
@@ -871,6 +872,15 @@ void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float h
 		// Keep going...
 		start = rows[nrows-1].next;
 	}
+
+	y += 10.0f;
+
+	nvgFillColor(vg, nvgRGBA(0,0,0,220));
+	nvgFontSize(vg, 12.0f);
+	nvgTextAlign(vg, NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+	nvgTextLineHeight(vg, 1.2f);
+
+	nvgTextBox(vg, x,y, 150, "Hover your mouse over the text to see calculated caret position.", NULL);
 
 	nvgRestore(vg);
 }

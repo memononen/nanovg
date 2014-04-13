@@ -27,20 +27,16 @@ extern "C" {
 
 struct NVGcontext;
 
-struct NVGcolor
-{
-	union
-	{
+struct NVGcolor {
+	union {
 		float rgba[4];
-		struct
-		{
+		struct {
 			float r,g,b,a;
 		};
 	};
 };
 
-struct NVGpaint
-{
+struct NVGpaint {
 	float xform[6];
 	float extent[2];
 	float radius;
@@ -90,6 +86,19 @@ enum NVGalpha {
 	NVG_STRAIGHT_ALPHA,
 	NVG_PREMULTIPLIED_ALPHA,
 };
+
+struct NVGglyphPosition {
+	const char* str;	// Position of the glyph in the input string.
+	float x;			// The x- coordinate of the position of the glyph .
+};
+
+struct NVGtextRow {
+	const char* start;	// Pointer to the input text where the row starts.
+	const char* end;	// Pointer to the input text where the row ends (one past the last character).
+	const char* next;	// Pointer to the beginning of the next row.
+	float width;		// Width of the row.
+};
+
 
 // Begin drawing a new frame
 // Calls to nanovg drawing API should be wrapped in nvgBeginFrame() & nvgEndFrame()
@@ -243,9 +252,9 @@ void nvgScale(struct NVGcontext* ctx, float x, float y);
 // Returns handle to the image.
 int nvgCreateImage(struct NVGcontext* ctx, const char* filename);
 
-// Creates image by loading it from the specified memory chunk.
+// Creates image by loading it from the specified chunk of memory.
 // Returns handle to the image.
-int nvgCreateImageMem(struct NVGcontext* ctx, unsigned char* data, int ndata, int freeData);
+int nvgCreateImageMem(struct NVGcontext* ctx, unsigned char* data, int ndata);
 
 // Creates image from specified image data.
 // Returns handle to the image.
@@ -394,11 +403,14 @@ int nvgFindFont(struct NVGcontext* ctx, const char* name);
 // Sets the font size of current text style.
 void nvgFontSize(struct NVGcontext* ctx, float size);
 
-// Sets the letter spacing of current text style.
-void nvgLetterSpacing(struct NVGcontext* ctx, float spacing);
-
 // Sets the blur of current text style.
 void nvgFontBlur(struct NVGcontext* ctx, float blur);
+
+// Sets the letter spacing of current text style.
+void nvgTextLetterSpacing(struct NVGcontext* ctx, float spacing);
+
+// Sets the proportional line height of current text style. The line height is specified as multiple of font size. 
+void nvgTextLineHeight(struct NVGcontext* ctx, float lineHeight);
 
 // Sets the text align of current text style, see NVGaling for options.
 void nvgTextAlign(struct NVGcontext* ctx, int align);
@@ -412,6 +424,11 @@ void nvgFontFace(struct NVGcontext* ctx, const char* font);
 // Draws text string at specified location. If end is specified only the sub-string up to the end is drawn.
 float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, const char* end);
 
+// Draws multi-line text string at specified location wrapped at the specified width. If end is specified only the sub-string up to the end is drawn.
+// White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
+// Words longer than the max width are slit at nearest character (i.e. no hyphenation).
+float nvgTextBox(struct NVGcontext* ctx, float x, float y, float width, const char* string, const char* end);
+
 // Measures the specified text string. Parameter bounds should be a pointer to float[4] if 
 // the bounding box of the text should be returned. Returns the width of the measured text.
 // Current transform does not affect the measured values.
@@ -421,18 +438,12 @@ float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end,
 // Current transform does not affect the measured values.
 void nvgTextMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh);
 
-struct NVGglyphPosition {
-	const char* str;
-	float x;
-};
+// Calculates the glyph x positions of the specified text. If end is specified only the sub-string will be used.
 int nvgTextGlyphPositions(struct NVGcontext* ctx, const char* string, const char* end, float x, float y, struct NVGglyphPosition* positions, int maxPositions);
 
-struct NVGtextRow {
-	const char* start;
-	const char* end;
-	const char* next;
-	float width;
-};
+// Breaks the specified text into lines. If end is specified only the sub-string will be used.
+// White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
+// Words longer than the max width are slit at nearest character (i.e. no hyphenation).
 int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* end, float maxRowWidth, struct NVGtextRow* rows, int maxRows);
 
 //

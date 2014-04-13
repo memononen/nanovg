@@ -66,6 +66,7 @@ struct NVGstate {
 	struct NVGscissor scissor;
 	float fontSize;
 	float letterSpacing;
+	float lineHeight;
 	float fontBlur;
 	int textAlign;
 	int fontId;
@@ -290,13 +291,23 @@ struct NVGcolor nvgRGBf(float r, float g, float b)
 
 struct NVGcolor nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
-	struct NVGcolor color = {r/255.0f, g/255.0f, b/255.0f, a/255.0f};
+	struct NVGcolor color;
+	// Use longer initialization to suppress warning.
+	color.r = r / 255.0f;
+	color.g = g / 255.0f;
+	color.b = b / 255.0f;
+	color.a = a / 255.0f;
 	return color;
 }
 
 struct NVGcolor nvgRGBAf(float r, float g, float b, float a)
 {
-	struct NVGcolor color = {r, g, b, a};
+	struct NVGcolor color;
+	// Use longer initialization to suppress warning.
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
 	return color;
 }
 
@@ -466,6 +477,7 @@ void nvgReset(struct NVGcontext* ctx)
 
 	state->fontSize = 16.0f;
 	state->letterSpacing = 0.0f;
+	state->lineHeight = 0.0f;
 	state->fontBlur = 0.0f;
 	state->textAlign = NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE;
 	state->fontId = 0;
@@ -574,7 +586,7 @@ int nvgCreateImage(struct NVGcontext* ctx, const char* filename)
 	return image;
 }
 
-int nvgCreateImageMem(struct NVGcontext* ctx, unsigned char* data, int ndata, int freeData)
+int nvgCreateImageMem(struct NVGcontext* ctx, unsigned char* data, int ndata)
 {
 	int w, h, n, image;
 	unsigned char* img = stbi_load_from_memory(data, ndata, &w, &h, &n, 4);
@@ -616,7 +628,7 @@ struct NVGpaint nvgLinearGradient(struct NVGcontext* ctx,
 	struct NVGpaint p;
 	float dx, dy, d;
 	const float large = 1e5;
-
+	NVG_NOTUSED(ctx);
 	memset(&p, 0, sizeof(p));
 
 	// Calculate transform aligned to the line
@@ -655,7 +667,7 @@ struct NVGpaint nvgRadialGradient(struct NVGcontext* ctx,
 	struct NVGpaint p;
 	float r = (inr+outr)*0.5f;
 	float f = (outr-inr);
-
+	NVG_NOTUSED(ctx);
 	memset(&p, 0, sizeof(p));
 
 	nvg__xformIdentity(p.xform);
@@ -680,7 +692,7 @@ struct NVGpaint nvgBoxGradient(struct NVGcontext* ctx,
 							   struct NVGcolor icol, struct NVGcolor ocol)
 {
 	struct NVGpaint p;
-
+	NVG_NOTUSED(ctx);
 	memset(&p, 0, sizeof(p));
 
 	nvg__xformIdentity(p.xform);
@@ -706,7 +718,7 @@ struct NVGpaint nvgImagePattern(struct NVGcontext* ctx,
 								int image, int repeat)
 {
 	struct NVGpaint p;
-
+	NVG_NOTUSED(ctx);
 	memset(&p, 0, sizeof(p));
 
 	nvg__xformRotate(p.xform, angle);
@@ -1873,16 +1885,22 @@ void nvgFontSize(struct NVGcontext* ctx, float size)
 	state->fontSize = size;
 }
 
-void nvgLetterSpacing(struct NVGcontext* ctx, float spacing)
+void nvgFontBlur(struct NVGcontext* ctx, float blur)
+{
+	struct NVGstate* state = nvg__getState(ctx);
+	state->fontBlur = blur;
+}
+
+void nvgTextLetterSpacing(struct NVGcontext* ctx, float spacing)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	state->letterSpacing = spacing;
 }
 
-void nvgFontBlur(struct NVGcontext* ctx, float blur)
+void nvgTextLineHeight(struct NVGcontext* ctx, float lineHeight)
 {
 	struct NVGstate* state = nvg__getState(ctx);
-	state->fontBlur = blur;
+	state->lineHeight = lineHeight;
 }
 
 void nvgTextAlign(struct NVGcontext* ctx, int align)
@@ -1982,6 +2000,41 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 	ctx->textTriCount += nverts/3;
 
 	return iter.x;
+}
+
+float nvgTextBox(struct NVGcontext* ctx, float x, float y, float width, const char* string, const char* end)
+{
+	struct NVGstate* state = nvg__getState(ctx);
+	struct NVGtextRow rows[2];
+	int nrows = 0, i;
+	int oldAlign = state->textAlign;
+	int haling = state->textAlign & (NVG_ALIGN_LEFT | NVG_ALIGN_CENTER | NVG_ALIGN_RIGHT);
+	int valign = state->textAlign & (NVG_ALIGN_TOP | NVG_ALIGN_MIDDLE | NVG_ALIGN_BOTTOM | NVG_ALIGN_BASELINE);
+	float lineh = 0;
+
+	if (state->fontId == FONS_INVALID) return x;
+
+	nvgTextMetrics(ctx, NULL, NULL, &lineh);
+
+	state->textAlign = NVG_ALIGN_LEFT | valign;
+
+	while ((nrows = nvgTextBreakLines(ctx, string, end, width, rows, 2))) {
+		for (i = 0; i < nrows; i++) {
+			struct NVGtextRow* row = &rows[i];
+			if (haling & NVG_ALIGN_LEFT)
+				nvgText(ctx, x, y, row->start, row->end);
+			else if (haling & NVG_ALIGN_CENTER)
+				nvgText(ctx, x + width*0.5f - row->width*0.5f, y, row->start, row->end);
+			else if (haling & NVG_ALIGN_RIGHT)
+				nvgText(ctx, x + width - row->width, y, row->start, row->end);
+			y += lineh * state->lineHeight;
+		}
+		string = rows[nrows-1].next;
+	}
+
+	state->textAlign = oldAlign;
+
+	return 0; // TODO
 }
 
 int nvgTextGlyphPositions(struct NVGcontext* ctx, const char* string, const char* end, float x, float y, struct NVGglyphPosition* positions, int maxPositions)
