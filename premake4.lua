@@ -13,6 +13,14 @@ solution "nanovg"
 		files { "src/*.c" }
 		targetdir("build")
 
+		configuration "Debug"
+			defines { "DEBUG" }
+			flags { "Symbols", "ExtraWarnings"}
+
+		configuration "Release"
+			defines { "NDEBUG" }
+			flags { "Optimize", "ExtraWarnings"}    
+
 	project "example_gl2"
 		kind "ConsoleApp"
 		language "C"

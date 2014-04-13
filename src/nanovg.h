@@ -419,8 +419,21 @@ float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end,
 
 // Returns the vertical metrics based on the current text style.
 // Current transform does not affect the measured values.
-void nvgVertMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh);
+void nvgTextMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh);
 
+struct NVGglyphPosition {
+	const char* str;
+	float x;
+};
+int nvgTextGlyphPositions(struct NVGcontext* ctx, const char* string, const char* end, float x, float y, struct NVGglyphPosition* positions, int maxPositions);
+
+struct NVGtextRow {
+	const char* start;
+	const char* end;
+	const char* next;
+	float width;
+};
+int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* end, float maxRowWidth, struct NVGtextRow* rows, int maxRows);
 
 //
 // Internal Render API

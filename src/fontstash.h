@@ -68,10 +68,12 @@ struct FONSquad
 
 struct FONStextIter {
 	float x, y, scale, spacing;
+	unsigned int codepoint;
 	short isize, iblur;
 	struct FONSfont* font;
 	struct FONSglyph* prevGlyph;
 	const char* str;
+	const char* next;
 	const char* end;
 	unsigned int utf8state;
 };
@@ -1292,7 +1294,9 @@ int fonsTextIterInit(struct FONScontext* stash, struct FONStextIter* iter,
 	iter->y = y;
 	iter->spacing = state->spacing;
 	iter->str = str;
+	iter->next = str;
 	iter->end = end;
+	iter->codepoint = 0;
 
 	return 1;
 }
@@ -1300,24 +1304,24 @@ int fonsTextIterInit(struct FONScontext* stash, struct FONStextIter* iter,
 int fonsTextIterNext(struct FONScontext* stash, struct FONStextIter* iter, struct FONSquad* quad)
 {
 	struct FONSglyph* glyph = NULL;
-	unsigned int codepoint = 0;
-	const char* str = iter->str;
+	const char* str = iter->next;
+	iter->str = iter->next;
 
 	if (str == iter->end)
 		return 0;
 
 	for (; str != iter->end; str++) {
-		if (fons__decutf8(&iter->utf8state, &codepoint, *(const unsigned char*)str))
+		if (fons__decutf8(&iter->utf8state, &iter->codepoint, *(const unsigned char*)str))
 			continue;
 		str++;
 		// Get glyph and quad
-		glyph = fons__getGlyph(stash, iter->font, codepoint, iter->isize, iter->iblur);
+		glyph = fons__getGlyph(stash, iter->font, iter->codepoint, iter->isize, iter->iblur);
 		if (glyph != NULL)
 			fons__getQuad(stash, iter->font, iter->prevGlyph, glyph, iter->scale, iter->spacing, &iter->x, &iter->y, quad);
 		iter->prevGlyph = glyph;
 		break;
 	}
-	iter->str = str;
+	iter->next = str;
 
 	return 1;
 }

@@ -808,12 +808,80 @@ void freeDemoData(struct NVGcontext* vg, struct DemoData* data)
 		nvgDeleteImage(vg, data->images[i]);
 }
 
+void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float height, float mx, float my)
+{
+	struct NVGtextRow rows[3];
+	struct NVGglyphPosition glyphs[100];
+	const char* text = "This is longer chunk of text.\n  \n  Would have used lorem ipsum but she    was busy jumping over the lazy dog with the fox and all the men who came to the aid of the party.";
+	const char* start;
+	const char* end;
+	int nrows, i, nglyphs, j;
+	float lineh;
+	float caretx, px;
+
+	nvgSave(vg);
+
+	nvgFontSize(vg, 18.0f);
+	nvgFontFace(vg, "sans");
+	nvgTextAlign(vg, NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+	nvgTextMetrics(vg, NULL, NULL, &lineh);
+
+/*	nvgBeginPath(vg);
+	nvgFillColor(vg, nvgRGBA(255,255,0,128));
+	nvgRect(vg, x, y, width, height);
+	nvgFill(vg);*/
+
+	// The text break API can be used to fill a large buffer of rows,
+	// or to iterate over the text just few lines (or just one) at a time.
+	// The "next" variable of the last returned item tells where to continue.
+	start = text;
+	end = text + strlen(text);
+	while ((nrows = nvgTextBreakLines(vg, start, end, width, rows, 3))) {
+		for (i = 0; i < nrows; i++) {
+			struct NVGtextRow* row = &rows[i];
+			int hit = mx > x && mx < (x+width) && my >= y && my < (y+lineh);
+
+			nvgBeginPath(vg);
+			nvgFillColor(vg, nvgRGBA(255,255,255,hit?64:8));
+			nvgRect(vg, x, y, row->width, lineh);
+			nvgFill(vg);
+
+			nvgFillColor(vg, nvgRGBA(255,255,255,255));
+			nvgText(vg, x, y, row->start, row->end);
+
+			if (hit) {
+				caretx = (mx < x+row->width/2) ? x : x+row->width;
+				px = x;
+				nglyphs = nvgTextGlyphPositions(vg, row->start, row->end, x, y, glyphs, 100);
+				for (j = 0; j < nglyphs; j++) {
+					float x0 = glyphs[j].x;
+					float x1 = (j+1 < nglyphs) ? glyphs[j+1].x : x+row->width;
+					float gx = (x0 + x1)/2;
+					if (mx > px && mx <= gx)
+						caretx = glyphs[j].x;
+					px = gx;
+				}
+				nvgBeginPath(vg);
+				nvgFillColor(vg, nvgRGBA(255,192,0,255));
+				nvgRect(vg, caretx, y, 2, lineh);
+				nvgFill(vg);
+			}
+			y += lineh;
+		}
+		// Keep going...
+		start = rows[nrows-1].next;
+	}
+
+	nvgRestore(vg);
+}
+
 void renderDemo(struct NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, struct DemoData* data)
 {
 	float x,y,popy;
 
 	drawEyes(vg, width - 250, 50, 150, 100, mx, my, t);
+	drawParagraph(vg, width - 450, 50, 150, 100, mx, my);
 	drawGraph(vg, 0, height/2, width, height/2, t);
 	drawColorwheel(vg, width - 300, height - 300, 250.0f, 250.0f, t);
 

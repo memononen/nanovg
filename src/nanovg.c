@@ -181,7 +181,7 @@ error:
 
 static void nvg__setDevicePixelRatio(struct NVGcontext* ctx, float ratio)
 {
-	ctx->tessTol = 0.25f * 4.0f / ratio;
+	ctx->tessTol = 1.0f / ratio;
 	ctx->distTol = 0.01f / ratio;
 	ctx->fringeWidth = 1.0f / ratio;
 	ctx->devicePxRatio = ratio;
@@ -978,7 +978,6 @@ static void nvg__tesselateBezier(struct NVGcontext* ctx,
 {
 	float x12,y12,x23,y23,x34,y34,x123,y123,x234,y234,x1234,y1234;
 	float dx,dy,d2,d3;
-	float tol = 0.5f;
 	
 	if (level > 10) return;
 
@@ -996,7 +995,7 @@ static void nvg__tesselateBezier(struct NVGcontext* ctx,
 	d2 = nvg__absf(((x2 - x4) * dy - (y2 - y4) * dx));
 	d3 = nvg__absf(((x3 - x4) * dy - (y3 - y4) * dx));
 
-	if ((d2 + d3)*(d2 + d3) < tol * (dx*dx + dy*dy)) {
+	if ((d2 + d3)*(d2 + d3) < ctx->tessTol * (dx*dx + dy*dy)) {
 		nvg__addPoint(ctx, x4, y4, type);
 		return;
 	}
@@ -1985,6 +1984,205 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 	return iter.x;
 }
 
+int nvgTextGlyphPositions(struct NVGcontext* ctx, const char* string, const char* end, float x, float y, struct NVGglyphPosition* positions, int maxPositions)
+{
+	struct NVGstate* state = nvg__getState(ctx);
+	struct FONStextIter iter;
+	struct FONSquad q;
+	int npos = 0;
+	float px;
+
+	if (state->fontId == FONS_INVALID) return 0;
+
+	if (end == NULL)
+		end = string + strlen(string);
+
+	if (string == end)
+		return 0;
+
+	fonsSetSize(ctx->fs, state->fontSize);
+	fonsSetSpacing(ctx->fs, state->letterSpacing);
+	fonsSetBlur(ctx->fs, state->fontBlur);
+	fonsSetAlign(ctx->fs, state->textAlign);
+	fonsSetFont(ctx->fs, state->fontId);
+
+	px = x;
+	fonsTextIterInit(ctx->fs, &iter, x, y, string, end);
+	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
+		positions[npos].str = iter.str;
+		positions[npos].x = px;
+		px = iter.x;
+		npos++;
+		if (npos >= maxPositions)
+			break;
+	}
+
+	return npos;
+}
+
+enum NVGcodepointType {
+	NVG_SPACE,
+	NVG_NEWLINE,
+	NVG_CHAR,
+};
+
+int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* end, float maxRowWidth, struct NVGtextRow* rows, int maxRows)
+{
+	struct NVGstate* state = nvg__getState(ctx);
+	struct FONStextIter iter;
+	struct FONSquad q;
+	int nrows = 0;
+	float rowStartX = 0;
+	float rowWidth = 0;
+	const char* rowStart = NULL;
+	const char* rowEnd = NULL;
+	const char* wordStart = NULL;
+	float wordStartX = 0;
+	const char* breakEnd = NULL;
+	float breakWidth = 0;
+	int type = NVG_SPACE, ptype = NVG_SPACE;
+	unsigned int pcodepoint = 0;
+
+	if (maxRows == 0) return 0;
+	if (state->fontId == FONS_INVALID) return 0;
+
+	if (end == NULL)
+		end = string + strlen(string);
+
+	if (string == end) return 0;
+
+	fonsSetSize(ctx->fs, state->fontSize);
+	fonsSetSpacing(ctx->fs, state->letterSpacing);
+	fonsSetBlur(ctx->fs, state->fontBlur);
+	fonsSetAlign(ctx->fs, state->textAlign);
+	fonsSetFont(ctx->fs, state->fontId);
+
+	fonsTextIterInit(ctx->fs, &iter, 0, 0, string, end);
+	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
+		switch (iter.codepoint) {
+			case 9:			// \t
+			case 11:		// \v
+			case 12:		// \f
+			case 32:		// space
+			case 0x00a0:	// NBSP
+				type = NVG_SPACE;
+				break;
+			case 10:		// \n
+				type = pcodepoint == 13 ? NVG_SPACE : NVG_NEWLINE;
+				break;
+			case 13:		// \r
+				type = pcodepoint == 10 ? NVG_SPACE : NVG_NEWLINE;
+				break;
+			case 0x0085:	// NEL
+				type = NVG_NEWLINE;
+				break;
+			default:
+				type = NVG_CHAR;
+				break;
+		}
+
+		if (type == NVG_NEWLINE) {
+			// Always handle new lines.
+			rows[nrows].start = rowStart != NULL ? rowStart : iter.str;
+			rows[nrows].end = rowEnd != NULL ? rowEnd : iter.str;
+			rows[nrows].width = rowWidth;
+			rows[nrows].next = iter.next;
+			nrows++;
+			if (nrows >= maxRows)
+				return nrows;
+			// Indicate to skip the white space at the beginning of the row.
+			rowStart = NULL;
+			rowEnd = NULL;
+			rowWidth = 0;
+		} else {
+			if (rowStart == NULL) {
+				// Skip white space until the beginning of the line
+				if (type == NVG_CHAR) {
+					// The current char is the row so far
+					rowStartX = q.x0;
+					rowStart = iter.str;
+					rowEnd = iter.next;
+					rowWidth = q.x1 - rowStartX;
+					wordStart = iter.str;
+					wordStartX = q.x0;
+					// Set null break point
+					breakEnd = rowStart;
+					breakWidth = 0.0;
+				}
+			} else {
+				float nextWidth = q.x1 - rowStartX;
+
+				if (nextWidth > maxRowWidth) {
+					// The run length is too long, need to break to new line.
+					if (breakEnd == rowStart) {
+						// The current word is longer than the row length, just break it from here.
+						rows[nrows].start = rowStart;
+						rows[nrows].end = iter.str;
+						rows[nrows].width = rowWidth;
+						rows[nrows].next = iter.str;
+						nrows++;
+						if (nrows >= maxRows)
+							return nrows;
+						rowStartX = q.x0;
+						rowStart = iter.str;
+						rowEnd = iter.next;
+						rowWidth = q.x1 - rowStartX;
+						wordStart = iter.str;
+						wordStartX = q.x0; 
+					} else {
+						// Break the line from the end of the last word, and start new line from the begining of the new.
+						rows[nrows].start = rowStart;
+						rows[nrows].end = breakEnd;
+						rows[nrows].width = breakWidth;
+						rows[nrows].next = wordStart;
+						nrows++;
+						if (nrows >= maxRows)
+							return nrows;
+						rowStartX = wordStartX;
+						rowStart = wordStart;
+						rowEnd = iter.next;
+						rowWidth = q.x1 - rowStartX;
+						// No change to the word start
+					}
+					// Set null break point
+					breakEnd = rowStart;
+					breakWidth = 0.0;
+				}
+
+				// track last non-white space character
+				if (type == NVG_CHAR) {
+					rowEnd = iter.next;
+					rowWidth = q.x1 - rowStartX;
+				}
+				// track last end of a word
+				if (ptype == NVG_CHAR && (type == NVG_SPACE || type == NVG_SPACE)) {
+					breakEnd = iter.str;
+					breakWidth = rowWidth;
+				}
+				// track last beginning of a word
+				if ((ptype == NVG_SPACE || ptype == NVG_SPACE) && type == NVG_CHAR) {
+					wordStart = iter.str;
+					wordStartX = q.x0;
+				}
+			}
+		}
+
+		pcodepoint = iter.codepoint;
+		ptype = type;
+	}
+
+	// Break the line from the end of the last word, and start new line from the begining of the new.
+	if (rowStart != NULL) {
+		rows[nrows].start = rowStart;
+		rows[nrows].end = rowEnd;
+		rows[nrows].width = rowWidth;
+		rows[nrows].next = end;
+		nrows++;
+	}
+
+	return nrows;
+}
+
 float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end, float* bounds)
 {
 	struct NVGstate* state = nvg__getState(ctx);
@@ -2000,7 +2198,7 @@ float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end,
 	return fonsTextBounds(ctx->fs, string, end, bounds);
 }
 
-void nvgVertMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh)
+void nvgTextMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 
