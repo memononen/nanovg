@@ -427,7 +427,7 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 // Draws multi-line text string at specified location wrapped at the specified width. If end is specified only the sub-string up to the end is drawn.
 // White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
 // Words longer than the max width are slit at nearest character (i.e. no hyphenation).
-float nvgTextBox(struct NVGcontext* ctx, float x, float y, float width, const char* string, const char* end);
+void nvgTextBox(struct NVGcontext* ctx, float x, float y, float width, const char* string, const char* end);
 
 // Measures the specified text string. Parameter bounds should be a pointer to float[4] if 
 // the bounding box of the text should be returned. Returns the width of the measured text.

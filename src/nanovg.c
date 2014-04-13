@@ -2002,7 +2002,7 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 	return iter.x;
 }
 
-float nvgTextBox(struct NVGcontext* ctx, float x, float y, float width, const char* string, const char* end)
+void nvgTextBox(struct NVGcontext* ctx, float x, float y, float width, const char* string, const char* end)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	struct NVGtextRow rows[2];
@@ -2012,7 +2012,7 @@ float nvgTextBox(struct NVGcontext* ctx, float x, float y, float width, const ch
 	int valign = state->textAlign & (NVG_ALIGN_TOP | NVG_ALIGN_MIDDLE | NVG_ALIGN_BOTTOM | NVG_ALIGN_BASELINE);
 	float lineh = 0;
 
-	if (state->fontId == FONS_INVALID) return x;
+	if (state->fontId == FONS_INVALID) return;
 
 	nvgTextMetrics(ctx, NULL, NULL, &lineh);
 
@@ -2033,8 +2033,6 @@ float nvgTextBox(struct NVGcontext* ctx, float x, float y, float width, const ch
 	}
 
 	state->textAlign = oldAlign;
-
-	return 0; // TODO
 }
 
 int nvgTextGlyphPositions(struct NVGcontext* ctx, const char* string, const char* end, float x, float y, struct NVGglyphPosition* positions, int maxPositions)
@@ -2052,6 +2050,8 @@ int nvgTextGlyphPositions(struct NVGcontext* ctx, const char* string, const char
 
 	if (string == end)
 		return 0;
+
+	// TODO: should use scaled text to better match with rendering.
 
 	fonsSetSize(ctx->fs, state->fontSize);
 	fonsSetSpacing(ctx->fs, state->letterSpacing);
@@ -2103,6 +2103,8 @@ int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* en
 		end = string + strlen(string);
 
 	if (string == end) return 0;
+
+	// TODO: should use scaled text to better match with rendering.
 
 	fonsSetSize(ctx->fs, state->fontSize);
 	fonsSetSpacing(ctx->fs, state->letterSpacing);
@@ -2242,6 +2244,8 @@ float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end,
 
 	if (state->fontId == FONS_INVALID) return 0;
 
+	// TODO: should use scaled text to better match with rendering.
+
 	fonsSetSize(ctx->fs, state->fontSize);
 	fonsSetSpacing(ctx->fs, state->letterSpacing);
 	fonsSetBlur(ctx->fs, state->fontBlur);
@@ -2256,6 +2260,8 @@ void nvgTextMetrics(struct NVGcontext* ctx, float* ascender, float* descender, f
 	struct NVGstate* state = nvg__getState(ctx);
 
 	if (state->fontId == FONS_INVALID) return;
+
+	// TODO: should use scaled text to better match with rendering.
 
 	fonsSetSize(ctx->fs, state->fontSize);
 	fonsSetSpacing(ctx->fs, state->letterSpacing);
