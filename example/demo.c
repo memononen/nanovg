@@ -827,11 +827,6 @@ void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float h
 	nvgTextAlign(vg, NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
 	nvgTextMetrics(vg, NULL, NULL, &lineh);
 
-/*	nvgBeginPath(vg);
-	nvgFillColor(vg, nvgRGBA(255,255,0,128));
-	nvgRect(vg, x, y, width, height);
-	nvgFill(vg);*/
-
 	// The text break API can be used to fill a large buffer of rows,
 	// or to iterate over the text just few lines (or just one) at a time.
 	// The "next" variable of the last returned item tells where to continue.
@@ -857,14 +852,14 @@ void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float h
 				for (j = 0; j < nglyphs; j++) {
 					float x0 = glyphs[j].x;
 					float x1 = (j+1 < nglyphs) ? glyphs[j+1].x : x+row->width;
-					float gx = (x0 + x1)/2;
-					if (mx > px && mx <= gx)
+					float gx = x0 * 0.3f + x1 * 0.7f;
+					if (mx >= px && mx < gx)
 						caretx = glyphs[j].x;
 					px = gx;
 				}
 				nvgBeginPath(vg);
 				nvgFillColor(vg, nvgRGBA(255,192,0,255));
-				nvgRect(vg, caretx, y, 2, lineh);
+				nvgRect(vg, caretx, y, 1, lineh);
 				nvgFill(vg);
 			}
 			y += lineh;

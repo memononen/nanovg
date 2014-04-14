@@ -1304,7 +1304,6 @@ static int nvg__expandStrokeAndFill(struct NVGcontext* ctx, int feats, float w, 
 	float wo = 0, iw = 0, aa = ctx->fringeWidth;
 	int ncap = nvg__curveDivs(w, NVG_PI, ctx->tessTol / 4.0f);
 	int nleft = 0;
-	struct NVGstate* state = nvg__getState(ctx);
 
 	if (w > 0.0f) iw = 1.0f / w;
 
@@ -1791,7 +1790,6 @@ void nvgCircle(struct NVGcontext* ctx, float cx, float cy, float r)
 
 void nvgDebugDumpPathCache(struct NVGcontext* ctx)
 {
-	struct NVGstate* state = nvg__getState(ctx);
 	const struct NVGpath* path;
 	int i, j;
 
@@ -2038,6 +2036,8 @@ void nvgTextBox(struct NVGcontext* ctx, float x, float y, float width, const cha
 int nvgTextGlyphPositions(struct NVGcontext* ctx, const char* string, const char* end, float x, float y, struct NVGglyphPosition* positions, int maxPositions)
 {
 	struct NVGstate* state = nvg__getState(ctx);
+	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+	float invscale = 1.0f / scale;
 	struct FONStextIter iter;
 	struct FONSquad q;
 	int npos = 0;
@@ -2051,19 +2051,17 @@ int nvgTextGlyphPositions(struct NVGcontext* ctx, const char* string, const char
 	if (string == end)
 		return 0;
 
-	// TODO: should use scaled text to better match with rendering.
-
-	fonsSetSize(ctx->fs, state->fontSize);
-	fonsSetSpacing(ctx->fs, state->letterSpacing);
-	fonsSetBlur(ctx->fs, state->fontBlur);
+	fonsSetSize(ctx->fs, state->fontSize*scale);
+	fonsSetSpacing(ctx->fs, state->letterSpacing*scale);
+	fonsSetBlur(ctx->fs, state->fontBlur*scale);
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 
-	px = x;
-	fonsTextIterInit(ctx->fs, &iter, x, y, string, end);
+	px = x*scale;
+	fonsTextIterInit(ctx->fs, &iter, x*scale, y*scale, string, end);
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
 		positions[npos].str = iter.str;
-		positions[npos].x = px;
+		positions[npos].x = px * invscale;
 		px = iter.x;
 		npos++;
 		if (npos >= maxPositions)
@@ -2082,6 +2080,8 @@ enum NVGcodepointType {
 int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* end, float maxRowWidth, struct NVGtextRow* rows, int maxRows)
 {
 	struct NVGstate* state = nvg__getState(ctx);
+	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+	float invscale = 1.0f / scale;
 	struct FONStextIter iter;
 	struct FONSquad q;
 	int nrows = 0;
@@ -2104,13 +2104,13 @@ int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* en
 
 	if (string == end) return 0;
 
-	// TODO: should use scaled text to better match with rendering.
-
-	fonsSetSize(ctx->fs, state->fontSize);
-	fonsSetSpacing(ctx->fs, state->letterSpacing);
-	fonsSetBlur(ctx->fs, state->fontBlur);
+	fonsSetSize(ctx->fs, state->fontSize*scale);
+	fonsSetSpacing(ctx->fs, state->letterSpacing*scale);
+	fonsSetBlur(ctx->fs, state->fontBlur*scale);
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
+
+	maxRowWidth *= scale;
 
 	fonsTextIterInit(ctx->fs, &iter, 0, 0, string, end);
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
@@ -2140,7 +2140,7 @@ int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* en
 			// Always handle new lines.
 			rows[nrows].start = rowStart != NULL ? rowStart : iter.str;
 			rows[nrows].end = rowEnd != NULL ? rowEnd : iter.str;
-			rows[nrows].width = rowWidth;
+			rows[nrows].width = rowWidth * invscale;
 			rows[nrows].next = iter.next;
 			nrows++;
 			if (nrows >= maxRows)
@@ -2173,7 +2173,7 @@ int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* en
 						// The current word is longer than the row length, just break it from here.
 						rows[nrows].start = rowStart;
 						rows[nrows].end = iter.str;
-						rows[nrows].width = rowWidth;
+						rows[nrows].width = rowWidth * invscale;
 						rows[nrows].next = iter.str;
 						nrows++;
 						if (nrows >= maxRows)
@@ -2188,7 +2188,7 @@ int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* en
 						// Break the line from the end of the last word, and start new line from the begining of the new.
 						rows[nrows].start = rowStart;
 						rows[nrows].end = breakEnd;
-						rows[nrows].width = breakWidth;
+						rows[nrows].width = breakWidth * invscale;
 						rows[nrows].next = wordStart;
 						nrows++;
 						if (nrows >= maxRows)
@@ -2230,7 +2230,7 @@ int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* en
 	if (rowStart != NULL) {
 		rows[nrows].start = rowStart;
 		rows[nrows].end = rowEnd;
-		rows[nrows].width = rowWidth;
+		rows[nrows].width = rowWidth * invscale;
 		rows[nrows].next = end;
 		nrows++;
 	}
@@ -2241,33 +2241,47 @@ int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* en
 float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end, float* bounds)
 {
 	struct NVGstate* state = nvg__getState(ctx);
+	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+	float invscale = 1.0f / scale;
+	float width;
 
 	if (state->fontId == FONS_INVALID) return 0;
 
-	// TODO: should use scaled text to better match with rendering.
-
-	fonsSetSize(ctx->fs, state->fontSize);
-	fonsSetSpacing(ctx->fs, state->letterSpacing);
-	fonsSetBlur(ctx->fs, state->fontBlur);
+	fonsSetSize(ctx->fs, state->fontSize*scale);
+	fonsSetSpacing(ctx->fs, state->letterSpacing*scale);
+	fonsSetBlur(ctx->fs, state->fontBlur*scale);
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 
-	return fonsTextBounds(ctx->fs, string, end, bounds);
+	width = fonsTextBounds(ctx->fs, string, end, bounds);
+	if (bounds != NULL) {
+		bounds[0] *= invscale;
+		bounds[1] *= invscale;
+		bounds[2] *= invscale;
+		bounds[3] *= invscale;
+	}
+	return width * invscale;
 }
 
 void nvgTextMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh)
 {
 	struct NVGstate* state = nvg__getState(ctx);
+	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+	float invscale = 1.0f / scale;
 
 	if (state->fontId == FONS_INVALID) return;
 
-	// TODO: should use scaled text to better match with rendering.
-
-	fonsSetSize(ctx->fs, state->fontSize);
-	fonsSetSpacing(ctx->fs, state->letterSpacing);
-	fonsSetBlur(ctx->fs, state->fontBlur);
+	fonsSetSize(ctx->fs, state->fontSize*scale);
+	fonsSetSpacing(ctx->fs, state->letterSpacing*scale);
+	fonsSetBlur(ctx->fs, state->fontBlur*scale);
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 
 	fonsVertMetrics(ctx->fs, ascender, descender, lineh);
+	if (ascender != NULL)
+		*ascender *= invscale;
+	if (descender != NULL)
+		*descender *= invscale;
+	if (lineh != NULL)
+		*lineh *= invscale;
 }
