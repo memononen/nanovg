@@ -624,6 +624,10 @@ static void glnvg__renderViewport(void* uptr, int width, int height, int alphaBl
 	gl->viewWidth = (float)width;
 	gl->viewHeight = (float)height;
 
+	glEnable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+
 	if (alphaBlend == NVG_PREMULTIPLIED_ALPHA)
 		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	else

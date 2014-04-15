@@ -24,6 +24,7 @@
 #include "nanovg.h"
 #define NANOVG_GL2_IMPLEMENTATION
 #include "nanovg_gl2.h"
+//#include "nanovg_gl3buf.h" // This version does not work correctly yet.
 #include "demo.h"
 #include "perf.h"
 
@@ -136,19 +137,12 @@ int main()
 			glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_CULL_FACE);
-		glDisable(GL_DEPTH_TEST);
-
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio, premult ? NVG_PREMULTIPLIED_ALPHA : NVG_STRAIGHT_ALPHA);
 
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
 		renderGraph(vg, 5,5, &fps);
 
 		nvgEndFrame(vg);
-
-		glEnable(GL_DEPTH_TEST);
 
 		if (screenshot) {
 			screenshot = 0;

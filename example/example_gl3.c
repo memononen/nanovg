@@ -151,11 +151,6 @@ int main()
 			glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_CULL_FACE);
-		glDisable(GL_DEPTH_TEST);
-
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio, premult ? NVG_PREMULTIPLIED_ALPHA : NVG_STRAIGHT_ALPHA);
 
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
@@ -166,8 +161,6 @@ int main()
 			renderGraph(vg, 5+200+5+200+5,5, &gpuGraph);
 
 		nvgEndFrame(vg);
-
-		glEnable(GL_DEPTH_TEST);
 
 		// Measure the CPU time taken excluding swap buffers (as the swap may wait for GPU)
 		cpuTime = glfwGetTime() - t;

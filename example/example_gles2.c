@@ -22,6 +22,7 @@
 #include "nanovg.h"
 #define NANOVG_GLES2_IMPLEMENTATION
 #include "nanovg_gl2.h"
+//#include "nanovg_gl3buf.h" // This version does not work correctly yet.
 #include "demo.h"
 #include "perf.h"
 
