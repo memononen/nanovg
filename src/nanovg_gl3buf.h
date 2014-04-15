@@ -708,6 +708,8 @@ static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms
 	struct GLNVGtexture* tex = NULL;
 	float invxform[6];
 
+	memset(frag, 0, sizeof(*frag));
+
 	frag->innerCol = paint->innerColor;
 	frag->outerCol = paint->outerColor;
 
@@ -1098,6 +1100,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 		call->uniformOffset = glnvg__allocFragUniforms(gl, 2);
 		// Simple shader for stencil
 		frag = nvg__fragUniformPtr(gl, call->uniformOffset);
+		memset(frag, 0, sizeof(*frag));
 		frag->type = NSVG_SHADER_SIMPLE;
 		// Fill shader
 		glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset + gl->fragSize), paint, scissor, fringe, fringe);
