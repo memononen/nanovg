@@ -22,7 +22,7 @@
 #endif
 #define GLFW_NO_GLU
 #ifndef _WIN32
-#   define GLFW_INCLUDE_GLCOREARB
+//#   define GLFW_INCLUDE_GLCOREARB
 #endif
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
