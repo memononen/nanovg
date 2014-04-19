@@ -1840,9 +1840,19 @@ void nvgStroke(struct NVGcontext* ctx)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	float scale = nvg__getAverageScale(state->xform);
-	float strokeWidth = nvg__clampf(state->strokeWidth * scale, 1.0f, 20.0f);
+	float strokeWidth = nvg__clampf(state->strokeWidth * scale, 0.0f, 20.0f);
+	struct NVGpaint strokePaint = state->stroke;
 	const struct NVGpath* path;
 	int i;
+
+	if (strokeWidth < ctx->fringeWidth) {
+		// If the stroke width is less than pixel size, use alpha to emulate coverate.
+		// Since coverage is area, scale by alpha*alpha.
+		float alpha = nvg__clampf(strokeWidth / ctx->fringeWidth, 0.0f, 1.0f);
+		strokePaint.innerColor.a *= alpha*alpha;
+		strokePaint.outerColor.a *= alpha*alpha;
+		strokeWidth = ctx->fringeWidth;
+	}
 
 	nvg__flattenPaths(ctx);
 	if (ctx->params.edgeAntiAlias)
@@ -1850,7 +1860,7 @@ void nvgStroke(struct NVGcontext* ctx)
 	else
 		nvg__expandStrokeAndFill(ctx, NVG_STROKE|NVG_CAPS, strokeWidth*0.5f, state->lineCap, state->lineJoin, state->miterLimit);
 
-	ctx->params.renderStroke(ctx->params.userPtr, &state->stroke, &state->scissor, ctx->fringeWidth,
+	ctx->params.renderStroke(ctx->params.userPtr, &strokePaint, &state->scissor, ctx->fringeWidth,
 							 strokeWidth, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
@@ -2359,10 +2369,10 @@ void nvgTextBoxBounds(struct NVGcontext* ctx, float x, float y, float breakRowWi
 	state->textAlign = oldAlign;
 
 	if (bounds != NULL) {
-		bounds[0] = minx * invscale;
-		bounds[1] = miny * invscale;
-		bounds[2] = maxx * invscale;
-		bounds[3] = maxy * invscale;
+		bounds[0] = minx;
+		bounds[1] = miny;
+		bounds[2] = maxx;
+		bounds[3] = maxy;
 	}
 }
 

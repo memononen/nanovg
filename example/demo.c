@@ -915,6 +915,27 @@ void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float h
 	nvgRestore(vg);
 }
 
+void drawWidths(struct NVGcontext* vg, float x, float y, float width)
+{
+	int i;
+
+	nvgSave(vg);
+
+	nvgStrokeColor(vg, nvgRGBA(0,0,0,255));
+
+	for (i = 0; i < 20; i++) {
+		float w = (i+0.5f)*0.1f;
+		nvgStrokeWidth(vg, w);
+		nvgBeginPath(vg);
+		nvgMoveTo(vg, x,y);
+		nvgLineTo(vg, x+width,y+width*0.3f);
+		nvgStroke(vg);
+		y += 10;
+	}
+
+	nvgRestore(vg);
+}
+
 void renderDemo(struct NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, struct DemoData* data)
 {
@@ -927,6 +948,9 @@ void renderDemo(struct NVGcontext* vg, float mx, float my, float width, float he
 
 	// Line joints
 	drawLines(vg, 50, height-50, 600, 50, t);
+
+	// Line width;
+	drawWidths(vg, 10, 50, 30);
 
 	nvgSave(vg);
 	if (blowup) {
