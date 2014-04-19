@@ -96,7 +96,8 @@ struct NVGtextRow {
 	const char* start;	// Pointer to the input text where the row starts.
 	const char* end;	// Pointer to the input text where the row ends (one past the last character).
 	const char* next;	// Pointer to the beginning of the next row.
-	float width;		// Width of the row.
+	float width;		// Logical width of the row.
+	float minx, maxx;	// Actual bounds of the row. Logical with and bounds can differ because of kerning and some parts over extending.
 };
 
 
@@ -385,7 +386,26 @@ void nvgStroke(struct NVGcontext* ctx);
 // font size, letter spacing and text align are supported. Font blur allows you
 // to create simple text effects such as drop shadows.
 //
-// At render time the tont face can be set based on the font handles or name.
+// At render time the font face can be set based on the font handles or name.
+//
+// Font measure functions return values in local space, the calculations are
+// carried in the same resolution as the final rendering. This is done because
+// the text glyph positions are snapped to the nearest pixels sharp rendering.
+//
+// The local space means that values are not rotated or scale as per the current
+// transformation. For example if you set font size to 12, which would mean that
+// line height is 16, then regardless of the current scaling and rotation, the
+// returned line height is always 16. Some measures may vary because of the scaling
+// since aforementioned pixel snapping.
+//
+// While this may sound a little odd, the setup allows you to always render the
+// same way regardless of scaling. I.e. following works regardless of scaling:
+//
+//		const char* txt = "Text me up.";
+//		nvgTextBounds(vg, x,y, txt, NULL, bounds);
+//		nvgBeginPath(vg);
+//		nvgRoundedRect(vg, bounds[0],bounds[1], bounds[2]-bounds[0], bounds[3]-bounds[1]);
+//		nvgFill(vg);
 //
 // Note: currently only solid color fill is supported for text.
 
@@ -427,24 +447,31 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 // Draws multi-line text string at specified location wrapped at the specified width. If end is specified only the sub-string up to the end is drawn.
 // White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
 // Words longer than the max width are slit at nearest character (i.e. no hyphenation).
-void nvgTextBox(struct NVGcontext* ctx, float x, float y, float width, const char* string, const char* end);
+void nvgTextBox(struct NVGcontext* ctx, float x, float y, float breakRowWidth, const char* string, const char* end);
 
-// Measures the specified text string. Parameter bounds should be a pointer to float[4] if 
-// the bounding box of the text should be returned. Returns the width of the measured text.
-// Current transform does not affect the measured values.
-float nvgTextBounds(struct NVGcontext* ctx, const char* string, const char* end, float* bounds);
+// Measures the specified text string. Parameter bounds should be a pointer to float[4],
+// if the bounding box of the text should be returned. The bounds value are [xmin,ymin, xmax,ymax]
+// Returns the horizontal advance of the measured text (i.e. where the next character should drawn).
+// Measured values are returned in local coordinate space.
+float nvgTextBounds(struct NVGcontext* ctx, float x, float y, const char* string, const char* end, float* bounds);
 
-// Returns the vertical metrics based on the current text style.
-// Current transform does not affect the measured values.
-void nvgTextMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh);
+// Measures the specified multi-text string. Parameter bounds should be a pointer to float[4],
+// if the bounding box of the text should be returned. The bounds value are [xmin,ymin, xmax,ymax]
+// Measured values are returned in local coordinate space.
+void nvgTextBoxBounds(struct NVGcontext* ctx, float x, float y, float breakRowWidth, const char* string, const char* end, float* bounds);
 
 // Calculates the glyph x positions of the specified text. If end is specified only the sub-string will be used.
-int nvgTextGlyphPositions(struct NVGcontext* ctx, const char* string, const char* end, float x, float y, struct NVGglyphPosition* positions, int maxPositions);
+// Measured values are returned in local coordinate space.
+int nvgTextGlyphPositions(struct NVGcontext* ctx, float x, float y, const char* string, const char* end, struct NVGglyphPosition* positions, int maxPositions);
+
+// Returns the vertical metrics based on the current text style.
+// Measured values are returned in local coordinate space.
+void nvgTextMetrics(struct NVGcontext* ctx, float* ascender, float* descender, float* lineh);
 
 // Breaks the specified text into lines. If end is specified only the sub-string will be used.
 // White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
 // Words longer than the max width are slit at nearest character (i.e. no hyphenation).
-int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* end, float maxRowWidth, struct NVGtextRow* rows, int maxRows);
+int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* end, float breakRowWidth, struct NVGtextRow* rows, int maxRows);
 
 //
 // Internal Render API

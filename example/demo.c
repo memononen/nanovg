@@ -223,7 +223,7 @@ void drawEditBoxNum(struct NVGcontext* vg,
 
 	drawEditBoxBase(vg, x,y, w,h);
 
-	uw = nvgTextBounds(vg, units, NULL, NULL);
+	uw = nvgTextBounds(vg, 0,0, units, NULL, NULL);
 
 	nvgFontSize(vg, 18.0f);
 	nvgFontFace(vg, "sans");
@@ -288,11 +288,11 @@ void drawButton(struct NVGcontext* vg, int preicon, const char* text, float x, f
 
 	nvgFontSize(vg, 20.0f);
 	nvgFontFace(vg, "sans-bold");
-	tw = nvgTextBounds(vg, text, NULL, NULL);
+	tw = nvgTextBounds(vg, 0,0, text, NULL, NULL);
 	if (preicon != 0) {
 		nvgFontSize(vg, h*1.3f);
 		nvgFontFace(vg, "icons");
-		iw = nvgTextBounds(vg, cpToUTF8(preicon,icon), NULL, NULL);
+		iw = nvgTextBounds(vg, 0,0, cpToUTF8(preicon,icon), NULL, NULL);
 		iw += h*0.15f;
 	}
 
@@ -815,9 +815,12 @@ void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float h
 	const char* text = "This is longer chunk of text.\n  \n  Would have used lorem ipsum but she    was busy jumping over the lazy dog with the fox and all the men who came to the aid of the party.";
 	const char* start;
 	const char* end;
-	int nrows, i, nglyphs, j;
+	int nrows, i, nglyphs, j, lnum = 0;
 	float lineh;
 	float caretx, px;
+	float bounds[4];
+	float gx,gy;
+	int gutter = 0;
 	NVG_NOTUSED(height);
 
 	nvgSave(vg);
@@ -848,7 +851,7 @@ void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float h
 			if (hit) {
 				caretx = (mx < x+row->width/2) ? x : x+row->width;
 				px = x;
-				nglyphs = nvgTextGlyphPositions(vg, row->start, row->end, x, y, glyphs, 100);
+				nglyphs = nvgTextGlyphPositions(vg, x, y, row->start, row->end, glyphs, 100);
 				for (j = 0; j < nglyphs; j++) {
 					float x0 = glyphs[j].x;
 					float x1 = (j+1 < nglyphs) ? glyphs[j+1].x : x+row->width;
@@ -861,20 +864,52 @@ void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float h
 				nvgFillColor(vg, nvgRGBA(255,192,0,255));
 				nvgRect(vg, caretx, y, 1, lineh);
 				nvgFill(vg);
+
+				gutter = lnum+1;
+				gx = x - 10;
+				gy = y + lineh/2;
 			}
+			lnum++;
 			y += lineh;
 		}
 		// Keep going...
 		start = rows[nrows-1].next;
 	}
 
-	y += 10.0f;
+	if (gutter) {
+		char txt[16];
+		snprintf(txt, sizeof(txt), "%d", gutter);
+		nvgFontSize(vg, 13.0f);
+		nvgTextAlign(vg, NVG_ALIGN_RIGHT|NVG_ALIGN_MIDDLE);
 
-	nvgFillColor(vg, nvgRGBA(0,0,0,220));
-	nvgFontSize(vg, 12.0f);
+		nvgTextBounds(vg, gx,gy, txt, NULL, bounds);
+
+		nvgBeginPath(vg);
+		nvgFillColor(vg, nvgRGBA(255,192,0,255));
+		nvgRoundedRect(vg, (int)bounds[0]-4,(int)bounds[1]-2, (int)(bounds[2]-bounds[0])+8, (int)(bounds[3]-bounds[1])+4, ((int)(bounds[3]-bounds[1])+4)/2-1);
+		nvgFill(vg);
+
+		nvgFillColor(vg, nvgRGBA(32,32,32,255));
+		nvgText(vg, gx,gy, txt, NULL);
+	}
+
+	y += 20.0f;
+
+	nvgFontSize(vg, 13.0f);
 	nvgTextAlign(vg, NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
 	nvgTextLineHeight(vg, 1.2f);
 
+	nvgTextBoxBounds(vg, x,y, 150, "Hover your mouse over the text to see calculated caret position.", NULL, bounds);
+	nvgBeginPath(vg);
+	nvgFillColor(vg, nvgRGBA(220,220,220,255));
+	nvgRoundedRect(vg, bounds[0]-2,bounds[1]-2, (int)(bounds[2]-bounds[0])+4, (int)(bounds[3]-bounds[1])+4, 3);
+	px = (int)((bounds[2]+bounds[0])/2);
+	nvgMoveTo(vg, px,bounds[1] - 10);
+	nvgLineTo(vg, px+7,bounds[1]+1);
+	nvgLineTo(vg, px-7,bounds[1]+1);
+	nvgFill(vg);
+
+	nvgFillColor(vg, nvgRGBA(0,0,0,220));
 	nvgTextBox(vg, x,y, 150, "Hover your mouse over the text to see calculated caret position.", NULL);
 
 	nvgRestore(vg);
