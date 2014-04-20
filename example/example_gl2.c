@@ -23,8 +23,7 @@
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
 #define NANOVG_GL2_IMPLEMENTATION
-//#include "nanovg_gl2.h"
-#include "nanovg_gl3buf.h" // This version does not work correctly yet.
+#include "nanovg_gl.h"
 #include "demo.h"
 #include "perf.h"
 

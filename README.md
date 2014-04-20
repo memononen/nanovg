@@ -17,13 +17,16 @@ The NanoVG API is modeled loosely on HTML5 canvas API. If you know canvas, you'r
 
 ## Creating drawing context
 
-The drawing context is created using platform specific constructor function. If you're using the default OpenGL 2.0 back-end the context is created as follows:
+The drawing context is created using platform specific constructor function. If you're using the a OpenGL 2.0 back-end the context is created as follows:
 ```C
+#define NANOVG_GL2_IMPLEMENTATION	// Use GL2 implementation.
+#include "nanovg_gl.h"
+...
 struct NVGcontext* vg = nvgCreateGL2(512, 512, NVG_ANTIALIAS);
 ```
-The two values passed to the constructor define the size of the texture atlas used for text rendering, 512x512 is a good starting point. If you're rendering retina sized text or plan to use a lot of different fonts, 1024x1024 is better choice.
+The first two values passed to the constructor define the size of the texture atlas used for text rendering, 512x512 is a good starting point. If you're rendering retina sized text or plan to use a lot of different fonts, 1024x1024 is better choice. The third parameter defines if anti-aliasing should be used, passing 0 means no AA (useful when you're using MSAA).
 
-Currently there are two different back-ends for NanoVG: [nanovg_gl2.h](/src/nanovg_gl2.h) for OpenGL 2.0 and [nanovg_gl3.h](/src/nanovg_gl3.h) for OpenGL 3.2 core profile.
+Currently there is an OpenGL back-end for NanoVG: [nanovg_gl.h](/src/nanovg_gl.h) for OpenGL 2.0, OpenGL ES 2.0, OpenGL 3.2 core profile and OpenGL ES 3. The implementation can be chosen using a define as in above example. See the header file and examples for further info.
 
 ## Drawing shapes with NanoVG
 
@@ -36,11 +39,11 @@ nvgFillColor(vg, nvgRGBA(255,192,0,255));
 nvgFill(vg);
 ```
 
-Calling nvgBeginPath() will clear any existing paths and start drawing from blank slate. There are number of number of functions to define the path to draw, such as rectangle, rounded rectangle and ellipse, or you can use the common moveTo, lineTo, bezierTo and arcTo API to compose the paths step by step.
+Calling `nvgBeginPath()` will clear any existing paths and start drawing from blank slate. There are number of number of functions to define the path to draw, such as rectangle, rounded rectangle and ellipse, or you can use the common moveTo, lineTo, bezierTo and arcTo API to compose the paths step by step.
 
 ## Understanding Composite Paths
 
-Because of the way the rendering backend is build in NanoVG, drawing a composite path, that is path consisting from multiple paths defining holes and fills, is a bit more involved. NanoVG uses even-odd filling rule and by default the paths are wound in counter clockwise order. Keep that in mind when drawing using the low level draw API. In order to wind one of the predefined shapes as a hole, you should call nvgPathWinding(vg, NVG_HOLE), or nvgPathWinding(vg, NVG_CV) _after_ defining the path.
+Because of the way the rendering backend is build in NanoVG, drawing a composite path, that is path consisting from multiple paths defining holes and fills, is a bit more involved. NanoVG uses even-odd filling rule and by default the paths are wound in counter clockwise order. Keep that in mind when drawing using the low level draw API. In order to wind one of the predefined shapes as a hole, you should call nvgPathWinding(vg, `NVG_HOLE`), or `nvgPathWinding(vg, NVG_CV)` _after_ defining the path.
 
 ``` C
 nvgBeginPath(vg);
@@ -57,17 +60,37 @@ nvgFill(vg);
 - make sure you have initialised OpenGL with stencil buffer
 - make sure you have cleared stencil buffer
 - make sure all rendering calls happen between `nvgBeginFrame()` and `nvgEndFrame()`
-- make sure you have following OpenGL state between calls to `nvgBeginFrame()` and `nvgEndFrame()`:
-  - `glEnable(GL_CULL_FACE)`
-  - `glCullFace(GL_BACK)`
-  - `glEnable(GL_BLEND)`
-  - `glDisable(GL_DEPTH_TEST)`
 - if the problem still persists, please report an issue!
+
+## OpenGL state touched by the backend
+
+The OpenGL back-end touches following states:
+
+When textures are uploaded or updated, the following pixel store is set to defaults: `GL_UNPACK_ALIGNMENT`, `GL_UNPACK_ROW_LENGTH`, `GL_UNPACK_SKIP_PIXELS`, `GL_UNPACK_SKIP_ROWS`. Texture binding is also affected. Texture updates can happen when the user loads images, or when new font glyphs are added. Glyphs are added as needed between calls to  `nvgBeginFrame()` and `nvgEndFrame()`.
+
+The data for the whole frame is buffered and flushed in `nvgEndFrame()`. The following code illustrates the OpenGL state touched by the rendering code:
+```C
+	glUseProgram(prog);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glEnable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_SCISSOR_TEST);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glStencilMask(0xffffffff);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilFunc(GL_ALWAYS, 0, 0xffffffff);
+	glActiveTexture(GL_TEXTURE0);
+	glBindBuffer(GL_UNIFORM_BUFFER, buf);
+	glBindVertexArray(arr);
+	glBindBuffer(GL_ARRAY_BUFFER, buf);
+	glBindTexture(GL_TEXTURE_2D, tex);
+``
 
 ## API Reference
 
 See the header file [nanovg.h](/src/nanovg.h) for API reference.
-
 
 ## License
 The library is licensed under [zlib license](LICENSE.txt)

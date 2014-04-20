@@ -1988,6 +1988,7 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 		}
 	}
 
+	// TODO: add back-end bit to do this just once per frame. 
 	if (fonsValidateTexture(ctx->fs, dirty)) {
 		// Update texture
 		if (ctx->fontImage != 0) {
