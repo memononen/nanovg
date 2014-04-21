@@ -375,34 +375,33 @@ struct NVGcolor nvgHSLA(float h, float s, float l, unsigned char a)
 }
 
 
-
 static struct NVGstate* nvg__getState(struct NVGcontext* ctx)
 {
 	return &ctx->states[ctx->nstates-1];
 }
 
-static void nvg__xformIdentity(float* t)
+void nvgTransformIdentity(float* t)
 {
 	t[0] = 1.0f; t[1] = 0.0f;
 	t[2] = 0.0f; t[3] = 1.0f;
 	t[4] = 0.0f; t[5] = 0.0f;
 }
 
-static void nvg__xformTranslate(float* t, float tx, float ty)
+void nvgTransformTranslate(float* t, float tx, float ty)
 {
 	t[0] = 1.0f; t[1] = 0.0f;
 	t[2] = 0.0f; t[3] = 1.0f;
 	t[4] = tx; t[5] = ty;
 }
 
-static void nvg__xformScale(float* t, float sx, float sy)
+void nvgTransformScale(float* t, float sx, float sy)
 {
 	t[0] = sx; t[1] = 0.0f;
 	t[2] = 0.0f; t[3] = sy;
 	t[4] = 0.0f; t[5] = 0.0f;
 }
 
-static void nvg__xformRotate(float* t, float a)
+void nvgTransformRotate(float* t, float a)
 {
 	float cs = nvg__cosf(a), sn = nvg__sinf(a);
 	t[0] = cs; t[1] = sn;
@@ -410,7 +409,21 @@ static void nvg__xformRotate(float* t, float a)
 	t[4] = 0.0f; t[5] = 0.0f;
 }
 
-static void nvg__xformMultiply(float* t, float* s)
+void nvgTransformSkewX(float* t, float a)
+{
+	t[0] = 1.0f; t[1] = 0.0f;
+	t[2] = nvg__tanf(a); t[3] = 1.0f;
+	t[4] = 0.0f; t[5] = 0.0f;
+}
+
+void nvgTransformSkewY(float* t, float a)
+{
+	t[0] = 1.0f; t[1] = nvg__tanf(a);
+	t[2] = 0.0f; t[3] = 1.0f;
+	t[4] = 0.0f; t[5] = 0.0f;
+}
+
+void nvgTransformMultiply(float* t, const float* s)
 {
 	float t0 = t[0] * s[0] + t[1] * s[2];
 	float t2 = t[2] * s[0] + t[3] * s[2];
@@ -423,18 +436,51 @@ static void nvg__xformMultiply(float* t, float* s)
 	t[4] = t4;
 }
 
-static void nvg__xformPremultiply(float* t, float* s)
+void nvgTransformPremultiply(float* t, const float* s)
 {
 	float s2[6];
 	memcpy(s2, s, sizeof(float)*6);
-	nvg__xformMultiply(s2, t);
+	nvgTransformMultiply(s2, t);
 	memcpy(t, s2, sizeof(float)*6);
+}
+
+int nvgTransformInverse(float* inv, const float* t)
+{
+	double invdet, det = (double)t[0] * t[3] - (double)t[2] * t[1];
+	if (det > -1e-6 && det < 1e-6) {
+		nvgTransformIdentity(inv);
+		return 0;
+	}
+	invdet = 1.0 / det;
+	inv[0] = (float)(t[3] * invdet);
+	inv[2] = (float)(-t[2] * invdet);
+	inv[4] = (float)(((double)t[2] * t[5] - (double)t[3] * t[4]) * invdet);
+	inv[1] = (float)(-t[1] * invdet);
+	inv[3] = (float)(t[0] * invdet);
+	inv[5] = (float)(((double)t[1] * t[4] - (double)t[0] * t[5]) * invdet);
+	return 1;
+}
+
+void nvgTransformPoint(float* dx, float* dy, const float* t, float sx, float sy)
+{
+	*dx = sx*t[0] + sy*t[2] + t[4];
+	*dy = sx*t[1] + sy*t[3] + t[5];
+}
+
+float nvgDegToRad(float deg)
+{
+	return deg / 180.0f * NVG_PI;
+}
+
+float nvgRadToDeg(float rad)
+{
+	return rad / NVG_PI * 180.0f;
 }
 
 static void nvg__setPaintColor(struct NVGpaint* p, struct NVGcolor color)
 {
 	memset(p, 0, sizeof(*p));
-	nvg__xformIdentity(p->xform);
+	nvgTransformIdentity(p->xform);
 	p->radius = 0.0f;
 	p->feather = 1.0f;
 	p->innerColor = color;
@@ -470,7 +516,7 @@ void nvgReset(struct NVGcontext* ctx)
 	state->miterLimit = 10.0f;
 	state->lineCap = NVG_BUTT;
 	state->lineJoin = NVG_MITER;
-	nvg__xformIdentity(state->xform);
+	nvgTransformIdentity(state->xform);
 
 	state->scissor.extent[0] = 0.0f;
 	state->scissor.extent[1] = 0.0f;
@@ -513,39 +559,61 @@ void nvgTransform(struct NVGcontext* ctx, float a, float b, float c, float d, fl
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	float t[6] = { a, b, c, d, e, f };
-	nvg__xformPremultiply(state->xform, t);
+	nvgTransformPremultiply(state->xform, t);
 }
 
 void nvgResetTransform(struct NVGcontext* ctx)
 {
 	struct NVGstate* state = nvg__getState(ctx);
-	nvg__xformIdentity(state->xform);
+	nvgTransformIdentity(state->xform);
 }
 
 void nvgTranslate(struct NVGcontext* ctx, float x, float y)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	float t[6];
-	nvg__xformTranslate(t, x,y);
-	nvg__xformPremultiply(state->xform, t);
+	nvgTransformTranslate(t, x,y);
+	nvgTransformPremultiply(state->xform, t);
 }
 
 void nvgRotate(struct NVGcontext* ctx, float angle)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	float t[6];
-	nvg__xformRotate(t, angle);
-	nvg__xformPremultiply(state->xform, t);
+	nvgTransformRotate(t, angle);
+	nvgTransformPremultiply(state->xform, t);
+}
+
+void nvgSkewX(struct NVGcontext* ctx, float angle)
+{
+	struct NVGstate* state = nvg__getState(ctx);
+	float t[6];
+	nvgTransformSkewX(t, angle);
+	nvgTransformPremultiply(state->xform, t);
+}
+
+void nvgSkewY(struct NVGcontext* ctx, float angle)
+{
+	struct NVGstate* state = nvg__getState(ctx);
+	float t[6];
+	nvgTransformSkewY(t, angle);
+	nvgTransformPremultiply(state->xform, t);
 }
 
 void nvgScale(struct NVGcontext* ctx, float x, float y)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	float t[6];
-	nvg__xformScale(t, x,y);
-	nvg__xformPremultiply(state->xform, t);
+	nvgTransformScale(t, x,y);
+	nvgTransformPremultiply(state->xform, t);
 }
 
+void nvgCurrentTransform(struct NVGcontext* ctx, float* xform)
+{
+	struct NVGstate* state = nvg__getState(ctx);
+	if (xform == NULL) return;
+	memcpy(xform, state->xform, sizeof(float)*6);
+}
 
 void nvgStrokeColor(struct NVGcontext* ctx, struct NVGcolor color)
 {
@@ -557,7 +625,7 @@ void nvgStrokePaint(struct NVGcontext* ctx, struct NVGpaint paint)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	state->stroke = paint;
-	nvg__xformMultiply(state->stroke.xform, state->xform);
+	nvgTransformMultiply(state->stroke.xform, state->xform);
 }
 
 void nvgFillColor(struct NVGcontext* ctx, struct NVGcolor color)
@@ -570,7 +638,7 @@ void nvgFillPaint(struct NVGcontext* ctx, struct NVGpaint paint)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	state->fill = paint;
-	nvg__xformMultiply(state->fill.xform, state->xform);
+	nvgTransformMultiply(state->fill.xform, state->xform);
 }
 
 int nvgCreateImage(struct NVGcontext* ctx, const char* filename)
@@ -670,7 +738,7 @@ struct NVGpaint nvgRadialGradient(struct NVGcontext* ctx,
 	NVG_NOTUSED(ctx);
 	memset(&p, 0, sizeof(p));
 
-	nvg__xformIdentity(p.xform);
+	nvgTransformIdentity(p.xform);
 	p.xform[4] = cx;
 	p.xform[5] = cy;
 
@@ -695,7 +763,7 @@ struct NVGpaint nvgBoxGradient(struct NVGcontext* ctx,
 	NVG_NOTUSED(ctx);
 	memset(&p, 0, sizeof(p));
 
-	nvg__xformIdentity(p.xform);
+	nvgTransformIdentity(p.xform);
 	p.xform[4] = x+w*0.5f;
 	p.xform[5] = y+h*0.5f;
 
@@ -721,7 +789,7 @@ struct NVGpaint nvgImagePattern(struct NVGcontext* ctx,
 	NVG_NOTUSED(ctx);
 	memset(&p, 0, sizeof(p));
 
-	nvg__xformRotate(p.xform, angle);
+	nvgTransformRotate(p.xform, angle);
 	p.xform[4] = cx;
 	p.xform[5] = cy;
 
@@ -739,10 +807,10 @@ void nvgScissor(struct NVGcontext* ctx, float x, float y, float w, float h)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 
-	nvg__xformIdentity(state->scissor.xform);
+	nvgTransformIdentity(state->scissor.xform);
 	state->scissor.xform[4] = x+w*0.5f;
 	state->scissor.xform[5] = y+h*0.5f;
-	nvg__xformMultiply(state->scissor.xform, state->xform);
+	nvgTransformMultiply(state->scissor.xform, state->xform);
 
 	state->scissor.extent[0] = w*0.5f;
 	state->scissor.extent[1] = h*0.5f;
@@ -754,12 +822,6 @@ void nvgResetScissor(struct NVGcontext* ctx)
 	memset(state->scissor.xform, 0, sizeof(state->scissor.xform));
 	state->scissor.extent[0] = 0;
 	state->scissor.extent[1] = 0;
-}
-
-static void nvg__xformPt(float* dx, float* dy, float sx, float sy, const float* t)
-{
-	*dx = sx*t[0] + sy*t[2] + t[4];
-	*dy = sx*t[1] + sy*t[3] + t[5];
 }
 
 static int nvg__ptEquals(float x1, float y1, float x2, float y2, float tol)
@@ -805,17 +867,17 @@ static void nvg__appendCommands(struct NVGcontext* ctx, float* vals, int nvals)
 		int cmd = (int)vals[i];
 		switch (cmd) {
 		case NVG_MOVETO:
-			nvg__xformPt(&vals[i+1],&vals[i+2], vals[i+1],vals[i+2], state->xform);
+			nvgTransformPoint(&vals[i+1],&vals[i+2], state->xform, vals[i+1],vals[i+2]);
 			i += 3;
 			break;
 		case NVG_LINETO:
-			nvg__xformPt(&vals[i+1],&vals[i+2], vals[i+1],vals[i+2], state->xform);
+			nvgTransformPoint(&vals[i+1],&vals[i+2], state->xform, vals[i+1],vals[i+2]);
 			i += 3;
 			break;
 		case NVG_BEZIERTO:
-			nvg__xformPt(&vals[i+1],&vals[i+2], vals[i+1],vals[i+2], state->xform);
-			nvg__xformPt(&vals[i+3],&vals[i+4], vals[i+3],vals[i+4], state->xform);
-			nvg__xformPt(&vals[i+5],&vals[i+6], vals[i+5],vals[i+6], state->xform);
+			nvgTransformPoint(&vals[i+1],&vals[i+2], state->xform, vals[i+1],vals[i+2]);
+			nvgTransformPoint(&vals[i+3],&vals[i+4], state->xform, vals[i+3],vals[i+4]);
+			nvgTransformPoint(&vals[i+5],&vals[i+6], state->xform, vals[i+5],vals[i+6]);
 			i += 7;
 			break;
 		case NVG_CLOSE:
@@ -1973,10 +2035,10 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
 		// Trasnform corners.
 		float c[4*2];
-		nvg__xformPt(&c[0],&c[1], q.x0*invscale, q.y0*invscale, state->xform);
-		nvg__xformPt(&c[2],&c[3], q.x1*invscale, q.y0*invscale, state->xform);
-		nvg__xformPt(&c[4],&c[5], q.x1*invscale, q.y1*invscale, state->xform);
-		nvg__xformPt(&c[6],&c[7], q.x0*invscale, q.y1*invscale, state->xform);
+		nvgTransformPoint(&c[0],&c[1], state->xform, q.x0*invscale, q.y0*invscale);
+		nvgTransformPoint(&c[2],&c[3], state->xform, q.x1*invscale, q.y0*invscale);
+		nvgTransformPoint(&c[4],&c[5], state->xform, q.x1*invscale, q.y1*invscale);
+		nvgTransformPoint(&c[6],&c[7], state->xform, q.x0*invscale, q.y1*invscale);
 		// Create triangles
 		if (nverts+6 <= cverts) {
 			nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;

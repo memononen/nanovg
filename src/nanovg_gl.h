@@ -671,29 +671,6 @@ static int glnvg__renderGetTextureSize(void* uptr, int image, int* w, int* h)
 	return 1;
 }
 
-static void glnvg__xformIdentity(float* t)
-{
-	t[0] = 1.0f; t[1] = 0.0f;
-	t[2] = 0.0f; t[3] = 1.0f;
-	t[4] = 0.0f; t[5] = 0.0f;
-}
-
-static void glnvg__xformInverse(float* inv, float* t)
-{
-	double invdet, det = (double)t[0] * t[3] - (double)t[2] * t[1];
-	if (det > -1e-6 && det < 1e-6) {
-		glnvg__xformIdentity(t);
-		return;
-	}
-	invdet = 1.0 / det;
-	inv[0] = (float)(t[3] * invdet);
-	inv[2] = (float)(-t[2] * invdet);
-	inv[4] = (float)(((double)t[2] * t[5] - (double)t[3] * t[4]) * invdet);
-	inv[1] = (float)(-t[1] * invdet);
-	inv[3] = (float)(t[0] * invdet);
-	inv[5] = (float)(((double)t[1] * t[4] - (double)t[0] * t[5]) * invdet);
-}
-
 static void glnvg__xformToMat3x4(float* m3, float* t)
 {
 	m3[0] = t[0];
@@ -721,7 +698,7 @@ static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms
 	frag->innerCol = paint->innerColor;
 	frag->outerCol = paint->outerColor;
 
-	glnvg__xformInverse(invxform, paint->xform);
+	nvgTransformInverse(invxform, paint->xform);
 	glnvg__xformToMat3x4(frag->paintMat, invxform);
 
 	if (scissor->extent[0] < 0.5f || scissor->extent[1] < 0.5f) {
@@ -731,7 +708,7 @@ static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms
 		frag->scissorScale[0] = 1.0f;
 		frag->scissorScale[1] = 1.0f;
 	} else {
-		glnvg__xformInverse(invxform, scissor->xform);
+		nvgTransformInverse(invxform, scissor->xform);
 		glnvg__xformToMat3x4(frag->scissorMat, invxform);
 		frag->scissorExt[0] = scissor->extent[0];
 		frag->scissorExt[1] = scissor->extent[1];
