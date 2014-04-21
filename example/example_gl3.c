@@ -99,6 +99,8 @@ int main()
 		printf("Could not init glew.\n");
 		return -1;
 	}
+	// GLEW generates GL error because it calls glGetString(GL_EXTENSIONS), we'll consume it here.
+	glGetError();
 #endif
 
 #ifdef DEMO_MSAA
