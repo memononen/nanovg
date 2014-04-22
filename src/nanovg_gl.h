@@ -367,7 +367,7 @@ static void glnvg__getUniforms(struct GLNVGshader* shader)
 static int glnvg__renderCreate(void* uptr)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	int align = 1;
+	int align = 4;
 
 	// TODO: mediump float may not be enough for GLES2 in iOS.
 	// see the following discussion: https://github.com/memononen/nanovg/issues/46
