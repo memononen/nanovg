@@ -34,7 +34,7 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
-			 links { "glu32","opengl32", "gdi32", "winmm", "user32", "glfw3", "GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "macosx" }
@@ -62,7 +62,7 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
-			 links { "glu32","opengl32", "gdi32", "winmm", "user32", "glfw3", "GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "macosx" }
@@ -91,7 +91,7 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
-			 links { "glu32","opengl32", "gdi32", "winmm", "user32", "glfw3", "GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "macosx" }
@@ -120,7 +120,7 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
-			 links { "glu32","opengl32", "gdi32", "winmm", "user32", "glfw3", "GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "macosx" }
@@ -147,7 +147,7 @@ solution "nanovg"
 			 links { "X11","Xrandr", "rt", "GL", "GLU", "pthread", "m", "glfw3" }
 
 		configuration { "windows" }
-			 links { "glu32","opengl32", "gdi32", "winmm", "user32", "glfw3", "GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "macosx" }
@@ -174,7 +174,7 @@ solution "nanovg"
 			 links { "X11","Xrandr", "rt", "GL", "GLU", "pthread", "m", "glfw3" }
 
 		configuration { "windows" }
-			 links { "glu32","opengl32", "gdi32", "winmm", "user32", "glfw3", "GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "macosx" }

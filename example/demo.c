@@ -13,7 +13,7 @@
 
 #ifdef _MSC_VER
 #define snprintf _snprintf
-#else
+#elif !defined(__MINGW32__)
 #include <iconv.h>
 #endif
 
