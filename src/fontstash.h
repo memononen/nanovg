@@ -1093,7 +1093,7 @@ static void fons__getQuad(struct FONScontext* stash, struct FONSfont* font,
 
 	if (prevGlyph) {
 		float adv = fons__tt_getGlyphKernAdvance(&font->font, prevGlyph->index, glyph->index) * scale;
-		*x += (int)(adv + 0.5f);
+		*x += (int)(adv + spacing + 0.5f);
 	}
 
 	// Each glyph has 2px border to allow good interpolation,
@@ -1134,7 +1134,7 @@ static void fons__getQuad(struct FONScontext* stash, struct FONSfont* font,
 		q->t1 = y1 * stash->ith;
 	}
 
-	*x += (int)(glyph->xadv / 10.0f + spacing + 0.5f);
+	*x += (int)(glyph->xadv / 10.0f + 0.5f);
 }
 
 static void fons__flush(struct FONScontext* stash)
@@ -1417,7 +1417,7 @@ float fonsTextBounds(struct FONScontext* stash,
 			continue;
 		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur);
 		if (glyph) {
-			fons__getQuad(stash, font, prevGlyph, glyph, state->spacing, scale, &x, &y, &q);
+			fons__getQuad(stash, font, prevGlyph, glyph, scale, state->spacing, &x, &y, &q);
 			if (q.x0 < minx) minx = q.x0;
 			if (q.x1 > maxx) maxx = q.x1;
 			if (stash->params.flags & FONS_ZERO_TOPLEFT) {
