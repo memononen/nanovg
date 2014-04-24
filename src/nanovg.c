@@ -2116,7 +2116,6 @@ int nvgTextGlyphPositions(struct NVGcontext* ctx, float x, float y, const char* 
 	struct FONStextIter iter;
 	struct FONSquad q;
 	int npos = 0;
-	float px;
 
 	if (state->fontId == FONS_INVALID) return 0;
 
@@ -2132,12 +2131,12 @@ int nvgTextGlyphPositions(struct NVGcontext* ctx, float x, float y, const char* 
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 
-	px = x*scale;
 	fonsTextIterInit(ctx->fs, &iter, x*scale, y*scale, string, end);
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
 		positions[npos].str = iter.str;
-		positions[npos].x = px * invscale;
-		px = iter.x;
+		positions[npos].x = iter.x * invscale;
+		positions[npos].minx = q.x0 * invscale;
+		positions[npos].maxx = q.x1 * invscale;
 		npos++;
 		if (npos >= maxPositions)
 			break;
