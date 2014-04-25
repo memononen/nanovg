@@ -20,7 +20,6 @@
 #ifdef NANOVG_GLEW
 #	include <GL/glew.h>
 #endif
-#define GLFW_NO_GLU
 #ifdef __APPLE__
 #	define GLFW_INCLUDE_GLCOREARB
 #endif
