@@ -900,6 +900,7 @@ static void glnvg__renderFlush(void* uptr, int alphaBlend)
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
+		glFrontFace(GL_CCW);
 		glEnable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_SCISSOR_TEST);
