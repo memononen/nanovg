@@ -984,7 +984,7 @@ static struct GLNVGcall* glnvg__allocCall(struct GLNVGcontext* gl)
 {
 	struct GLNVGcall* ret = NULL;
 	if (gl->ncalls+1 > gl->ccalls) {
-		gl->ccalls = gl->ccalls == 0 ? 32 : gl->ccalls * 2;
+		gl->ccalls = glnvg__maxi(gl->ncalls+1, 128) + gl->ccalls; // 1.5x Overallocate
 		gl->calls = (struct GLNVGcall*)realloc(gl->calls, sizeof(struct GLNVGcall) * gl->ccalls);
 	}
 	ret = &gl->calls[gl->ncalls++];
@@ -996,7 +996,7 @@ static int glnvg__allocPaths(struct GLNVGcontext* gl, int n)
 {
 	int ret = 0;
 	if (gl->npaths+n > gl->cpaths) {
-		gl->cpaths = gl->cpaths == 0 ? glnvg__maxi(n, 32) : gl->cpaths * 2;
+		gl->cpaths = glnvg__maxi(gl->npaths + n, 128) + gl->cpaths; // 1.5x Overallocate
 		gl->paths = (struct GLNVGpath*)realloc(gl->paths, sizeof(struct GLNVGpath) * gl->cpaths);
 	}
 	ret = gl->npaths;
@@ -1008,7 +1008,7 @@ static int glnvg__allocVerts(struct GLNVGcontext* gl, int n)
 {
 	int ret = 0;
 	if (gl->nverts+n > gl->cverts) {
-		gl->cverts = gl->cverts == 0 ? glnvg__maxi(n, 256) : gl->cverts * 2;
+		gl->cverts = glnvg__maxi(gl->nverts + n, 4096) + gl->cverts/2; // 1.5x Overallocate
 		gl->verts = (struct NVGvertex*)realloc(gl->verts, sizeof(struct NVGvertex) * gl->cverts);
 	}
 	ret = gl->nverts;
@@ -1020,7 +1020,7 @@ static int glnvg__allocFragUniforms(struct GLNVGcontext* gl, int n)
 {
 	int ret = 0, structSize = gl->fragSize;
 	if (gl->nuniforms+n > gl->cuniforms) {
-		gl->cuniforms = gl->cuniforms == 0 ? glnvg__maxi(n, 32) : gl->cuniforms * 2;
+		gl->cuniforms = glnvg__maxi(gl->nuniforms+n, 128) + gl->cuniforms/2; // 1.5x Overallocate
 		gl->uniforms = (unsigned char*)realloc(gl->uniforms, gl->cuniforms * structSize);
 	}
 	ret = gl->nuniforms * structSize;

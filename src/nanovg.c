@@ -25,7 +25,10 @@
 #include "stb_image.c"
 
 
-#define NVG_INIT_PATH_SIZE 256
+#define NVG_INIT_COMMANDS_SIZE 256
+#define NVG_INIT_POINTS_SIZE 128
+#define NVG_INIT_PATHS_SIZE 16
+#define NVG_INIT_VERTS_SIZE 256
 #define NVG_MAX_STATES 32
 
 #define NVG_KAPPA90 0.5522847493f	// Lenght proportional to radius of a cubic bezier handle for 90deg arcs.
@@ -159,20 +162,20 @@ static struct NVGpathCache* nvg__allocPathCache()
 	if (c == NULL) goto error;
 	memset(c, 0, sizeof(struct NVGpathCache));
 
-	c->points = (struct NVGpoint*)malloc(sizeof(struct NVGpoint)*4);
+	c->points = (struct NVGpoint*)malloc(sizeof(struct NVGpoint)*NVG_INIT_POINTS_SIZE);
 	if (!c->points) goto error;
 	c->npoints = 0;
-	c->cpoints = 4;
+	c->cpoints = NVG_INIT_POINTS_SIZE;
 
-	c->paths = (struct NVGpath*)malloc(sizeof(struct NVGpath)*4);
+	c->paths = (struct NVGpath*)malloc(sizeof(struct NVGpath)*NVG_INIT_PATHS_SIZE);
 	if (!c->paths) goto error;
 	c->npaths = 0;
-	c->cpaths = 4;
+	c->cpaths = NVG_INIT_PATHS_SIZE;
 
-	c->verts = (struct NVGvertex*)malloc(sizeof(struct NVGvertex)*4);
+	c->verts = (struct NVGvertex*)malloc(sizeof(struct NVGvertex)*NVG_INIT_VERTS_SIZE);
 	if (!c->verts) goto error;
 	c->nverts = 0;
-	c->cverts = 4;
+	c->cverts = NVG_INIT_VERTS_SIZE;
 
 	return c;
 error:
@@ -197,10 +200,10 @@ struct NVGcontext* nvgCreateInternal(struct NVGparams* params)
 
 	ctx->params = *params;
 
-	ctx->commands = (float*)malloc(sizeof(float)*NVG_INIT_PATH_SIZE);
+	ctx->commands = (float*)malloc(sizeof(float)*NVG_INIT_COMMANDS_SIZE);
 	if (!ctx->commands) goto error;
 	ctx->ncommands = 0;
-	ctx->ccommands = NVG_INIT_PATH_SIZE;
+	ctx->ccommands = NVG_INIT_COMMANDS_SIZE;
 
 	ctx->alphaBlend = NVG_STRAIGHT_ALPHA;
 
@@ -919,7 +922,7 @@ static void nvg__addPath(struct NVGcontext* ctx)
 {
 	struct NVGpath* path;
 	if (ctx->cache->npaths+1 > ctx->cache->cpaths) {
-		ctx->cache->cpaths = (ctx->cache->cpaths == 0) ? 8 : (ctx->cache->cpaths*2);
+		ctx->cache->cpaths = ctx->cache->npaths+1 + ctx->cache->cpaths/2;
 		ctx->cache->paths = (struct NVGpath*)realloc(ctx->cache->paths, sizeof(struct NVGpath)*ctx->cache->cpaths);
 		if (ctx->cache->paths == NULL) return;
 	}
@@ -953,7 +956,7 @@ static void nvg__addPoint(struct NVGcontext* ctx, float x, float y, int flags)
 	}
 
 	if (ctx->cache->npoints+1 > ctx->cache->cpoints) {
-		ctx->cache->cpoints = (ctx->cache->cpoints == 0) ? 8 : (ctx->cache->cpoints*2);
+		ctx->cache->cpoints = ctx->cache->npoints+1 + ctx->cache->cpoints/2;
 		ctx->cache->points = (struct NVGpoint*)realloc(ctx->cache->points, sizeof(struct NVGpoint)*ctx->cache->cpoints);
 		if (ctx->cache->points == NULL) return;
 	}
