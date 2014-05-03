@@ -581,14 +581,7 @@ void nvgDeleteInternal(struct NVGcontext* ctx);
 // Debug function to dump cached path data.
 void nvgDebugDumpPathCache(struct NVGcontext* ctx);
 
-// Compiler references
-// http://sourceforge.net/p/predef/wiki/Compilers/
-#if _MSC_VER >= 1800
-	// VS 2013 seems to be too smart for school, it will still list the variable as unused if passed into sizeof().
-	#define NVG_NOTUSED(v) do { (void)(v); } while(0)
-#else
-	#define NVG_NOTUSED(v)  (void)sizeof(v)
-#endif
+#define NVG_NOTUSED(v) do { (void)(1 ? (void)0 : ( (void)(v) ) ); } while(0)
 
 #ifdef __cplusplus
 }
