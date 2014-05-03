@@ -857,11 +857,11 @@ static void nvg__appendCommands(struct NVGcontext* ctx, float* vals, int nvals)
 	int i;
 
 	if (ctx->ncommands+nvals > ctx->ccommands) {
-		if (ctx->ccommands == 0) ctx->ccommands = 8;
-		while (ctx->ccommands < ctx->ncommands+nvals)
-			ctx->ccommands *= 2;
-		ctx->commands = (float*)realloc(ctx->commands, ctx->ccommands*sizeof(float));
-		if (ctx->commands == NULL) return;
+		float* commands;
+		ctx->ccommands = ctx->ncommands+nvals + ctx->ccommands/2;
+		commands = (float*)realloc(ctx->commands, ctx->ccommands*sizeof(float));
+		if (commands == NULL) return;
+		ctx->commands = commands;
 	}
 
 	// transform commands
@@ -922,9 +922,11 @@ static void nvg__addPath(struct NVGcontext* ctx)
 {
 	struct NVGpath* path;
 	if (ctx->cache->npaths+1 > ctx->cache->cpaths) {
+		struct NVGpath* paths;
 		ctx->cache->cpaths = ctx->cache->npaths+1 + ctx->cache->cpaths/2;
-		ctx->cache->paths = (struct NVGpath*)realloc(ctx->cache->paths, sizeof(struct NVGpath)*ctx->cache->cpaths);
-		if (ctx->cache->paths == NULL) return;
+		paths = (struct NVGpath*)realloc(ctx->cache->paths, sizeof(struct NVGpath)*ctx->cache->cpaths);
+		if (paths == NULL) return;
+		ctx->cache->paths = paths;
 	}
 	path = &ctx->cache->paths[ctx->cache->npaths];
 	memset(path, 0, sizeof(*path));
@@ -956,9 +958,11 @@ static void nvg__addPoint(struct NVGcontext* ctx, float x, float y, int flags)
 	}
 
 	if (ctx->cache->npoints+1 > ctx->cache->cpoints) {
+		struct NVGpoint* points;
 		ctx->cache->cpoints = ctx->cache->npoints+1 + ctx->cache->cpoints/2;
-		ctx->cache->points = (struct NVGpoint*)realloc(ctx->cache->points, sizeof(struct NVGpoint)*ctx->cache->cpoints);
-		if (ctx->cache->points == NULL) return;
+		points = (struct NVGpoint*)realloc(ctx->cache->points, sizeof(struct NVGpoint)*ctx->cache->cpoints);
+		if (points == NULL) return;
+		ctx->cache->points = points;
 	}
 
 	pt = &ctx->cache->points[ctx->cache->npoints];
@@ -995,12 +999,13 @@ static float nvg__getAverageScale(float *t)
 static struct NVGvertex* nvg__allocTempVerts(struct NVGcontext* ctx, int nverts)
 {
 	if (nverts > ctx->cache->cverts) {
-		if (ctx->cache->cverts == 0) ctx->cache->cverts = 8;
-		while (ctx->cache->cverts < nverts)
-			ctx->cache->cverts *= 2;
-		ctx->cache->verts = (struct NVGvertex*)realloc(ctx->cache->verts, sizeof(struct NVGvertex)*ctx->cache->cverts);
-		if (ctx->cache->verts == NULL) return NULL;
+		struct NVGvertex* verts;
+		ctx->cache->cverts = (nverts + 0xff) & ~0xff; // Round up to prevent allocations when things change just slightly.
+		verts = (struct NVGvertex*)realloc(ctx->cache->verts, sizeof(struct NVGvertex)*ctx->cache->cverts);
+		if (verts == NULL) return NULL;
+		ctx->cache->verts = verts;
 	}
+
 	return ctx->cache->verts;
 }
 
