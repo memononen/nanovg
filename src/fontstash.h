@@ -396,7 +396,7 @@ struct FONScontext
 	float tcoords[FONS_VERTEX_COUNT*2];
 	unsigned int colors[FONS_VERTEX_COUNT];
 	int nverts;
-	unsigned char scratch[FONS_SCRATCH_BUF_SIZE];
+	unsigned char *scratch;
 	int nscratch;
 	struct FONSstate states[FONS_MAX_STATES];
 	int nstates;
@@ -407,8 +407,11 @@ struct FONScontext
 static void* fons__tmpalloc(size_t size, void* up)
 {
 	unsigned char* ptr;
-
 	struct FONScontext* stash = (struct FONScontext*)up;
+
+	// 16-byte align the returned pointer
+	size = (size + 0xf) & ~0xf;
+
 	if (stash->nscratch+(int)size > FONS_SCRATCH_BUF_SIZE) {
 		if (stash->handleError)
 			stash->handleError(stash->errorUptr, FONS_SCRATCH_FULL, stash->nscratch+(int)size);
@@ -465,7 +468,7 @@ static unsigned int fons__decutf8(unsigned int* state, unsigned int* codep, unsi
 	return *state;
 }
 
-// Atlas based on Skyline Pin Packer by Jukka Jylänki
+// Atlas based on Skyline Bin Packer by Jukka Jylänki
 
 static void fons__deleteAtlas(struct FONSatlas* atlas)
 {
@@ -678,6 +681,10 @@ struct FONScontext* fonsCreateInternal(struct FONSparams* params)
 	memset(stash, 0, sizeof(struct FONScontext));
 
 	stash->params = *params;
+
+	// Allocate scratch buffer.
+	stash->scratch = malloc(FONS_SCRATCH_BUF_SIZE);
+	if (stash->scratch == NULL) goto error;
 
 	// Initialize implementation library
 	if (!fons__tt_init(stash)) goto error;
@@ -1538,6 +1545,7 @@ void fonsDeleteInternal(struct FONScontext* stash)
 	if (stash->atlas) fons__deleteAtlas(stash->atlas);
 	if (stash->fonts) free(stash->fonts);
 	if (stash->texData) free(stash->texData);
+	if (stash->scratch) free(stash->scratch);
 	free(stash);
 }
 
