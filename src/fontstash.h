@@ -407,15 +407,26 @@ struct FONScontext
 static void* fons__tmpalloc(size_t size, void* up)
 {
 	unsigned char* ptr;
-
 	struct FONScontext* stash = (struct FONScontext*)up;
+	const uintptr_t alignment = 16 - 1; // For 16 byte alignment
+	uintptr_t alignmentOffset;
+
+	// Make sure stash->scratch + stash->nscratch is aligned
+	ptr = stash->scratch + stash->nscratch;
+	alignmentOffset = (((uintptr_t)ptr + alignment) & (~alignment)) - (uintptr_t)ptr;
+	stash->nscratch += alignmentOffset;
+
+	// Aligned pointer
+	ptr = stash->scratch + stash->nscratch;
+
+	// Check free space
 	if (stash->nscratch+(int)size > FONS_SCRATCH_BUF_SIZE) {
 		if (stash->handleError)
 			stash->handleError(stash->errorUptr, FONS_SCRATCH_FULL, stash->nscratch+(int)size);
 		return NULL;
 	}
-	ptr = stash->scratch + stash->nscratch;
 	stash->nscratch += (int)size;
+
 	return ptr;
 }
 
