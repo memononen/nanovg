@@ -4,7 +4,7 @@
 NanoVG
 ==========
 
-NanoVG is small antialiased vector graphics rendering library for OpenGL. It has lean API modeled after HTML5 canvas API. It is aimed to be a practical and fun toolset for building scalable user interfaces and visualizations. 
+NanoVG is small antialiased vector graphics rendering library for OpenGL. It has lean API modeled after HTML5 canvas API. It is aimed to be a practical and fun toolset for building scalable user interfaces and visualizations.
 
 ## Screenshot
 
@@ -100,5 +100,5 @@ The library is licensed under [zlib license](LICENSE.txt)
 [NanoVG mailing list](https://groups.google.com/forum/#!forum/nanovg)
 
 ## Links
-Uses [stb_truetype](http://nothings.org) for font rendering.
+Uses [stb_truetype](http://nothings.org) (or, optionally, [freetype](http://freetype.org)) for font rendering.
 Uses [stb_image](http://nothings.org) for image loading.
