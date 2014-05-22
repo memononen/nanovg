@@ -812,7 +812,6 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 	int i, npaths = call->pathCount;
 
 	// Draw shapes
-	glDisable(GL_BLEND);
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(0xff);
 	glStencilFunc(GL_ALWAYS, 0, ~0L);
@@ -831,7 +830,6 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 
 	// Draw aliased off-pixels
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glEnable(GL_BLEND);
 
 	glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image);
 	glnvg__checkError("fill fill");
