@@ -5,13 +5,14 @@ solution "nanovg"
 	location ( "build" )
 	configurations { "Debug", "Release" }
 	platforms {"native", "x64", "x32"}
-  
+
    	project "nanovg"
 		language "C"
 		kind "StaticLib"
 		includedirs { "src" }
 		files { "src/*.c" }
 		targetdir("build")
+		--defines { "FONS_USE_FREETYPE" }	-- Uncomment to compile with FreeType support
 
 		configuration "Debug"
 			defines { "DEBUG" }
@@ -19,7 +20,7 @@ solution "nanovg"
 
 		configuration "Release"
 			defines { "NDEBUG" }
-			flags { "Optimize", "ExtraWarnings"}    
+			flags { "Optimize", "ExtraWarnings"}
 
 	project "example_gl2"
 		kind "ConsoleApp"
@@ -28,7 +29,7 @@ solution "nanovg"
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
-	 
+
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
 			 links { "GL", "GLU", "m", "GLEW" }
@@ -48,7 +49,7 @@ solution "nanovg"
 
 		configuration "Release"
 			defines { "NDEBUG" }
-			flags { "Optimize", "ExtraWarnings"}    
+			flags { "Optimize", "ExtraWarnings"}
 
 	project "example_gl3"
 		kind "ConsoleApp"
@@ -57,7 +58,7 @@ solution "nanovg"
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
-	 
+
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
 			 links { "GL", "GLU", "m", "GLEW" }
@@ -77,7 +78,7 @@ solution "nanovg"
 
 		configuration "Release"
 			defines { "NDEBUG" }
-			flags { "Optimize", "ExtraWarnings"}    
+			flags { "Optimize", "ExtraWarnings"}
 
 	project "example_gl2_msaa"
 		kind "ConsoleApp"
@@ -87,7 +88,7 @@ solution "nanovg"
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
-	 
+
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
 			 links { "GL", "GLU", "m", "GLEW" }
@@ -107,7 +108,7 @@ solution "nanovg"
 
 		configuration "Release"
 			defines { "NDEBUG" }
-			flags { "Optimize", "ExtraWarnings"}    
+			flags { "Optimize", "ExtraWarnings"}
 
 	project "example_gl3_msaa"
 		kind "ConsoleApp"
@@ -117,7 +118,7 @@ solution "nanovg"
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
-	 
+
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
 			 links { "GL", "GLU", "m", "GLEW" }
@@ -137,7 +138,7 @@ solution "nanovg"
 
 		configuration "Release"
 			defines { "NDEBUG" }
-			flags { "Optimize", "ExtraWarnings"}    
+			flags { "Optimize", "ExtraWarnings"}
 
 	project "example_gles2"
 		kind "ConsoleApp"
@@ -146,7 +147,7 @@ solution "nanovg"
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
-	 
+
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
 			 links { "GL", "GLU", "m", "GLEW" }
@@ -174,7 +175,7 @@ solution "nanovg"
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }
-	 
+
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
 			 links { "GL", "GLU", "m", "GLEW" }
@@ -193,4 +194,4 @@ solution "nanovg"
 
 		configuration "Release"
 			defines { "NDEBUG" }
-			flags { "Optimize", "ExtraWarnings"}    
+			flags { "Optimize", "ExtraWarnings"}
