@@ -1360,7 +1360,7 @@ static struct NVGvertex* nvg__bevelJoin(struct NVGvertex* dst, struct NVGpoint* 
 			nvg__vset(dst, p1->x, p1->y, 0.5f,1); dst++;
 		}
 
-		nvg__vset(dst, p1->x + dlx1*rw, p1->y + dly1*rw, lu,1); dst++;
+		nvg__vset(dst, p1->x + dlx1*lw, p1->y + dly1*lw, lu,1); dst++;
 		nvg__vset(dst, rx1, ry1, ru,1); dst++;
 	}
 

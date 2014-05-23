@@ -841,7 +841,7 @@ void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float h
 			int hit = mx > x && mx < (x+width) && my >= y && my < (y+lineh);
 
 			nvgBeginPath(vg);
-			nvgFillColor(vg, nvgRGBA(255,255,255,hit?64:8));
+			nvgFillColor(vg, nvgRGBA(255,255,255,hit?64:16));
 			nvgRect(vg, x, y, row->width, lineh);
 			nvgFill(vg);
 
