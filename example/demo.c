@@ -936,6 +936,37 @@ void drawWidths(struct NVGcontext* vg, float x, float y, float width)
 	nvgRestore(vg);
 }
 
+void drawCaps(struct NVGcontext* vg, float x, float y, float width)
+{
+	int i;
+	int caps[3] = {NVG_BUTT, NVG_ROUND, NVG_SQUARE};
+	float lineWidth = 8.0f;
+
+	nvgSave(vg);
+
+	nvgBeginPath(vg);
+	nvgRect(vg, x-lineWidth/2, y, width+lineWidth, 40);
+	nvgFillColor(vg, nvgRGBA(255,255,255,32));
+	nvgFill(vg);
+
+	nvgBeginPath(vg);
+	nvgRect(vg, x, y, width, 40);
+	nvgFillColor(vg, nvgRGBA(255,255,255,32));
+	nvgFill(vg);
+
+	nvgStrokeWidth(vg, lineWidth);
+	for (i = 0; i < 3; i++) {
+		nvgLineCap(vg, caps[i]);
+		nvgStrokeColor(vg, nvgRGBA(0,0,0,255));
+		nvgBeginPath(vg);
+		nvgMoveTo(vg, x, y + i*10 + 5);
+		nvgLineTo(vg, x+width, y + i*10 + 5);
+		nvgStroke(vg);
+	}
+
+	nvgRestore(vg);
+}
+
 void renderDemo(struct NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, struct DemoData* data)
 {
@@ -949,8 +980,11 @@ void renderDemo(struct NVGcontext* vg, float mx, float my, float width, float he
 	// Line joints
 	drawLines(vg, 50, height-50, 600, 50, t);
 
-	// Line width;
+	// Line caps
 	drawWidths(vg, 10, 50, 30);
+
+	// Line caps
+	drawCaps(vg, 10, 300, 30);
 
 	nvgSave(vg);
 	if (blowup) {
