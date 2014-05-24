@@ -132,6 +132,7 @@ static int nvg__clampi(int a, int mn, int mx) { return a < mn ? mn : (a > mx ? m
 static float nvg__minf(float a, float b) { return a < b ? a : b; }
 static float nvg__maxf(float a, float b) { return a > b ? a : b; }
 static float nvg__absf(float a) { return a >= 0.0f ? a : -a; }
+static float nvg__signf(float a) { return a >= 0.0f ? 1.0f : -1.0f; }
 static float nvg__clampf(float a, float mn, float mx) { return a < mn ? mn : (a > mx ? mx : a); }
 static float nvg__cross(float dx0, float dy0, float dx1, float dy1) { return dx1*dy0 - dx0*dy1; }
 
@@ -1815,9 +1816,9 @@ void nvgRect(struct NVGcontext* ctx, float x, float y, float w, float h)
 {
 	float vals[] = {
 		NVG_MOVETO, x,y,
-		NVG_LINETO, x+w,y,
-		NVG_LINETO, x+w,y+h,
 		NVG_LINETO, x,y+h,
+		NVG_LINETO, x+w,y+h,
+		NVG_LINETO, x+w,y,
 		NVG_CLOSE
 	};
 	nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
@@ -1830,16 +1831,17 @@ void nvgRoundedRect(struct NVGcontext* ctx, float x, float y, float w, float h, 
 		return;
 	}
 	else {
+		float rx = nvg__minf(r, nvg__absf(w)*0.5f) * nvg__signf(w), ry = nvg__minf(r, nvg__absf(h)*0.5f) * nvg__signf(h);
 		float vals[] = {
-			NVG_MOVETO, x+r, y,
-			NVG_LINETO, x+w-r, y,
-			NVG_BEZIERTO, x+w-r*(1-NVG_KAPPA90), y, x+w, y+r*(1-NVG_KAPPA90), x+w, y+r,
-			NVG_LINETO, x+w, y+h-r,
-			NVG_BEZIERTO, x+w, y+h-r*(1-NVG_KAPPA90), x+w-r*(1-NVG_KAPPA90), y+h, x+w-r, y+h,
-			NVG_LINETO, x+r, y+h,
-			NVG_BEZIERTO, x+r*(1-NVG_KAPPA90), y+h, x, y+h-r*(1-NVG_KAPPA90), x, y+h-r,
-			NVG_LINETO, x, y+r,
-			NVG_BEZIERTO, x, y+r*(1-NVG_KAPPA90), x+r*(1-NVG_KAPPA90), y, x+r, y,
+			NVG_MOVETO, x, y+ry,
+			NVG_LINETO, x, y+h-ry,
+			NVG_BEZIERTO, x, y+h-ry*(1-NVG_KAPPA90), x+rx*(1-NVG_KAPPA90), y+h, x+rx, y+h,
+			NVG_LINETO, x+w-rx, y+h,
+			NVG_BEZIERTO, x+w-rx*(1-NVG_KAPPA90), y+h, x+w, y+h-ry*(1-NVG_KAPPA90), x+w, y+h-ry,
+			NVG_LINETO, x+w, y+ry,
+			NVG_BEZIERTO, x+w, y+ry*(1-NVG_KAPPA90), x+w-rx*(1-NVG_KAPPA90), y, x+w-rx, y,
+			NVG_LINETO, x+rx, y,
+			NVG_BEZIERTO, x+rx*(1-NVG_KAPPA90), y, x, y+ry*(1-NVG_KAPPA90), x, y+ry,
 			NVG_CLOSE
 		};
 		nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
@@ -1849,11 +1851,11 @@ void nvgRoundedRect(struct NVGcontext* ctx, float x, float y, float w, float h, 
 void nvgEllipse(struct NVGcontext* ctx, float cx, float cy, float rx, float ry)
 {
 	float vals[] = {
-		NVG_MOVETO, cx+rx, cy,
-		NVG_BEZIERTO, cx+rx, cy+ry*NVG_KAPPA90, cx+rx*NVG_KAPPA90, cy+ry, cx, cy+ry,
-		NVG_BEZIERTO, cx-rx*NVG_KAPPA90, cy+ry, cx-rx, cy+ry*NVG_KAPPA90, cx-rx, cy,
-		NVG_BEZIERTO, cx-rx, cy-ry*NVG_KAPPA90, cx-rx*NVG_KAPPA90, cy-ry, cx, cy-ry,
-		NVG_BEZIERTO, cx+rx*NVG_KAPPA90, cy-ry, cx+rx, cy-ry*NVG_KAPPA90, cx+rx, cy,
+		NVG_MOVETO, cx-rx, cy,
+		NVG_BEZIERTO, cx-rx, cy+ry*NVG_KAPPA90, cx-rx*NVG_KAPPA90, cy+ry, cx, cy+ry,
+		NVG_BEZIERTO, cx+rx*NVG_KAPPA90, cy+ry, cx+rx, cy+ry*NVG_KAPPA90, cx+rx, cy,
+		NVG_BEZIERTO, cx+rx, cy-ry*NVG_KAPPA90, cx+rx*NVG_KAPPA90, cy-ry, cx, cy-ry,
+		NVG_BEZIERTO, cx-rx*NVG_KAPPA90, cy-ry, cx-rx, cy-ry*NVG_KAPPA90, cx-rx, cy,
 		NVG_CLOSE
 	};
 	nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
