@@ -683,7 +683,7 @@ struct FONScontext* fonsCreateInternal(struct FONSparams* params)
 	stash->params = *params;
 
 	// Allocate scratch buffer.
-	stash->scratch = malloc(FONS_SCRATCH_BUF_SIZE);
+	stash->scratch = (unsigned char*)malloc(FONS_SCRATCH_BUF_SIZE);
 	if (stash->scratch == NULL) goto error;
 
 	// Initialize implementation library
