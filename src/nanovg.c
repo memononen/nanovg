@@ -1916,13 +1916,13 @@ void nvgStroke(struct NVGcontext* ctx)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	float scale = nvg__getAverageScale(state->xform);
-	float strokeWidth = nvg__clampf(state->strokeWidth * scale, 0.0f, 20.0f);
+	float strokeWidth = nvg__clampf(state->strokeWidth * scale, 0.0f, 200.0f);
 	struct NVGpaint strokePaint = state->stroke;
 	const struct NVGpath* path;
 	int i;
 
 	if (strokeWidth < ctx->fringeWidth) {
-		// If the stroke width is less than pixel size, use alpha to emulate coverate.
+		// If the stroke width is less than pixel size, use alpha to emulate coverage.
 		// Since coverage is area, scale by alpha*alpha.
 		float alpha = nvg__clampf(strokeWidth / ctx->fringeWidth, 0.0f, 1.0f);
 		strokePaint.innerColor.a *= alpha*alpha;
