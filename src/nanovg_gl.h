@@ -803,7 +803,7 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 	// Draw shapes
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(0xff);
-	glStencilFunc(GL_ALWAYS, 0, ~0L);
+	glStencilFunc(GL_ALWAYS, 0, (GLuint)(~0L));
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 	// set bindpoint for solid loc
