@@ -186,7 +186,7 @@ error:
 
 static void nvg__setDevicePixelRatio(struct NVGcontext* ctx, float ratio)
 {
-	ctx->tessTol = 1.0f / ratio;
+	ctx->tessTol = 0.25f / ratio;
 	ctx->distTol = 0.01f / ratio;
 	ctx->fringeWidth = 1.0f / ratio;
 	ctx->devicePxRatio = ratio;
@@ -1077,8 +1077,8 @@ static void nvg__tesselateBezier(struct NVGcontext* ctx,
 	x123 = (x12+x23)*0.5f;
 	y123 = (y12+y23)*0.5f;
 
-	dx = x3 - x1;
-	dy = y3 - y1;
+	dx = x4 - x1;
+	dy = y4 - y1;
 	d2 = nvg__absf(((x2 - x4) * dy - (y2 - y4) * dx));
 	d3 = nvg__absf(((x3 - x4) * dy - (y3 - y4) * dx));
 
