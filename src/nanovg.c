@@ -671,6 +671,11 @@ int nvgCreateImageMem(struct NVGcontext* ctx, unsigned char* data, int ndata)
 	return image;
 }
 
+int nvgCreateImageNative(struct NVGcontext* ctx, int w, int h, unsigned int handle)
+{
+    return ctx->params.renderCreateTextureNative(ctx->params.userPtr, NVG_TEXTURE_RGBA, w, h, handle);
+}
+
 int nvgCreateImageRGBA(struct NVGcontext* ctx, int w, int h, const unsigned char* data)
 {
 	return ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_RGBA, w, h, data);

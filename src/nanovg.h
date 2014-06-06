@@ -310,6 +310,10 @@ int nvgCreateImage(struct NVGcontext* ctx, const char* filename);
 // Returns handle to the image.
 int nvgCreateImageMem(struct NVGcontext* ctx, unsigned char* data, int ndata);
 
+// Creates an image from an exisiting backend handle. This can be used for turning a
+// rendering into an FBO into a source image.
+int nvgCreateImageNative(struct NVGcontext* ctx, int w, int h, unsigned int handle);
+
 // Creates image from specified image data.
 // Returns handle to the image.
 int nvgCreateImageRGBA(struct NVGcontext* ctx, int w, int h, const unsigned char* data);
@@ -349,10 +353,10 @@ struct NVGpaint nvgBoxGradient(struct NVGcontext* ctx, float x, float y, float w
 struct NVGpaint nvgRadialGradient(struct NVGcontext* ctx, float cx, float cy, float inr, float outr,
 								  struct NVGcolor icol, struct NVGcolor ocol);
 
-// Creates and returns an image patter. Parameters (ox,oy) specify the left-top location of the image pattern,
+// Creates and returns an image pattern. Parameters (ox,oy) specify the left-top location of the image pattern,
 // (ex,ey) the size of one image, angle rotation around the top-left corner, image is handle to the image to render,
 // and repeat is combination of NVG_REPEATX and NVG_REPEATY which tells if the image should be repeated across x or y.
-// The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
+// The image is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 struct NVGpaint nvgImagePattern(struct NVGcontext* ctx, float ox, float oy, float ex, float ey,
 								float angle, int image, int repeat);
 
@@ -565,6 +569,7 @@ struct NVGparams {
 	int edgeAntiAlias;
 	int (*renderCreate)(void* uptr);
 	int (*renderCreateTexture)(void* uptr, int type, int w, int h, const unsigned char* data);
+	int (*renderCreateTextureNative)(void* uptr, int type, int w, int h, unsigned int handle);
 	int (*renderDeleteTexture)(void* uptr, int image);
 	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
