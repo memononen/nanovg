@@ -15,8 +15,8 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 //
-#ifndef NANOVG_GL3_H
-#define NANOVG_GL3_H
+#ifndef NANOVG_GL_H
+#define NANOVG_GL_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,7 +38,7 @@ extern "C" {
 #  define NANOVG_GLES3 1
 #  define NANOVG_GL_IMPLEMENTATION 1
 #endif
-	
+
 
 #if defined NANOVG_GL2
 
@@ -62,11 +62,21 @@ void nvgDeleteGLES3(struct NVGcontext* ctx);
 
 #endif
 
+enum NVGLtextureflags {
+	NVGL_TEXTURE_FLIP_Y   = 0x01,
+	NVGL_TEXTURE_NODELETE = 0x02,
+};
+
+int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int flags);
+GLuint nvglImageHandle(struct NVGcontext* ctx, int image);
+void nvglImageFlags(struct NVGcontext* ctx, int image, int flags);
+
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* NANOVG_GL_H */
 
 #ifdef NANOVG_GL_IMPLEMENTATION
 
@@ -123,6 +133,7 @@ struct GLNVGtexture {
 	GLuint tex;
 	int width, height;
 	int type;
+	int flags;
 };
 
 enum GLNVGcallType {
@@ -242,7 +253,7 @@ static int glnvg__deleteTexture(struct GLNVGcontext* gl, int id)
 	int i;
 	for (i = 0; i < gl->ntextures; i++) {
 		if (gl->textures[i].id == id) {
-			if (gl->textures[i].tex != 0)
+			if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVGL_TEXTURE_NODELETE) == 0)
 				glDeleteTextures(1, &gl->textures[i].tex);
 			memset(&gl->textures[i], 0, sizeof(gl->textures[i]));
 			return 1;
@@ -703,9 +714,6 @@ static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms
 	frag->innerCol = paint->innerColor;
 	frag->outerCol = paint->outerColor;
 
-	nvgTransformInverse(invxform, paint->xform);
-	glnvg__xformToMat3x4(frag->paintMat, invxform);
-
 	if (scissor->extent[0] < 0.5f || scissor->extent[1] < 0.5f) {
 		memset(frag->scissorMat, 0, sizeof(frag->scissorMat));
 		frag->scissorExt[0] = 1.0f;
@@ -720,19 +728,32 @@ static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms
 		frag->scissorScale[0] = sqrtf(scissor->xform[0]*scissor->xform[0] + scissor->xform[2]*scissor->xform[2]) / fringe;
 		frag->scissorScale[1] = sqrtf(scissor->xform[1]*scissor->xform[1] + scissor->xform[3]*scissor->xform[3]) / fringe;
 	}
+
 	memcpy(frag->extent, paint->extent, sizeof(frag->extent));
 	frag->strokeMult = (width*0.5f + fringe*0.5f) / fringe;
 
 	if (paint->image != 0) {
 		tex = glnvg__findTexture(gl, paint->image);
 		if (tex == NULL) return 0;
+		if ((tex->flags & NVGL_TEXTURE_FLIP_Y) != 0) {
+			float flipped[6];
+			nvgTransformScale(flipped, 1.0f, -1.0f);
+			nvgTransformMultiply(flipped, paint->xform);
+			nvgTransformInverse(invxform, flipped);
+		} else {
+			nvgTransformInverse(invxform, paint->xform);
+		}
 		frag->type = NSVG_SHADER_FILLIMG;
 		frag->texType = tex->type == NVG_TEXTURE_RGBA ? 0 : 1;
 	} else {
 		frag->type = NSVG_SHADER_FILLGRAD;
 		frag->radius = paint->radius;
 		frag->feather = paint->feather;
+		nvgTransformInverse(invxform, paint->xform);
 	}
+
+	glnvg__xformToMat3x4(frag->paintMat, invxform);
+
 	return 1;
 }
 
@@ -1222,7 +1243,7 @@ static void glnvg__renderDelete(void* uptr)
 		glDeleteBuffers(1, &gl->vertBuf);
 
 	for (i = 0; i < gl->ntextures; i++) {
-		if (gl->textures[i].tex != 0)
+		if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVGL_TEXTURE_NODELETE) == 0)
 			glDeleteTextures(1, &gl->textures[i].tex);
 	}
 	free(gl->textures);
@@ -1290,4 +1311,36 @@ void nvgDeleteGLES3(struct NVGcontext* ctx)
 	nvgDeleteInternal(ctx);
 }
 
-#endif
+int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int flags)
+{
+	struct GLNVGcontext* gl = (struct GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
+	struct GLNVGtexture* tex = glnvg__allocTexture(gl);
+
+	if (tex == NULL) return 0;
+
+	tex->tex = textureId;
+	tex->type = NVG_TEXTURE_RGBA;
+    tex->flags = 0;
+	glBindTexture(GL_TEXTURE_2D, tex->tex);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &tex->width);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &tex->height);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return tex->id;
+}
+
+GLuint nvglImageHandle(struct NVGcontext* ctx, int image)
+{
+	struct GLNVGcontext* gl = (struct GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
+	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
+	return tex->tex;
+}
+
+void nvglImageFlags(struct NVGcontext* ctx, int image, int flags)
+{
+	struct GLNVGcontext* gl = (struct GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
+	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
+	tex->flags = flags;
+}
+
+#endif /* NANOVG_GL_IMPLEMENTATION */
