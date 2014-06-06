@@ -62,6 +62,9 @@ void nvgDeleteGLES3(struct NVGcontext* ctx);
 
 #endif
 
+int nvgCreateImageGL(struct NVGcontext* ctx, int textureId);
+int nvgImageHandlerGL(struct NVGcontext* ctx, int image);
+
 #ifdef __cplusplus
 }
 #endif
@@ -1288,6 +1291,30 @@ void nvgDeleteGLES3(struct NVGcontext* ctx)
 #endif
 {
 	nvgDeleteInternal(ctx);
+}
+
+int nvgCreateImageGL(struct NVGcontext* ctx, int textureId)
+{
+	struct GLNVGcontext* gl = (struct GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
+	struct GLNVGtexture* tex = glnvg__allocTexture(gl);
+
+	if (tex == NULL) return 0;
+
+	tex->tex = textureId;
+	tex->type = NVG_TEXTURE_RGBA;
+	glBindTexture(GL_TEXTURE_2D, tex->tex);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &tex->width);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &tex->height);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return tex->id;
+}
+
+int nvgImageHandlerGL(struct NVGcontext* ctx, int image)
+{
+	struct GLNVGcontext* gl = (struct GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
+	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
+	return tex->tex;
 }
 
 #endif

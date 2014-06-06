@@ -51,6 +51,34 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 		premult = !premult;
 }
 
+static int createFBO(int w, int h, int* fboId, int* rboId, int* texId)
+{
+	/* texture */
+	glGenTextures(1, texId);
+	glBindTexture(GL_TEXTURE_2D, *texId);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	/* frame buffer object */
+	glGenFramebuffers(1, fboId);
+	glBindFramebuffer(GL_FRAMEBUFFER, *fboId);
+
+	/* render buffer object */
+	glGenRenderbuffers(1, rboId);
+	glBindRenderbuffer(GL_RENDERBUFFER, *rboId);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+
+	/* combine all */
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *texId, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *rboId);
+
+	return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+}
+
 int main()
 {
 	GLFWwindow* window;
@@ -58,6 +86,7 @@ int main()
 	struct NVGcontext* vg = NULL;
 	struct PerfGraph fps;
 	double prevt = 0;
+	int hasFBO, fboId, rboId, texId, image;
 
 	if (!glfwInit()) {
 		printf("Failed to init GLFW.");
@@ -74,7 +103,7 @@ int main()
 	glfwWindowHint(GLFW_SAMPLES, 4);
 #endif
 
-    window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
+	window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
 //	window = glfwCreateWindow(1000, 600, "NanoVG", glfwGetPrimaryMonitor(), NULL);
 	if (!window) {
 		glfwTerminate();
@@ -109,12 +138,30 @@ int main()
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
+	hasFBO = createFBO(600, 600, &fboId, &rboId, &texId);
+	if (hasFBO)
+		image = nvgCreateImageGL(vg, texId);
+
 	while (!glfwWindowShouldClose(window))
 	{
 		double mx, my, t, dt;
 		int winWidth, winHeight;
 		int fbWidth, fbHeight;
 		float pxRatio;
+
+		if (hasFBO) {
+			int fboWidth, fboHeight;
+			nvgImageSize(vg, image, &fboWidth, &fboHeight);
+			// Draw some stull to an FBO as a test
+			glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+			glViewport(0, 0, fboWidth, fboHeight);
+			glClearColor(0, 0, 0, 0);
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+			nvgBeginFrame(vg, fboWidth, fboHeight, pxRatio, NVG_PREMULTIPLIED_ALPHA);
+			renderDemo(vg, mx, my, fboWidth, fboHeight, t, blowup, &data);
+			nvgEndFrame(vg);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
 
 		t = glfwGetTime();
 		dt = t - prevt;
@@ -141,6 +188,16 @@ int main()
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
 		renderGraph(vg, 5,5, &fps);
 
+		if (hasFBO) {
+			struct NVGpaint img = nvgImagePattern(vg, 0, 0, 150, 150, 0, image, 0);
+			nvgBeginPath(vg);
+			nvgTranslate(vg, 540, 450);
+			nvgScale(vg, 1.0f, -1.0f);
+			nvgRect(vg, 0, 0, 150, 150);
+			nvgFillPaint(vg, img);
+			nvgFill(vg);
+		}
+
 		nvgEndFrame(vg);
 
 		if (screenshot) {
@@ -155,6 +212,9 @@ int main()
 	freeDemoData(vg, &data);
 
 	nvgDeleteGL2(vg);
+	glDeleteFramebuffers(1, &fboId);
+	glDeleteRenderbuffers(1, &rboId);
+	glDeleteTextures(1, &texId);
 
 	glfwTerminate();
 	return 0;
