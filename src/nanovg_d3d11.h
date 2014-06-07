@@ -965,12 +965,12 @@ static void D3Dnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGsci
         D3D_API_1(D3D->pDeviceContext, RSSetState, D3D->pRSNoCull);
 
         struct NVGvertex quad[6];
-        D3Dnvg__vset(quad, bounds[0], bounds[3], .5f, 1.0f);
-        D3Dnvg__vset(quad, bounds[2], bounds[3], .5f, 1.0f);
-        D3Dnvg__vset(quad, bounds[2], bounds[1], .5f, 1.0f);
-        D3Dnvg__vset(quad, bounds[0], bounds[3], .5f, 1.0f);
-        D3Dnvg__vset(quad, bounds[2], bounds[1], .5f, 1.0f);
-        D3Dnvg__vset(quad, bounds[0], bounds[1], .5f, 1.0f);
+        D3Dnvg__vset(&quad[0], bounds[0], bounds[3], .5f, 1.0f);
+        D3Dnvg__vset(&quad[1], bounds[2], bounds[3], .5f, 1.0f);
+        D3Dnvg__vset(&quad[2], bounds[2], bounds[1], .5f, 1.0f);
+        D3Dnvg__vset(&quad[3], bounds[0], bounds[3], .5f, 1.0f);
+        D3Dnvg__vset(&quad[4], bounds[2], bounds[1], .5f, 1.0f);
+        D3Dnvg__vset(&quad[5], bounds[0], bounds[1], .5f, 1.0f);
 
         unsigned int dynamicOffset = D3Dnvg_updateVertexBuffer(D3D->pDeviceContext, &D3D->VertexBuffer, quad, 6);
         D3Dnvg_setBuffers(D3D, dynamicOffset, 0);
