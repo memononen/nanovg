@@ -583,7 +583,7 @@ void nvgDeleteInternal(struct NVGcontext* ctx);
 // Debug function to dump cached path data.
 void nvgDebugDumpPathCache(struct NVGcontext* ctx);
 
-#define NVG_NOTUSED(v) do { (void)(1 ? (void)0 : ( (void)(v) ) ); } while(0)
+#define NVG_NOTUSED(v) ((void*)&v)
 
 #ifdef __cplusplus
 }
