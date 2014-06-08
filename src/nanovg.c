@@ -2239,8 +2239,8 @@ int nvgTextGlyphPositions(struct NVGcontext* ctx, float x, float y, const char* 
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
 		positions[npos].str = iter.str;
 		positions[npos].x = iter.x * invscale;
-		positions[npos].minx = q.x0 * invscale;
-		positions[npos].maxx = q.x1 * invscale;
+		positions[npos].minx = nvg__minf(iter.x, q.x0) * invscale;
+		positions[npos].maxx = nvg__maxf(iter.nextx, q.x1) * invscale;
 		npos++;
 		if (npos >= maxPositions)
 			break;
