@@ -57,10 +57,8 @@ int main()
 	GLFWwindow* window;
 	struct DemoData data;
 	struct NVGcontext* vg = NULL;
-	struct NVGLUframebuffer fb;
 	struct PerfGraph fps;
 	double prevt = 0;
-	int hasFBO;
 
 	if (!glfwInit()) {
 		printf("Failed to init GLFW.");
@@ -112,28 +110,12 @@ int main()
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
-	hasFBO = nvgluCreateFramebuffer(vg, &fb, 600, 600);
-
 	while (!glfwWindowShouldClose(window))
 	{
 		double mx, my, t, dt;
 		int winWidth, winHeight;
 		int fbWidth, fbHeight;
 		float pxRatio;
-
-		if (hasFBO) {
-			int fboWidth, fboHeight;
-			nvgImageSize(vg, fb.image, &fboWidth, &fboHeight);
-			// Draw some stull to an FBO as a test
-			glBindFramebuffer(GL_FRAMEBUFFER, fb.fbo);
-			glViewport(0, 0, fboWidth, fboHeight);
-			glClearColor(0, 0, 0, 0);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-			nvgBeginFrame(vg, fboWidth, fboHeight, pxRatio, NVG_PREMULTIPLIED_ALPHA);
-			renderDemo(vg, mx, my, fboWidth, fboHeight, t, blowup, &data);
-			nvgEndFrame(vg);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
 
 		t = glfwGetTime();
 		dt = t - prevt;
@@ -160,15 +142,6 @@ int main()
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
 		renderGraph(vg, 5,5, &fps);
 
-		if (hasFBO) {
-			struct NVGpaint img = nvgImagePattern(vg, 0, 0, 150, 150, 0, fb.image, 0);
-			nvgBeginPath(vg);
-			nvgTranslate(vg, 540, 300);
-			nvgRect(vg, 0, 0, 150, 150);
-			nvgFillPaint(vg, img);
-			nvgFill(vg);
-		}
-
 		nvgEndFrame(vg);
 
 		if (screenshot) {
@@ -182,7 +155,6 @@ int main()
 
 	freeDemoData(vg, &data);
 
-	nvgluDeleteFramebuffer(vg, &fb);
 	nvgDeleteGL2(vg);
 
 	glfwTerminate();

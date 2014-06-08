@@ -1324,7 +1324,7 @@ int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int flag
 
 	tex->tex = textureId;
 	tex->type = NVG_TEXTURE_RGBA;
-    tex->flags = 0;
+    tex->flags = flags;
 	glBindTexture(GL_TEXTURE_2D, tex->tex);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &tex->width);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &tex->height);
