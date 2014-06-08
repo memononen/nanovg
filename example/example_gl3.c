@@ -179,7 +179,7 @@ int main()
 			renderGraph(vg, 5+200+5+200+5,5, &gpuGraph);
 
 		if (fb != NULL) {
-			struct NVGpaint img = nvgImagePattern(vg, 0, 0, 150, 150, 0, fb->image, 0);
+			struct NVGpaint img = nvgImagePattern(vg, 0, 0, 150, 150, 0, fb->image, NVG_NOREPEAT, 1.0f);
 			nvgBeginPath(vg);
 			nvgTranslate(vg, 540, 300);
 			nvgRect(vg, 0, 0, 150, 150);

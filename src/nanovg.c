@@ -59,6 +59,7 @@ struct NVGstate {
 	float miterLimit;
 	int lineJoin;
 	int lineCap;
+	float alpha;
 	float xform[6];
 	struct NVGscissor scissor;
 	float fontSize;
@@ -519,6 +520,7 @@ void nvgReset(struct NVGcontext* ctx)
 	state->miterLimit = 10.0f;
 	state->lineCap = NVG_BUTT;
 	state->lineJoin = NVG_MITER;
+	state->alpha = 1.0f;
 	nvgTransformIdentity(state->xform);
 
 	state->scissor.extent[0] = 0.0f;
@@ -557,6 +559,11 @@ void nvgLineJoin(struct NVGcontext* ctx, int join)
 	state->lineJoin = join;
 }
 
+void nvgGlobalAlpha(struct NVGcontext* ctx, float alpha)
+{
+	struct NVGstate* state = nvg__getState(ctx);
+	state->alpha = alpha;
+}
 
 void nvgTransform(struct NVGcontext* ctx, float a, float b, float c, float d, float e, float f)
 {
@@ -786,7 +793,7 @@ struct NVGpaint nvgBoxGradient(struct NVGcontext* ctx,
 
 struct NVGpaint nvgImagePattern(struct NVGcontext* ctx,
 								float cx, float cy, float w, float h, float angle,
-								int image, int repeat)
+								int image, int repeat, float alpha)
 {
 	struct NVGpaint p;
 	NVG_NOTUSED(ctx);
@@ -801,6 +808,8 @@ struct NVGpaint nvgImagePattern(struct NVGcontext* ctx,
 
 	p.image = image;
 	p.repeat = repeat;
+
+	p.innerColor = p.outerColor = nvgRGBAf(1,1,1,alpha);
 
 	return p;
 }
@@ -1981,6 +1990,7 @@ void nvgFill(struct NVGcontext* ctx)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	const struct NVGpath* path;
+	struct NVGpaint fillPaint = state->fill;
 	int i;
 
 	nvg__flattenPaths(ctx);
@@ -1989,7 +1999,11 @@ void nvgFill(struct NVGcontext* ctx)
 	else
 		nvg__expandFill(ctx, 0.0f, NVG_MITER, 2.4f);
 
-	ctx->params.renderFill(ctx->params.userPtr, &state->fill, &state->scissor, ctx->fringeWidth,
+	// Apply global alpha
+	fillPaint.innerColor.a *= state->alpha;
+	fillPaint.outerColor.a *= state->alpha;
+
+	ctx->params.renderFill(ctx->params.userPtr, &fillPaint, &state->scissor, ctx->fringeWidth,
 						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
@@ -2018,6 +2032,10 @@ void nvgStroke(struct NVGcontext* ctx)
 		strokePaint.outerColor.a *= alpha*alpha;
 		strokeWidth = ctx->fringeWidth;
 	}
+
+	// Apply global alpha
+	strokePaint.innerColor.a *= state->alpha;
+	strokePaint.outerColor.a *= state->alpha;
 
 	nvg__flattenPaths(ctx);
 
@@ -2171,6 +2189,11 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 	// Render triangles.
 	paint = state->fill;
 	paint.image = ctx->fontImage;
+
+	// Apply global alpha
+	paint.innerColor.a *= state->alpha;
+	paint.outerColor.a *= state->alpha;
+
 	ctx->params.renderTriangles(ctx->params.userPtr, &paint, &state->scissor, verts, nverts);
 
 	ctx->drawCallCount++;

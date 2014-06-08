@@ -524,6 +524,8 @@ static int glnvg__renderCreate(void* uptr)
 		"		vec4 color = texture2D(tex, pt);\n"
 		"#endif\n"
 		"   	color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
+		"		// Apply color tint and alpha.\n"
+		"		color *= innerCol;\n"
 		"		// Combine alpha\n"
 		"		color.w *= strokeAlpha * scissor;\n"
 		"		result = color;\n"

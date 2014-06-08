@@ -66,6 +66,7 @@ enum NVGlineCap {
 };
 
 enum NVGpatternRepeat {
+	NVG_NOREPEAT = 0,
 	NVG_REPEATX = 0x01,		// Repeat image pattern in X direction
 	NVG_REPEATY = 0x02,		// Repeat image pattern in Y direction
 };
@@ -207,6 +208,10 @@ void nvgLineCap(struct NVGcontext* ctx, int cap);
 // Sets how sharp path corners are drawn.
 // Can be one of NVG_MITER (default), NVG_ROUND, NVG_BEVEL.
 void nvgLineJoin(struct NVGcontext* ctx, int join);
+
+// Sets the transparency applied to all rendered shapes.
+// Alreade transparent paths will get proportionally more transparent as well.
+void nvgGlobalAlpha(struct NVGcontext* ctx, float alpha);
 
 //
 // Transforms
@@ -354,7 +359,7 @@ struct NVGpaint nvgRadialGradient(struct NVGcontext* ctx, float cx, float cy, fl
 // and repeat is combination of NVG_REPEATX and NVG_REPEATY which tells if the image should be repeated across x or y.
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 struct NVGpaint nvgImagePattern(struct NVGcontext* ctx, float ox, float oy, float ex, float ey,
-								float angle, int image, int repeat);
+								float angle, int image, int repeat, float alpha);
 
 //
 // Scissoring
