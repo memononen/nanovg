@@ -34,9 +34,20 @@ void nvgluDeleteFramebuffer(struct NVGcontext* ctx, struct NVGLUframebuffer* fb)
 
 #ifdef NANOVG_GL_IMPLEMENTATION
 
+#if defined(NANOVG_GL3)
+// FBO is core in OpenGL 3>.
+#	define NANOVG_FBO_VALID 1
+#elif defined(NANOVG_GL2)
+// On OS X including glext defines FBO on GL2 too.
+#	ifdef __APPLE__
+#		include <OpenGL/glext.h>
+#		define NANOVG_FBO_VALID 1
+#	endif
+#endif
+
 struct NVGLUframebuffer* nvgluCreateFramebuffer(struct NVGcontext* ctx, int w, int h)
 {
-#ifdef NANOVG_GL3
+#ifdef NANOVG_FBO_VALID
 	struct NVGLUframebuffer* fb = NULL;
 	fb = (struct NVGLUframebuffer*)malloc(sizeof(struct NVGLUframebuffer));
 	if (fb == NULL) goto error;
@@ -75,7 +86,7 @@ error:
 
 void nvgluBindFramebuffer(struct NVGLUframebuffer* fb)
 {
-#ifdef NANOVG_GL3
+#ifdef NANOVG_FBO_VALID
 	glBindFramebuffer(GL_FRAMEBUFFER, fb != NULL ? fb->fbo : 0);
 #else
 	NVG_NOTUSED(fb);
@@ -84,7 +95,7 @@ void nvgluBindFramebuffer(struct NVGLUframebuffer* fb)
 
 void nvgluDeleteFramebuffer(struct NVGcontext* ctx, struct NVGLUframebuffer* fb)
 {
-#ifdef NANOVG_GL3
+#ifdef NANOVG_FBO_VALID
 	if (fb == NULL) return;
 	if (fb->fbo != 0)
 		glDeleteFramebuffers(1, &fb->fbo);
