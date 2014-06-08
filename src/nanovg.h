@@ -580,6 +580,8 @@ struct NVGparams {
 struct NVGcontext* nvgCreateInternal(struct NVGparams* params);
 void nvgDeleteInternal(struct NVGcontext* ctx);
 
+struct NVGparams* nvgInternalParams(struct NVGcontext* ctx);
+
 // Debug function to dump cached path data.
 void nvgDebugDumpPathCache(struct NVGcontext* ctx);
 

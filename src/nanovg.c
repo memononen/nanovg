@@ -236,6 +236,11 @@ error:
 	return 0;
 }
 
+struct NVGparams* nvgInternalParams(struct NVGcontext* ctx)
+{
+    return &ctx->params;
+}
+
 void nvgDeleteInternal(struct NVGcontext* ctx)
 {
 	if (ctx == NULL) return;
