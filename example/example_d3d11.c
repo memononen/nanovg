@@ -80,6 +80,9 @@ void Draw()
     float gpuTimes[3];
     double dt;
     double t;
+    float clearColor[4];
+    D3D11_VIEWPORT viewport;
+    float pxRatio;
 
     if (!pDeviceContext)
     {
@@ -90,8 +93,6 @@ void Draw()
     dt = t - prevt;
 	prevt = t;
     
-    float clearColor[4];
-
     if (premult)
     {
         clearColor[0] = 0.0f;
@@ -110,7 +111,6 @@ void Draw()
 
     ID3D11DeviceContext_OMSetRenderTargets(pDeviceContext, 1, &pRenderTargetView, pDepthStencilView);
           
-    D3D11_VIEWPORT viewport;
     viewport.Height = (float)yWin;
     viewport.Width = (float)xWin;
     viewport.MaxDepth = 1.0f;
@@ -122,7 +122,7 @@ void Draw()
     ID3D11DeviceContext_ClearRenderTargetView(pDeviceContext, pRenderTargetView, clearColor);
     ID3D11DeviceContext_ClearDepthStencilView(pDeviceContext, pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 0.0f, (UINT8)0);
 
-    float pxRatio = (float)xWin / (float)yWin;
+    pxRatio = (float)xWin / (float)yWin;
     nvgBeginFrame(vg, xWin, yWin, pxRatio, premult ? NVG_PREMULTIPLIED_ALPHA : NVG_STRAIGHT_ALPHA);
 
     renderDemo(vg, (float)xm, (float)ym, (float)xWin, (float)yWin, (float)t, blowup, &data);
@@ -254,19 +254,29 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
+    RECT rcWin;
+    
     hInst = hInstance; // Store instance handle in our global variable
 
-    unsigned int winWidth = 1000;
-    unsigned int winHeight = 600;
+    rcWin.left = 0;
+    rcWin.right = 1000;
+    rcWin.top = 0;
+    rcWin.bottom = 600;
+  
+    AdjustWindowRectEx(&rcWin, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    
+    rcWin.right += -rcWin.left;
+    rcWin.bottom += -rcWin.top;
+  
     hWndMain = CreateWindowEx(0, pszWindowClass, "Nanovg", WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, winWidth, winHeight, NULL, NULL, hInstance, NULL);
+        CW_USEDEFAULT, CW_USEDEFAULT, (int)rcWin.right, (int)rcWin.bottom, NULL, NULL, hInstance, NULL);
 
     if (!hWndMain)
     {
         return FALSE;
     }
 
-    if (FAILED(InitializeDX(winWidth, winHeight)))
+    if (FAILED(InitializeDX(rcWin.right, rcWin.bottom)))
     {
         printf("Could not init DX\n");
         return FALSE;
@@ -306,6 +316,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 int main()
 {
+    MSG msg;
+    
     hInst = GetModuleHandle(NULL);
 	MyRegisterClass(hInst);
 
@@ -315,7 +327,6 @@ int main()
 		return FALSE;
 	}
 
-    MSG msg;
     ZeroMemory(&msg, sizeof(msg));
 	
     // Main message loop:
@@ -366,6 +377,11 @@ void UnInitializeDX()
 BOOL InitializeDX(unsigned int x, unsigned int y)
 {
     HRESULT hr = S_OK;
+    IDXGIDevice *pDXGIDevice = NULL;
+    IDXGIAdapter *pAdapter = NULL;
+    IDXGIFactory *pDXGIFactory = NULL;
+    UINT deviceFlags = 0;
+    UINT driver = 0;
 
     static const D3D_DRIVER_TYPE driverAttempts[] =
     {
@@ -384,8 +400,7 @@ BOOL InitializeDX(unsigned int x, unsigned int y)
         D3D_FEATURE_LEVEL_9_1,   // Direct3D 9.1  SM 2
     };
 
-    UINT deviceFlags = 0;
-    for (UINT driver = 0; driver < ARRAYSIZE(driverAttempts); driver++)
+    for (driver = 0; driver < ARRAYSIZE(driverAttempts); driver++)
     {
         hr = D3D11CreateDevice(
             NULL,
@@ -407,10 +422,7 @@ BOOL InitializeDX(unsigned int x, unsigned int y)
 
     }
 
-    IDXGIDevice *pDXGIDevice = NULL;
-    IDXGIAdapter *pAdapter = NULL;
-    IDXGIFactory *pDXGIFactory = NULL;
-
+    
     if (SUCCEEDED(hr))
     {
         hr = ID3D11Device_QueryInterface(pDevice, &IID_IDXGIDevice, &pDXGIDevice);
@@ -493,18 +505,19 @@ BOOL InitializeDX(unsigned int x, unsigned int y)
 
 HRESULT ResizeWindow(unsigned int x, unsigned int y)
 {
-    if (!pDevice || !pDeviceContext)
-        return E_FAIL;
+    D3D11_RENDER_TARGET_VIEW_DESC renderDesc;
+    ID3D11RenderTargetView *viewList[1] = { NULL };
+    HRESULT hr = S_OK;
+    ID3D11Resource *pBackBufferResource = NULL;
+    D3D11_TEXTURE2D_DESC texDesc;
+    D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDesc;
 
     xWin = x;
     yWin = y;
-
-    ID3D11RenderTargetView *viewList[1] = { NULL };
-
-    HRESULT hr = S_OK;
-    
-    ID3D11Resource *pBackBufferResource = NULL;
    
+    if (!pDevice || !pDeviceContext)
+        return E_FAIL;
+
     //pDeviceContext->ClearState();
     ID3D11DeviceContext_OMSetRenderTargets(pDeviceContext, 1, viewList, NULL);
 
@@ -530,7 +543,6 @@ HRESULT ResizeWindow(unsigned int x, unsigned int y)
         return hr;
     }
 
-    D3D11_RENDER_TARGET_VIEW_DESC renderDesc;
     renderDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     renderDesc.ViewDimension = (swapDesc.SampleDesc.Count>1) ? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D;
     renderDesc.Texture2D.MipSlice = 0;
@@ -542,7 +554,6 @@ HRESULT ResizeWindow(unsigned int x, unsigned int y)
         return hr;
     }
 
-    D3D11_TEXTURE2D_DESC texDesc;
     texDesc.ArraySize = 1;
     texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     texDesc.CPUAccessFlags = 0;
@@ -562,7 +573,6 @@ HRESULT ResizeWindow(unsigned int x, unsigned int y)
         return hr;
     }
 
-    D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDesc;
     depthViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     depthViewDesc.ViewDimension = (swapDesc.SampleDesc.Count>1) ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D;
     depthViewDesc.Flags = 0;

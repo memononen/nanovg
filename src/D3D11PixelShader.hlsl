@@ -76,6 +76,9 @@ float4 D3D11PixelShader_Main(PS_INPUT input) : SV_TARGET
             float4 color = g_texture.Sample(g_sampler, pt);
             color = texType == 0 ? color : float4(1, 1, 1, color.x);
 
+        // Apply color tint and alpha.
+        color *= innerCol;
+
         // Combine alpha
         color.w *= strokeAlpha * scissor;
         return color;

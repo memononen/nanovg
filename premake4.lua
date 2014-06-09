@@ -83,7 +83,7 @@ solution "nanovg"
     project "example_d3d11"
 		kind "ConsoleApp"
 		language "C"
-		files { "example/example_d3d11.c", "example/demo.c" }
+		files { "example/example_d3d11.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }

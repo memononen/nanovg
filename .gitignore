@@ -26,3 +26,8 @@ build/*
 
 ## xcode specific
 *xcuserdata*
+src/GL/glew.h
+src/GL/glxew.h
+src/GL/wglew.h
+src/GLFW/glfw3.h
+src/GLFW/glfw3native.h
