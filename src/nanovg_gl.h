@@ -77,7 +77,7 @@ enum NVGLtextureflags {
 	NVGL_TEXTURE_NODELETE = 0x02,
 };
 
-int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int flags);
+int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
 GLuint nvglImageHandle(struct NVGcontext* ctx, int image);
 void nvglImageFlags(struct NVGcontext* ctx, int image, int flags);
 
@@ -1381,20 +1381,18 @@ void nvgDeleteGLES3(struct NVGcontext* ctx)
 	nvgDeleteInternal(ctx);
 }
 
-int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int flags)
+int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int w, int h, int flags)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
 	struct GLNVGtexture* tex = glnvg__allocTexture(gl);
 
 	if (tex == NULL) return 0;
 
-	tex->tex = textureId;
 	tex->type = NVG_TEXTURE_RGBA;
-    tex->flags = flags;
-	glBindTexture(GL_TEXTURE_2D, tex->tex);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &tex->width);
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &tex->height);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	tex->tex = textureId;
+	tex->flags = flags;
+	tex->width = w;
+	tex->height = h;
 
 	return tex->id;
 }
