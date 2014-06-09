@@ -122,7 +122,9 @@ void Draw()
     ID3D11DeviceContext_ClearRenderTargetView(pDeviceContext, pRenderTargetView, clearColor);
     ID3D11DeviceContext_ClearDepthStencilView(pDeviceContext, pDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 0.0f, (UINT8)0);
 
-    pxRatio = (float)xWin / (float)yWin;
+    // Ration 1/1 for now.  Not sure how to support retina on Windows.
+    pxRatio = 1.0f;
+
     nvgBeginFrame(vg, xWin, yWin, pxRatio, premult ? NVG_PREMULTIPLIED_ALPHA : NVG_STRAIGHT_ALPHA);
 
     renderDemo(vg, (float)xm, (float)ym, (float)xWin, (float)yWin, (float)t, blowup, &data);
