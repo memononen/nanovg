@@ -51,12 +51,12 @@ float strokeMask(float2 ftcoord)
 
 float4 D3D11PixelShader_Main(PS_INPUT input) : SV_TARGET
 {
+    float scissor = scissorMask(input.fpos);
+    float strokeAlpha = strokeMask(input.ftcoord);
+
     if (type == 0)
     {
         // Gradient
-        float scissor = scissorMask(input.fpos);
-        float strokeAlpha = strokeMask(input.ftcoord);
-
         // Calculate gradient color using box gradient
         float2 pt = (mul((float3x3)paintMat, float3(input.fpos, 1.0))).xy;
             float d = clamp((sdroundrect(pt, extent.xy, radius.x) + feather.x*0.5) / feather.x, 0.0, 1.0);
@@ -69,8 +69,6 @@ float4 D3D11PixelShader_Main(PS_INPUT input) : SV_TARGET
     else if (type == 1)
     {
         // Image
-        float scissor = scissorMask(input.fpos);
-        float strokeAlpha = strokeMask(input.ftcoord);
         // Calculate color fron texture
         float2 pt = (mul((float3x3)paintMat, float3(input.fpos, 1.0))).xy / extent.xy;
             float4 color = g_texture.Sample(g_sampler, pt);
@@ -92,8 +90,9 @@ float4 D3D11PixelShader_Main(PS_INPUT input) : SV_TARGET
     {
         // Textured tris
         float4 color = g_texture.Sample(g_sampler, input.ftcoord);
-            color = texType == 0 ? color : float4(1, 1, 1, color.x);
-        return (color * input.fcolor);
+        color = texType == 0 ? color : float4(1,1,1,color.x);
+        color.w *= scissor;
+        return (color * innerCol);
     }
     return float4(1.0, 1.0, 1.0, 1.0);
 }

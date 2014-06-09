@@ -35,6 +35,7 @@ int ym = 0;
 int xWin = 0;
 int yWin = 0;
 
+//#define DEMO_MSAA
 struct NVGcontext* vg = NULL;
 struct GPUtimer gpuTimer;
 struct PerfGraph fps, cpuGraph, gpuGraph;
@@ -439,6 +440,7 @@ BOOL InitializeDX(unsigned int x, unsigned int y)
     }
     if (SUCCEEDED(hr))
     {
+        UINT i;
         ZeroMemory(&swapDesc, sizeof(swapDesc));
 
         swapDesc.SampleDesc.Count = 1;        //The Number of Multisamples per Level
@@ -446,7 +448,7 @@ BOOL InitializeDX(unsigned int x, unsigned int y)
       
         // Enable if you want to use multisample AA for the rendertarget
 #ifdef DEMO_MSAA
-        for (UINT i = 1; i <= D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT; i++)
+        for (i = 1; i <= D3D11_MAX_MULTISAMPLE_SAMPLE_COUNT; i++)
         {
             UINT Quality;
             if SUCCEEDED(ID3D11Device_CheckMultisampleQualityLevels(pDevice, DXGI_FORMAT_B8G8R8A8_UNORM, i, &Quality))
@@ -460,6 +462,8 @@ BOOL InitializeDX(unsigned int x, unsigned int y)
                 }
             }
         }
+#else
+        NVG_NOTUSED(i);
 #endif
 
         swapDesc.BufferDesc.Width = x;
