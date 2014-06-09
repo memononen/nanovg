@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2013 Mikko Mononen memon@inside.org
-//
+// D3D Demo port cmaughan.
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
 // arising from the use of this software.
@@ -148,9 +148,11 @@ void Draw()
 	if (screenshot)
     {
 	    screenshot = 0;
+        // Screenshot not yet supported
 		//saveScreenShot(fbWidth, fbHeight, premult, "dump.png");
 	}
 
+    // Don't wait for VBlank
     IDXGISwapChain_Present(pSwapChain, 0, 0);
 }
 
@@ -437,7 +439,9 @@ BOOL InitializeDX(unsigned int x, unsigned int y)
             {
                 if (Quality > 0)
                 {
-                    DXGI_SAMPLE_DESC Desc = { i, Quality - 1 };
+                    DXGI_SAMPLE_DESC Desc;
+                    Desc.Count = i;
+                    Desc.Quality = Quality - 1;
                     swapDesc.SampleDesc = Desc;
                 }
             }
@@ -460,7 +464,7 @@ BOOL InitializeDX(unsigned int x, unsigned int y)
         if (FAILED(hr))
         {
             swapDesc.SampleDesc.Count = 1;
-            hr = IDXGIFactory_CreateSwapChain(pDXGIFactory, pDevice, &swapDesc, &pSwapChain);
+            hr = IDXGIFactory_CreateSwapChain(pDXGIFactory, (IUnknown*)pDevice, &swapDesc, &pSwapChain);
         }
 #endif
     }

@@ -382,7 +382,7 @@ static int D3Dnvg__renderCreate(void* uptr)
             return 0;
     }
     else {
-        if (D3Dnvg__createShader(D3D, &D3D->shader, g_D3D11VertexShader_Main, sizeof(g_D3D11VertexShader_Main), g_D3D11PixelShader_Main, sizeof(g_D3D11PixelShaderAA_Main)) == 0)
+        if (D3Dnvg__createShader(D3D, &D3D->shader, g_D3D11VertexShader_Main, sizeof(g_D3D11VertexShader_Main), g_D3D11PixelShader_Main, sizeof(g_D3D11PixelShader_Main)) == 0)
             return 0;
     }
 
