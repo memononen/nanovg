@@ -105,9 +105,9 @@ int main()
 #endif
 
 #ifdef DEMO_MSAA
-	vg = nvgCreateGL3(512, 512, 0);
+	vg = nvgCreateGL3(512, 512, NVG_STENCIL_STROKES);
 #else
-	vg = nvgCreateGL3(512, 512, NVG_ANTIALIAS);
+	vg = nvgCreateGL3(512, 512, NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 #endif
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
