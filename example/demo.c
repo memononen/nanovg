@@ -26,6 +26,11 @@
 #define ICON_LOGIN 0xE740
 #define ICON_TRASH 0xE729
 
+static float minf(float a, float b) { return a < b ? a : b; }
+static float maxf(float a, float b) { return a > b ? a : b; }
+static float absf(float a) { return a >= 0.0f ? a : -a; }
+static float clampf(float a, float mn, float mx) { return a < mn ? mn : (a > mx ? mx : a); }
+
 // Returns 1 if col.rgba is 0.0f,0.0f,0.0f,0.0f, 0 otherwise
 int isBlack( struct NVGcolor col )
 {
@@ -494,6 +499,32 @@ void drawGraph(struct NVGcontext* vg, float x, float y, float w, float h, float 
 	nvgStrokeWidth(vg, 1.0f);
 }
 
+void drawSpinner(struct NVGcontext* vg, float cx, float cy, float r, float t)
+{
+	float a0 = 0.0f + t*6;
+	float a1 = NVG_PI + t*6;
+	float r0 = r;
+	float r1 = r * 0.75f;
+	float ax,ay, bx,by;
+	struct NVGpaint paint;
+
+	nvgSave(vg);
+
+	nvgBeginPath(vg);
+	nvgArc(vg, cx,cy, r0, a0, a1, NVG_CW);
+	nvgArc(vg, cx,cy, r1, a1, a0, NVG_CCW);
+	nvgClosePath(vg);
+	ax = cx + cosf(a0) * (r0+r1)*0.5f;
+	ay = cy + sinf(a0) * (r0+r1)*0.5f;
+	bx = cx + cosf(a1) * (r0+r1)*0.5f;
+	by = cy + sinf(a1) * (r0+r1)*0.5f;
+	paint = nvgLinearGradient(vg, ax,ay, bx,by, nvgRGBA(0,0,0,0), nvgRGBA(0,0,0,128));
+	nvgFillPaint(vg, paint);
+	nvgFill(vg);
+
+	nvgRestore(vg);
+}
+
 void drawThumbnails(struct NVGcontext* vg, float x, float y, float w, float h, const int* images, int nimages, float t)
 {
 	float cornerRadius = 3.0f;
@@ -505,7 +536,8 @@ void drawThumbnails(struct NVGcontext* vg, float x, float y, float w, float h, c
 	float stackh = (nimages/2) * (thumb+10) + 10;
 	int i;
 	float u = (1+cosf(t*0.5f))*0.5f;
-	float scrollh;
+	float u2 = (1-cosf(t*0.2f))*0.5f;
+	float scrollh, dv;
 
 	nvgSave(vg);
 //	nvgClearState(vg);
@@ -532,8 +564,10 @@ void drawThumbnails(struct NVGcontext* vg, float x, float y, float w, float h, c
 	nvgScissor(vg, x,y,w,h);
 	nvgTranslate(vg, 0, -(stackh - h)*u);
 
+	dv = 1.0f / (float)(nimages-1);
+
 	for (i = 0; i < nimages; i++) {
-		float tx, ty;
+		float tx, ty, v, a;
 		tx = x+10;
 		ty = y+10;
 		tx += (i%2) * (thumb+10);
@@ -550,7 +584,14 @@ void drawThumbnails(struct NVGcontext* vg, float x, float y, float w, float h, c
 			ix = -(iw-thumb)*0.5f;
 			iy = 0;
 		}
-		imgPaint = nvgImagePattern(vg, tx+ix, ty+iy, iw,ih, 0.0f/180.0f*NVG_PI, images[i], 0);
+
+		v = i * dv;
+		a = clampf((u2-v) / dv, 0, 1);
+
+		if (a < 1.0f)
+			drawSpinner(vg, tx+thumb/2,ty+thumb/2, thumb*0.25f, t);
+
+		imgPaint = nvgImagePattern(vg, tx+ix, ty+iy, iw,ih, 0.0f/180.0f*NVG_PI, images[i], NVG_NOREPEAT, a);
 		nvgBeginPath(vg);
 		nvgRoundedRect(vg, tx,ty, thumb,thumb, 5);
 		nvgFillPaint(vg, imgPaint);
@@ -821,6 +862,7 @@ void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float h
 	float lineh;
 	float caretx, px;
 	float bounds[4];
+	float a;
 	float gx,gy;
 	int gutter = 0;
 	NVG_NOTUSED(height);
@@ -902,6 +944,14 @@ void drawParagraph(struct NVGcontext* vg, float x, float y, float width, float h
 	nvgTextLineHeight(vg, 1.2f);
 
 	nvgTextBoxBounds(vg, x,y, 150, "Hover your mouse over the text to see calculated caret position.", NULL, bounds);
+
+	// Fade the tooltip out when close to it.
+	gx = fabsf((mx - (bounds[0]+bounds[2])*0.5f) / (bounds[0] - bounds[2]));
+	gy = fabsf((my - (bounds[1]+bounds[3])*0.5f) / (bounds[1] - bounds[3]));
+	a = maxf(gx, gy) - 0.5f;
+	a = clampf(a, 0, 1);
+	nvgGlobalAlpha(vg, a);
+
 	nvgBeginPath(vg);
 	nvgFillColor(vg, nvgRGBA(220,220,220,255));
 	nvgRoundedRect(vg, bounds[0]-2,bounds[1]-2, (int)(bounds[2]-bounds[0])+4, (int)(bounds[3]-bounds[1])+4, 3);
