@@ -1381,8 +1381,10 @@ void nvgDeleteGLES3(struct NVGcontext* ctx)
 	nvgDeleteInternal(ctx);
 }
 
+
 int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int flags)
 {
+#if defined(NANOVG_GL2) || defined(NANOVG_GL3)
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
 	struct GLNVGtexture* tex = glnvg__allocTexture(gl);
 
@@ -1397,6 +1399,9 @@ int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int flag
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return tex->id;
+#else
+    return 0;
+#endif
 }
 
 GLuint nvglImageHandle(struct NVGcontext* ctx, int image)
