@@ -86,6 +86,7 @@ enum NVGalign {
 enum NVGalpha {
 	NVG_STRAIGHT_ALPHA,
 	NVG_PREMULTIPLIED_ALPHA,
+	NVG_CUSTOM_ALPHA,
 };
 
 struct NVGglyphPosition {
