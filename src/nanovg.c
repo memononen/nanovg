@@ -1450,7 +1450,7 @@ static void nvg__calculateJoins(struct NVGcontext* ctx, float w, int lineJoin, f
 {
 	struct NVGpathCache* cache = ctx->cache;
 	int i, j;
-	float iw;
+	float iw = 1.0f;
 
 	if (w > 0.0f) iw = 1.0f / w;
 

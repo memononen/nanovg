@@ -5,7 +5,9 @@
 #ifdef NANOVG_GLEW
 #  include <GL/glew.h>
 #endif
+#ifndef NANOVG_D3D11
 #include <GLFW/glfw3.h>
+#endif
 #include "nanovg.h"
 
 #ifdef _MSC_VER
@@ -14,6 +16,7 @@
 #include <iconv.h>
 #endif
 
+#ifndef NANOVG_D3D11
 // timer query support
 #ifndef GL_ARB_timer_query
 #define GL_TIME_ELAPSED                   0x88BF
@@ -70,7 +73,25 @@ int stopGPUTimer(struct GPUtimer* timer, float* times, int maxTimes)
 	}
 	return n;
 }
+#else
+void startGPUTimer(struct GPUtimer* timer)
+{
+    NVG_NOTUSED(timer);
+}
 
+int stopGPUTimer(struct GPUtimer* timer, float* times, int maxTimes)
+{
+    NVG_NOTUSED(timer);
+    NVG_NOTUSED(times);
+    NVG_NOTUSED(maxTimes);
+    return 0;
+}
+
+void initGPUTimer(struct GPUtimer* timer)
+{
+    timer->supported = 0;
+}
+#endif
 
 void initGraph(struct PerfGraph* fps, int style, const char* name)
 {
