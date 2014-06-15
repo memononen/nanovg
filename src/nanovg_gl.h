@@ -75,6 +75,7 @@ void nvgDeleteGLES3(struct NVGcontext* ctx);
 enum NVGLtextureflags {
 	NVGL_TEXTURE_FLIP_Y   = 0x01,
 	NVGL_TEXTURE_NODELETE = 0x02,
+	NVGL_TEXTURE_PREMULTIPLIED = 0x04,
 };
 
 int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int flags);
@@ -173,19 +174,19 @@ struct GLNVGpath {
 };
 
 struct GLNVGfragUniforms {
-   float scissorMat[12]; // matrices are actually 3 vec4s
-   float paintMat[12];
-   struct NVGcolor innerCol;
-   struct NVGcolor outerCol;
-   float scissorExt[2];
-   float scissorScale[2];
-   float extent[2];
-   float radius;
-   float feather;
-   float strokeMult;
-   float strokeThr;
-   int texType;
-   int type;
+	float scissorMat[12]; // matrices are actually 3 vec4s
+	float paintMat[12];
+	struct NVGcolor innerCol;
+	struct NVGcolor outerCol;
+	float scissorExt[2];
+	float scissorScale[2];
+	float extent[2];
+	float radius;
+	float feather;
+	float strokeMult;
+	float strokeThr;
+	int texType;
+	int type;
 };
 
 struct GLNVGcontext {
@@ -520,7 +521,6 @@ static int glnvg__renderCreate(void* uptr)
 		"	float scissor = scissorMask(fpos);\n"
 		"#ifdef EDGE_AA\n"
 		"	float strokeAlpha = strokeMask();\n"
-		"	if (strokeAlpha < strokeThr) discard;\n"
 		"#else\n"
 		"	float strokeAlpha = 1.0;\n"
 		"#endif\n"
@@ -530,7 +530,7 @@ static int glnvg__renderCreate(void* uptr)
 		"		float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
 		"		vec4 color = mix(innerCol,outerCol,d);\n"
 		"		// Combine alpha\n"
-		"		color.w *= strokeAlpha * scissor;\n"
+		"		color *= strokeAlpha * scissor;\n"
 		"		result = color;\n"
 		"	} else if (type == 1) {		// Image\n"
 		"		// Calculate color fron texture\n"
@@ -540,11 +540,12 @@ static int glnvg__renderCreate(void* uptr)
 		"#else\n"
 		"		vec4 color = texture2D(tex, pt);\n"
 		"#endif\n"
-		"   	color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
+		"		if (texType == 1) color = vec4(color.xyz*color.w,color.w);"
+		"		if (texType == 2) color = vec4(color.x);"
 		"		// Apply color tint and alpha.\n"
 		"		color *= innerCol;\n"
 		"		// Combine alpha\n"
-		"		color.w *= strokeAlpha * scissor;\n"
+		"		color *= strokeAlpha * scissor;\n"
 		"		result = color;\n"
 		"	} else if (type == 2) {		// Stencil fill\n"
 		"		result = vec4(1,1,1,1);\n"
@@ -554,10 +555,14 @@ static int glnvg__renderCreate(void* uptr)
 		"#else\n"
 		"		vec4 color = texture2D(tex, ftcoord);\n"
 		"#endif\n"
-		"   	color = texType == 0 ? color : vec4(1,1,1,color.x);\n"
-		"		color.w *= scissor;\n"
+		"		if (texType == 1) color = vec4(color.xyz*color.w,color.w);"
+		"		if (texType == 2) color = vec4(color.x);"
+		"		color *= scissor;\n"
 		"		result = color * innerCol;\n"
 		"	}\n"
+		"#ifdef EDGE_AA\n"
+		"	if (strokeAlpha < strokeThr) discard;\n"
+		"#endif\n"
 		"#ifdef NANOVG_GL3\n"
 		"	outColor = result;\n"
 		"#else\n"
@@ -726,6 +731,14 @@ static void glnvg__xformToMat3x4(float* m3, float* t)
 	m3[11] = 0.0f;
 }
 
+static struct NVGcolor glnvg__premulColor(struct NVGcolor c)
+{
+	c.r *= c.a;
+	c.g *= c.a;
+	c.b *= c.a;
+	return c;
+}
+
 static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms* frag, struct NVGpaint* paint,
 							   struct NVGscissor* scissor, float width, float fringe, float strokeThr)
 {
@@ -734,8 +747,8 @@ static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms
 
 	memset(frag, 0, sizeof(*frag));
 
-	frag->innerCol = paint->innerColor;
-	frag->outerCol = paint->outerColor;
+	frag->innerCol = glnvg__premulColor(paint->innerColor);
+	frag->outerCol = glnvg__premulColor(paint->outerColor);
 
 	if (scissor->extent[0] < 0.5f || scissor->extent[1] < 0.5f) {
 		memset(frag->scissorMat, 0, sizeof(frag->scissorMat));
@@ -768,7 +781,12 @@ static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms
 			nvgTransformInverse(invxform, paint->xform);
 		}
 		frag->type = NSVG_SHADER_FILLIMG;
-		frag->texType = tex->type == NVG_TEXTURE_RGBA ? 0 : 1;
+
+		if (tex->type == NVG_TEXTURE_RGBA)
+			frag->texType = (tex->flags & NVGL_TEXTURE_PREMULTIPLIED) ? 0 : 1;
+		else
+			frag->texType = 2;
+//		printf("frag->texType = %d\n", frag->texType);
 	} else {
 		frag->type = NSVG_SHADER_FILLGRAD;
 		frag->radius = paint->radius;
@@ -833,10 +851,9 @@ static void glnvg__setUniforms(struct GLNVGcontext* gl, int uniformOffset, int i
 	}
 }
 
-static void glnvg__renderViewport(void* uptr, int width, int height, int alphaBlend)
+static void glnvg__renderViewport(void* uptr, int width, int height)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	NVG_NOTUSED(alphaBlend);
 	gl->view[0] = (float)width;
 	gl->view[1] = (float)height;
 }
@@ -957,7 +974,7 @@ static void glnvg__triangles(struct GLNVGcontext* gl, struct GLNVGcall* call)
 	glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
 }
 
-static void glnvg__renderFlush(void* uptr, int alphaBlend)
+static void glnvg__renderFlush(void* uptr)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	int i;
@@ -967,10 +984,7 @@ static void glnvg__renderFlush(void* uptr, int alphaBlend)
 		// Setup require GL state.
 		glUseProgram(gl->shader.prog);
 
-		if (alphaBlend == NVG_PREMULTIPLIED_ALPHA)
-			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-		else
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
@@ -1000,7 +1014,7 @@ static void glnvg__renderFlush(void* uptr, int alphaBlend)
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)0);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(0 + 2*sizeof(float)));
 
-		// Set view and texture just once per frame.		
+		// Set view and texture just once per frame.
 		glUniform1i(gl->shader.loc[GLNVG_LOC_TEX], 0);
 		glUniform2fv(gl->shader.loc[GLNVG_LOC_VIEWSIZE], 1, gl->view);
 
@@ -1051,7 +1065,7 @@ static struct GLNVGcall* glnvg__allocCall(struct GLNVGcontext* gl)
 	struct GLNVGcall* ret = NULL;
 	if (gl->ncalls+1 > gl->ccalls) {
 		struct GLNVGcall* calls;
-		int ccalls = glnvg__maxi(gl->ncalls+1, 128) + gl->ccalls; // 1.5x Overallocate
+		int ccalls = glnvg__maxi(gl->ncalls+1, 128) + gl->ccalls/2; // 1.5x Overallocate
 		calls = (struct GLNVGcall*)realloc(gl->calls, sizeof(struct GLNVGcall) * ccalls);
 		if (calls == NULL) return NULL;
 		gl->calls = calls;
@@ -1067,7 +1081,7 @@ static int glnvg__allocPaths(struct GLNVGcontext* gl, int n)
 	int ret = 0;
 	if (gl->npaths+n > gl->cpaths) {
 		struct GLNVGpath* paths;
-		int cpaths = glnvg__maxi(gl->npaths + n, 128) + gl->cpaths; // 1.5x Overallocate
+		int cpaths = glnvg__maxi(gl->npaths + n, 128) + gl->cpaths/2; // 1.5x Overallocate
 		paths = (struct GLNVGpath*)realloc(gl->paths, sizeof(struct GLNVGpath) * cpaths);
 		if (paths == NULL) return -1;
 		gl->paths = paths;

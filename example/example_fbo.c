@@ -27,18 +27,69 @@
 #include "nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
 #include "nanovg_gl.h"
-#include "demo.h"
+#include "nanovg_gl_utils.h"
 #include "perf.h"
 
+void renderPattern(struct NVGcontext* vg, struct NVGLUframebuffer* fb, float t, float pxRatio)
+{
+	int winWidth, winHeight;
+	int fboWidth, fboHeight;
+	int pw, ph, x, y;
+	float s = 20.0f;
+	float sr = (cosf(t)+1)*0.5f;
+	float r = s * 0.6f * (0.2f + 0.8f * sr);
+
+	if (fb == NULL) return;
+
+	nvgImageSize(vg, fb->image, &fboWidth, &fboHeight);
+	winWidth = (int)(fboWidth / pxRatio);
+	winHeight = (int)(fboHeight / pxRatio);
+
+	// Draw some stull to an FBO as a test
+	nvgluBindFramebuffer(fb);
+	glViewport(0, 0, fboWidth, fboHeight);
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+	nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
+
+	pw = (int)ceilf(winWidth / s);
+	ph = (int)ceilf(winHeight / s);
+
+	nvgBeginPath(vg);
+	for (y = 0; y < ph; y++) {
+		for (x = 0; x < pw; x++) {
+			float cx = (x+0.5f) * s;
+			float cy = (y+0.5f) * s;
+			nvgCircle(vg, cx,cy, r);
+		}
+	}
+	nvgFillColor(vg, nvgRGBA(220,160,0,200));
+	nvgFill(vg);
+
+	nvgEndFrame(vg);
+	nvgluBindFramebuffer(NULL);
+}
+
+int loadFonts(struct NVGcontext* vg)
+{
+	int font;
+	font = nvgCreateFont(vg, "sans", "../example/Roboto-Regular.ttf");
+	if (font == -1) {
+		printf("Could not add font regular.\n");
+		return -1;
+	}
+	font = nvgCreateFont(vg, "sans-bold", "../example/Roboto-Bold.ttf");
+	if (font == -1) {
+		printf("Could not add font bold.\n");
+		return -1;
+	}
+	return 0;
+}
 
 void errorcb(int error, const char* desc)
 {
 	printf("GLFW error %d: %s\n", error, desc);
 }
-
-int blowup = 0;
-int screenshot = 0;
-int premult = 0;
 
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -46,22 +97,19 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 	NVG_NOTUSED(mods);
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
-	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-		blowup = !blowup;
-	if (key == GLFW_KEY_S && action == GLFW_PRESS)
-		screenshot = 1;
-	if (key == GLFW_KEY_P && action == GLFW_PRESS)
-		premult = !premult;
 }
 
 int main()
 {
 	GLFWwindow* window;
-	struct DemoData data;
 	struct NVGcontext* vg = NULL;
 	struct GPUtimer gpuTimer;
 	struct PerfGraph fps, cpuGraph, gpuGraph;
 	double prevt = 0, cpuTime = 0;
+	struct NVGLUframebuffer* fb = NULL;
+	int winWidth, winHeight;
+	int fbWidth, fbHeight;
+	float pxRatio;
 
 	if (!glfwInit()) {
 		printf("Failed to init GLFW.");
@@ -114,8 +162,22 @@ int main()
 		return -1;
 	}
 
-	if (loadDemoData(vg, &data) == -1)
+	// Create hi-dpi FBO for hi-dpi screens.
+	glfwGetWindowSize(window, &winWidth, &winHeight);
+	glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+	// Calculate pixel ration for hi-dpi devices.
+	pxRatio = (float)fbWidth / (float)winWidth;
+
+	fb = nvgluCreateFramebuffer(vg, (int)(100*pxRatio), (int)(100*pxRatio));
+	if (fb == NULL) {
+		printf("Could not create FBO.\n");
 		return -1;
+	}
+
+	if (!loadFonts(vg) == -1) {
+		printf("Could not load fonts\n");
+		return -1;
+	}
 
 	glfwSwapInterval(0);
 
@@ -127,9 +189,6 @@ int main()
 	while (!glfwWindowShouldClose(window))
 	{
 		double mx, my, t, dt;
-		int winWidth, winHeight;
-		int fbWidth, fbHeight;
-		float pxRatio;
 		float gpuTimes[3];
 		int i, n;
 
@@ -145,17 +204,37 @@ int main()
 		// Calculate pixel ration for hi-dpi devices.
 		pxRatio = (float)fbWidth / (float)winWidth;
 
+		renderPattern(vg, fb, t, pxRatio);
+
 		// Update and render
 		glViewport(0, 0, fbWidth, fbHeight);
-		if (premult)
-			glClearColor(0,0,0,0);
-		else
-			glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
+		glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
-		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
+		// Use the FBO as image pattern.
+		if (fb != NULL) {
+			struct NVGpaint img = nvgImagePattern(vg, 0, 0, 100, 100, 0, fb->image, NVG_REPEATX|NVG_REPEATY, 1.0f);
+			nvgSave(vg);
+
+			for (i = 0; i < 20; i++) {
+				nvgBeginPath(vg);
+				nvgRect(vg, 10 + i*30,10, 10, winHeight-20);
+				nvgFillColor(vg, nvgHSLA(i/19.0f, 0.5f, 0.5f, 255));
+				nvgFill(vg);
+			}
+
+			nvgBeginPath(vg);
+			nvgRoundedRect(vg, 140 + sinf(t*1.3f)*100, 140 + cosf(t*1.71244f)*100, 250, 250, 20);
+			nvgFillPaint(vg, img);
+			nvgFill(vg);
+			nvgStrokeColor(vg, nvgRGBA(220,160,0,255));
+			nvgStrokeWidth(vg, 3.0f);
+			nvgStroke(vg);
+
+			nvgRestore(vg);
+		}
 
 		renderGraph(vg, 5,5, &fps);
 		renderGraph(vg, 5+200+5,5, &cpuGraph);
@@ -175,16 +254,11 @@ int main()
 		for (i = 0; i < n; i++)
 			updateGraph(&gpuGraph, gpuTimes[i]);
 
-		if (screenshot) {
-			screenshot = 0;
-			saveScreenShot(fbWidth, fbHeight, premult, "dump.png");
-		}
-
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
-	freeDemoData(vg, &data);
+	nvgluDeleteFramebuffer(vg, fb);
 
 	nvgDeleteGL3(vg);
 

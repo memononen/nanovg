@@ -106,7 +106,6 @@ struct NVGcontext {
 	float devicePxRatio;
 	struct FONScontext* fs;
 	int fontImage;
-	int alphaBlend;
 	int drawCallCount;
 	int fillTriCount;
 	int strokeTriCount;
@@ -201,8 +200,6 @@ struct NVGcontext* nvgCreateInternal(struct NVGparams* params)
 	ctx->ncommands = 0;
 	ctx->ccommands = NVG_INIT_COMMANDS_SIZE;
 
-	ctx->alphaBlend = NVG_STRAIGHT_ALPHA;
-
 	ctx->cache = nvg__allocPathCache();
 	if (ctx->cache == NULL) goto error;
 
@@ -257,7 +254,7 @@ void nvgDeleteInternal(struct NVGcontext* ctx)
 	free(ctx);
 }
 
-void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, float devicePixelRatio, int alphaBlend)
+void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, float devicePixelRatio)
 {
 /*	printf("Tris: draws:%d  fill:%d  stroke:%d  text:%d  TOT:%d\n",
 		ctx->drawCallCount, ctx->fillTriCount, ctx->strokeTriCount, ctx->textTriCount,
@@ -268,9 +265,8 @@ void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, fl
 	nvgReset(ctx);
 
 	nvg__setDevicePixelRatio(ctx, devicePixelRatio);
-	ctx->alphaBlend = alphaBlend;
 	
-	ctx->params.renderViewport(ctx->params.userPtr, windowWidth, windowHeight, ctx->alphaBlend);
+	ctx->params.renderViewport(ctx->params.userPtr, windowWidth, windowHeight);
 
 	ctx->drawCallCount = 0;
 	ctx->fillTriCount = 0;
@@ -280,7 +276,7 @@ void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, fl
 
 void nvgEndFrame(struct NVGcontext* ctx)
 {
-	ctx->params.renderFlush(ctx->params.userPtr, ctx->alphaBlend);
+	ctx->params.renderFlush(ctx->params.userPtr);
 }
 
 struct NVGcolor nvgRGB(unsigned char r, unsigned char g, unsigned char b)

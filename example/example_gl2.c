@@ -24,7 +24,6 @@
 #include "nanovg.h"
 #define NANOVG_GL2_IMPLEMENTATION
 #include "nanovg_gl.h"
-#include "nanovg_gl_utils.h"
 #include "demo.h"
 #include "perf.h"
 
@@ -59,7 +58,6 @@ int main()
 	struct NVGcontext* vg = NULL;
 	struct PerfGraph fps;
 	double prevt = 0;
-	struct NVGLUframebuffer* fb = NULL;
 
 	if (!glfwInit()) {
 		printf("Failed to init GLFW.");
@@ -111,8 +109,6 @@ int main()
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
-	fb = nvgluCreateFramebuffer(vg, 600, 600);
-
 	while (!glfwWindowShouldClose(window))
 	{
 		double mx, my, t, dt;
@@ -132,20 +128,6 @@ int main()
 		// Calculate pixel ration for hi-dpi devices.
 		pxRatio = (float)fbWidth / (float)winWidth;
 
-		if (fb != NULL) {
-			int fboWidth, fboHeight;
-			nvgImageSize(vg, fb->image, &fboWidth, &fboHeight);
-			// Draw some stull to an FBO as a test
-			nvgluBindFramebuffer(fb);
-			glViewport(0, 0, fboWidth, fboHeight);
-			glClearColor(0, 0, 0, 0);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-			nvgBeginFrame(vg, fboWidth, fboHeight, pxRatio, NVG_PREMULTIPLIED_ALPHA);
-			renderDemo(vg, mx, my, fboWidth, fboHeight, t, blowup, &data);
-			nvgEndFrame(vg);
-			nvgluBindFramebuffer(NULL);
-		}
-
 		// Update and render
 		glViewport(0, 0, fbWidth, fbHeight);
 		if (premult)
@@ -154,19 +136,10 @@ int main()
 			glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-		nvgBeginFrame(vg, winWidth, winHeight, pxRatio, premult ? NVG_PREMULTIPLIED_ALPHA : NVG_STRAIGHT_ALPHA);
+		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
 		renderGraph(vg, 5,5, &fps);
-
-		if (fb != NULL) {
-			struct NVGpaint img = nvgImagePattern(vg, 0, 0, 150, 150, 0, fb->image, NVG_NOREPEAT, 1.0f);
-			nvgBeginPath(vg);
-			nvgTranslate(vg, 540, 300);
-			nvgRect(vg, 0, 0, 150, 150);
-			nvgFillPaint(vg, img);
-			nvgFill(vg);
-		}
 
 		nvgEndFrame(vg);
 

@@ -55,7 +55,7 @@ struct NVGLUframebuffer* nvgluCreateFramebuffer(struct NVGcontext* ctx, int w, i
 
 	fb->image = nvgCreateImageRGBA(ctx, w, h, NULL);
 	fb->texture = nvglImageHandle(ctx, fb->image);
-	nvglImageFlags(ctx, fb->image, NVGL_TEXTURE_FLIP_Y);
+	nvglImageFlags(ctx, fb->image, NVGL_TEXTURE_FLIP_Y | NVGL_TEXTURE_PREMULTIPLIED);
 
 	// frame buffer object
 	glGenFramebuffers(1, &fb->fbo);
@@ -64,7 +64,7 @@ struct NVGLUframebuffer* nvgluCreateFramebuffer(struct NVGcontext* ctx, int w, i
 	// render buffer object
 	glGenRenderbuffers(1, &fb->rbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, fb->rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, w, h);
 
 	// combine all
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb->texture, 0);
