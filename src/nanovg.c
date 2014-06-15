@@ -151,7 +151,7 @@ static void nvg__deletePathCache(struct NVGpathCache* c)
 	free(c);
 }
 
-static struct NVGpathCache* nvg__allocPathCache()
+static struct NVGpathCache* nvg__allocPathCache(void)
 {
 	struct NVGpathCache* c = (struct NVGpathCache*)malloc(sizeof(struct NVGpathCache));
 	if (c == NULL) goto error;
