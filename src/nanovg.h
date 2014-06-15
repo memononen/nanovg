@@ -391,8 +391,11 @@ void nvgMoveTo(struct NVGcontext* ctx, float x, float y);
 // Adds line segment from the last point in the path to the specified point.
 void nvgLineTo(struct NVGcontext* ctx, float x, float y);
 
-// Adds bezier segment from last point in the path via two control points to the specified point.
+// Adds cubic bezier segment from last point in the path via two control points to the specified point.
 void nvgBezierTo(struct NVGcontext* ctx, float c1x, float c1y, float c2x, float c2y, float x, float y);
+
+// Adds quadratic bezier segment from last point in the path via a control point to the specified point.
+void nvgQuadTo(struct NVGcontext* ctx, float cx, float cy, float x, float y);
 
 // Adds an arc segment at the corner defined by the last path point, and two specified points.
 void nvgArcTo(struct NVGcontext* ctx, float x1, float y1, float x2, float y2, float radius);
