@@ -1519,7 +1519,7 @@ static int nvg__expandStroke(struct NVGcontext* ctx, float w, int lineCap, int l
 	struct NVGvertex* dst;
 	int cverts, i, j;
 	float aa = ctx->fringeWidth;
-	int ncap = nvg__curveDivs(w, NVG_PI, ctx->tessTol / 4.0f);
+	int ncap = nvg__curveDivs(w, NVG_PI, ctx->tessTol);	// Calculate divisions per half circle.
 
 	nvg__calculateJoins(ctx, w, lineJoin, miterLimit);
 
