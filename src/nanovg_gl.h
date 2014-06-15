@@ -1332,6 +1332,11 @@ static void glnvg__renderDelete(void* uptr)
 	}
 	free(gl->textures);
 
+	free(gl->paths);
+	free(gl->verts);
+	free(gl->uniforms);
+	free(gl->calls);
+
 	free(gl);
 }
 
