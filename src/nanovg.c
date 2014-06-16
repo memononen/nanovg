@@ -31,6 +31,10 @@
 #pragma warning(disable: 4706)  // assignment within conditional expression
 #endif
 
+#define NVG_INIT_FONTIMAGE_SIZE  512
+#define NVG_MAX_FONTIMAGE_SIZE   2048
+#define NVG_MAX_FONTIMAGES       4
+
 #define NVG_INIT_COMMANDS_SIZE 256
 #define NVG_INIT_POINTS_SIZE 128
 #define NVG_INIT_PATHS_SIZE 16
@@ -111,7 +115,8 @@ struct NVGcontext {
 	float fringeWidth;
 	float devicePxRatio;
 	struct FONScontext* fs;
-	int fontImage;
+	int fontImages[NVG_MAX_FONTIMAGES];
+	int fontImageIdx;
 	int drawCallCount;
 	int fillTriCount;
 	int strokeTriCount;
@@ -196,10 +201,13 @@ struct NVGcontext* nvgCreateInternal(struct NVGparams* params)
 {
 	struct FONSparams fontParams;
 	struct NVGcontext* ctx = (struct NVGcontext*)malloc(sizeof(struct NVGcontext));
+	int i;
 	if (ctx == NULL) goto error;
 	memset(ctx, 0, sizeof(struct NVGcontext));
 
 	ctx->params = *params;
+	for (i = 0; i < NVG_MAX_FONTIMAGES; i++)
+		ctx->fontImages[i] = 0;
 
 	ctx->commands = (float*)malloc(sizeof(float)*NVG_INIT_COMMANDS_SIZE);
 	if (!ctx->commands) goto error;
@@ -218,8 +226,8 @@ struct NVGcontext* nvgCreateInternal(struct NVGparams* params)
 
 	// Init font rendering
 	memset(&fontParams, 0, sizeof(fontParams));
-	fontParams.width = params->atlasWidth;
-	fontParams.height = params->atlasHeight;
+	fontParams.width = NVG_INIT_FONTIMAGE_SIZE;
+	fontParams.height = NVG_INIT_FONTIMAGE_SIZE;
 	fontParams.flags = FONS_ZERO_TOPLEFT;
 	fontParams.renderCreate = NULL;
 	fontParams.renderUpdate = NULL;
@@ -230,8 +238,9 @@ struct NVGcontext* nvgCreateInternal(struct NVGparams* params)
 	if (ctx->fs == NULL) goto error;
 
 	// Create font texture
-	ctx->fontImage = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, fontParams.width, fontParams.height, NULL);
-	if (ctx->fontImage == 0) goto error;
+	ctx->fontImages[0] = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, fontParams.width, fontParams.height, NULL);
+	if (ctx->fontImages[0] == 0) goto error;
+	ctx->fontImageIdx = 0;
 
 	return ctx;
 
@@ -247,12 +256,20 @@ struct NVGparams* nvgInternalParams(struct NVGcontext* ctx)
 
 void nvgDeleteInternal(struct NVGcontext* ctx)
 {
+	int i;
 	if (ctx == NULL) return;
 	if (ctx->commands != NULL) free(ctx->commands);
 	if (ctx->cache != NULL) nvg__deletePathCache(ctx->cache);
 
 	if (ctx->fs)
 		fonsDeleteInternal(ctx->fs);
+
+	for (i = 0; i < NVG_MAX_FONTIMAGES; i++) {
+		if (ctx->fontImages[i] != 0) {
+			nvgDeleteImage(ctx, ctx->fontImages[i]);
+			ctx->fontImages[i] = 0;
+		}
+	}
 
 	if (ctx->params.renderDelete != NULL)
 		ctx->params.renderDelete(ctx->params.userPtr);
@@ -283,6 +300,31 @@ void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, fl
 void nvgEndFrame(struct NVGcontext* ctx)
 {
 	ctx->params.renderFlush(ctx->params.userPtr);
+	if (ctx->fontImageIdx != 0) {
+		int fontImage = ctx->fontImages[ctx->fontImageIdx];
+		int i, j, iw, ih;
+		// delete images that smaller than current one
+		if (fontImage == 0)
+			return;
+		nvgImageSize(ctx, fontImage, &iw, &ih);
+		for (i = j = 0; i < ctx->fontImageIdx; i++) {
+			if (ctx->fontImages[i] != 0) {
+				int nw, nh;
+				nvgImageSize(ctx, ctx->fontImages[i], &nw, &nh);
+				if (nw < iw || nh < ih)
+					nvgDeleteImage(ctx, ctx->fontImages[i]);
+				else
+					ctx->fontImages[j++] = ctx->fontImages[i];
+			}
+		}
+		// make current font image to first
+		ctx->fontImages[j++] = ctx->fontImages[0];
+		ctx->fontImages[0] = fontImage;
+		ctx->fontImageIdx = 0;
+		// clear all images after j
+		for (i = j; i < NVG_MAX_FONTIMAGES; i++)
+			ctx->fontImages[i] = 0;
+	}
 }
 
 struct NVGcolor nvgRGB(unsigned char r, unsigned char g, unsigned char b)
@@ -337,7 +379,7 @@ struct NVGcolor nvgLerpRGBA(struct NVGcolor c0, struct NVGcolor c1, float u)
 
 	u = nvg__clampf(u, 0.0f, 1.0f);
 	oneminu = 1.0f - u;
-	for( i = 0; i <4; ++i )
+	for( i = 0; i <4; i++ )
 	{
 		cint.rgba[i] = c0.rgba[i] * oneminu + c1.rgba[i] * u;
 	}
@@ -1197,7 +1239,7 @@ static void nvg__flattenPaths(struct NVGcontext* ctx)
 				nvg__polyReverse(pts, path->count);
 		}
 
-		for(i = 0; i < path->count; ++i) {
+		for(i = 0; i < path->count; i++) {
 			// Calculate segment direction and length
 			p0->dx = p1->x - p0->x;
 			p0->dy = p1->y - p0->y;
@@ -2128,16 +2170,75 @@ static float nvg__getFontScale(struct NVGstate* state)
 	return nvg__minf(nvg__quantize(nvg__getAverageScale(state->xform), 0.01f), 4.0f);
 }
 
+static void nvg__flushTextTexture(struct NVGcontext* ctx)
+{
+	int dirty[4];
+
+	if (fonsValidateTexture(ctx->fs, dirty)) {
+		int fontImage = ctx->fontImages[ctx->fontImageIdx];
+		// Update texture
+		if (fontImage != 0) {
+			int iw, ih;
+			const unsigned char* data = fonsGetTextureData(ctx->fs, &iw, &ih);
+			int x = dirty[0];
+			int y = dirty[1];
+			int w = dirty[2] - dirty[0];
+			int h = dirty[3] - dirty[1];
+			ctx->params.renderUpdateTexture(ctx->params.userPtr, fontImage, x,y, w,h, data);
+		}
+	}
+}
+
+static int nvg__allocTextAtlas(struct NVGcontext* ctx)
+{
+	int iw, ih;
+	nvg__flushTextTexture(ctx);
+	if (ctx->fontImageIdx >= NVG_MAX_FONTIMAGES-1)
+		return 0;
+	// if next fontImage already have a texture
+	if (ctx->fontImages[ctx->fontImageIdx+1] != 0)
+		nvgImageSize(ctx, ctx->fontImages[ctx->fontImageIdx+1], &iw, &ih);
+	else { // calculate the new font image size and create it.
+		nvgImageSize(ctx, ctx->fontImages[ctx->fontImageIdx], &iw, &ih);
+		if (iw > ih)
+			ih *= 2;
+		else
+			iw *= 2;
+		if (iw > NVG_MAX_FONTIMAGE_SIZE || ih > NVG_MAX_FONTIMAGE_SIZE)
+			iw = ih = NVG_MAX_FONTIMAGE_SIZE;
+		ctx->fontImages[ctx->fontImageIdx+1] = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, iw, ih, NULL);
+	}
+	++ctx->fontImageIdx;
+	fonsResetAtlas(ctx->fs, iw, ih);
+	return 1;
+}
+
+static void nvg__renderText(struct NVGcontext* ctx, struct NVGvertex* verts, int nverts)
+{
+	struct NVGstate* state = nvg__getState(ctx);
+	struct NVGpaint paint = state->fill;
+
+	// Render triangles.
+	paint.image = ctx->fontImages[ctx->fontImageIdx];
+
+	// Apply global alpha
+	paint.innerColor.a *= state->alpha;
+	paint.outerColor.a *= state->alpha;
+
+	ctx->params.renderTriangles(ctx->params.userPtr, &paint, &state->scissor, verts, nverts);
+
+	ctx->drawCallCount++;
+	ctx->textTriCount += nverts/3;
+}
+
 float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, const char* end)
 {
 	struct NVGstate* state = nvg__getState(ctx);
-	struct NVGpaint paint;
-	struct FONStextIter iter;
+	struct FONStextIter iter, prevIter;
 	struct FONSquad q;
 	struct NVGvertex* verts;
 	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
 	float invscale = 1.0f / scale;
-	int dirty[4];
 	int cverts = 0;
 	int nverts = 0;
 
@@ -2157,9 +2258,23 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 	if (verts == NULL) return x;
 
 	fonsTextIterInit(ctx->fs, &iter, x*scale, y*scale, string, end);
+	prevIter = iter;
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
-		// Trasnform corners.
 		float c[4*2];
+		if (iter.prevGlyphIndex == -1) { // can not retrieve glyph?
+			if (!nvg__allocTextAtlas(ctx))
+				break; // no memory :(
+			if (nverts != 0) {
+				nvg__renderText(ctx, verts, nverts);
+				nverts = 0;
+			}
+			iter = prevIter;
+			fonsTextIterNext(ctx->fs, &iter, &q); // try again
+			if (iter.prevGlyphIndex == -1) // still can not find glyph?
+				break;
+		}
+		prevIter = iter;
+		// Trasnform corners.
 		nvgTransformPoint(&c[0],&c[1], state->xform, q.x0*invscale, q.y0*invscale);
 		nvgTransformPoint(&c[2],&c[3], state->xform, q.x1*invscale, q.y0*invscale);
 		nvgTransformPoint(&c[4],&c[5], state->xform, q.x1*invscale, q.y1*invscale);
@@ -2176,31 +2291,9 @@ float nvgText(struct NVGcontext* ctx, float x, float y, const char* string, cons
 	}
 
 	// TODO: add back-end bit to do this just once per frame. 
-	if (fonsValidateTexture(ctx->fs, dirty)) {
-		// Update texture
-		if (ctx->fontImage != 0) {
-			int iw, ih;
-			const unsigned char* data = fonsGetTextureData(ctx->fs, &iw, &ih);
-			int x = dirty[0];
-			int y = dirty[1];
-			int w = dirty[2] - dirty[0];
-			int h = dirty[3] - dirty[1];
-			ctx->params.renderUpdateTexture(ctx->params.userPtr, ctx->fontImage, x,y, w,h, data);
-		}
-	}
+	nvg__flushTextTexture(ctx);
 
-	// Render triangles.
-	paint = state->fill;
-	paint.image = ctx->fontImage;
-
-	// Apply global alpha
-	paint.innerColor.a *= state->alpha;
-	paint.outerColor.a *= state->alpha;
-
-	ctx->params.renderTriangles(ctx->params.userPtr, &paint, &state->scissor, verts, nverts);
-
-	ctx->drawCallCount++;
-	ctx->textTriCount += nverts/3;
+	nvg__renderText(ctx, verts, nverts);
 
 	return iter.x;
 }
@@ -2243,7 +2336,7 @@ int nvgTextGlyphPositions(struct NVGcontext* ctx, float x, float y, const char* 
 	struct NVGstate* state = nvg__getState(ctx);
 	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
 	float invscale = 1.0f / scale;
-	struct FONStextIter iter;
+	struct FONStextIter iter, prevIter;
 	struct FONSquad q;
 	int npos = 0;
 
@@ -2262,7 +2355,13 @@ int nvgTextGlyphPositions(struct NVGcontext* ctx, float x, float y, const char* 
 	fonsSetFont(ctx->fs, state->fontId);
 
 	fonsTextIterInit(ctx->fs, &iter, x*scale, y*scale, string, end);
+	prevIter = iter;
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
+		if (iter.prevGlyphIndex < 0 && nvg__allocTextAtlas(ctx)) { // can not retrieve glyph?
+			iter = prevIter;
+			fonsTextIterNext(ctx->fs, &iter, &q); // try again
+		}
+		prevIter = iter;
 		positions[npos].str = iter.str;
 		positions[npos].x = iter.x * invscale;
 		positions[npos].minx = nvg__minf(iter.x, q.x0) * invscale;
@@ -2286,7 +2385,7 @@ int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* en
 	struct NVGstate* state = nvg__getState(ctx);
 	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
 	float invscale = 1.0f / scale;
-	struct FONStextIter iter;
+	struct FONStextIter iter, prevIter;
 	struct FONSquad q;
 	int nrows = 0;
 	float rowStartX = 0;
@@ -2321,7 +2420,13 @@ int nvgTextBreakLines(struct NVGcontext* ctx, const char* string, const char* en
 	breakRowWidth *= scale;
 
 	fonsTextIterInit(ctx->fs, &iter, 0, 0, string, end);
+	prevIter = iter;
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
+		if (iter.prevGlyphIndex < 0 && nvg__allocTextAtlas(ctx)) { // can not retrieve glyph?
+			iter = prevIter;
+			fonsTextIterNext(ctx->fs, &iter, &q); // try again
+		}
+		prevIter = iter;
 		switch (iter.codepoint) {
 			case 9:			// \t
 			case 11:		// \v
@@ -2592,3 +2697,4 @@ void nvgTextMetrics(struct NVGcontext* ctx, float* ascender, float* descender, f
 	if (lineh != NULL)
 		*lineh *= invscale;
 }
+// vim: ft=c nu noet ts=4
