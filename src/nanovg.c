@@ -1291,7 +1291,6 @@ static struct NVGvertex* nvg__bevelJoin(struct NVGvertex* dst, struct NVGpoint* 
 {
 	float rx0,ry0,rx1,ry1;
 	float lx0,ly0,lx1,ly1;
-	float mx,my,len;
 	float dlx0 = p0->dy;
 	float dly0 = -p0->dx;
 	float dlx1 = p1->dy;
@@ -1305,11 +1304,6 @@ static struct NVGvertex* nvg__bevelJoin(struct NVGvertex* dst, struct NVGpoint* 
 		nvg__vset(dst, p1->x - dlx0*rw, p1->y - dly0*rw, ru,1); dst++;
 
 		if (p1->flags & NVG_PT_BEVEL) {
-			// TODO: this needs more work.
-			mx = (dlx0 + dlx1) * 0.5f;
-			my = (dly0 + dly1) * 0.5f;
-			len = sqrtf(mx*mx + my*my);
-
 			nvg__vset(dst, lx0, ly0, lu,1); dst++;
 			nvg__vset(dst, p1->x - dlx0*rw, p1->y - dly0*rw, ru,1); dst++;
 
@@ -1339,11 +1333,6 @@ static struct NVGvertex* nvg__bevelJoin(struct NVGvertex* dst, struct NVGpoint* 
 		nvg__vset(dst, rx0, ry0, ru,1); dst++;
 
 		if (p1->flags & NVG_PT_BEVEL) {
-			// TODO: this needs more work.
-			mx = (dlx0 + dlx1) * 0.5f;
-			my = (dly0 + dly1) * 0.5f;
-			len = sqrtf(mx*mx + my*my);
-
 			nvg__vset(dst, p1->x + dlx0*lw, p1->y + dly0*lw, lu,1); dst++;
 			nvg__vset(dst, rx0, ry0, ru,1); dst++;
 
