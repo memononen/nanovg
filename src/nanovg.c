@@ -151,7 +151,7 @@ static void nvg__deletePathCache(struct NVGpathCache* c)
 	free(c);
 }
 
-static struct NVGpathCache* nvg__allocPathCache()
+static struct NVGpathCache* nvg__allocPathCache(void)
 {
 	struct NVGpathCache* c = (struct NVGpathCache*)malloc(sizeof(struct NVGpathCache));
 	if (c == NULL) goto error;
@@ -1444,7 +1444,7 @@ static void nvg__calculateJoins(struct NVGcontext* ctx, float w, int lineJoin, f
 {
 	struct NVGpathCache* cache = ctx->cache;
 	int i, j;
-	float iw;
+	float iw = 0.0f;
 
 	if (w > 0.0f) iw = 1.0f / w;
 
