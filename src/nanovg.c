@@ -519,8 +519,8 @@ void nvgReset(struct NVGcontext* ctx)
 	state->alpha = 1.0f;
 	nvgTransformIdentity(state->xform);
 
-	state->scissor.extent[0] = 0.0f;
-	state->scissor.extent[1] = 0.0f;
+	state->scissor.extent[0] = -1.0f;
+	state->scissor.extent[1] = -1.0f;
 
 	state->fontSize = 16.0f;
 	state->letterSpacing = 0.0f;
@@ -815,6 +815,9 @@ void nvgScissor(struct NVGcontext* ctx, float x, float y, float w, float h)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 
+	w = nvg__maxf(0.0f, w);
+	h = nvg__maxf(0.0f, h);
+
 	nvgTransformIdentity(state->scissor.xform);
 	state->scissor.xform[4] = x+w*0.5f;
 	state->scissor.xform[5] = y+h*0.5f;
@@ -828,8 +831,8 @@ void nvgResetScissor(struct NVGcontext* ctx)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	memset(state->scissor.xform, 0, sizeof(state->scissor.xform));
-	state->scissor.extent[0] = 0;
-	state->scissor.extent[1] = 0;
+	state->scissor.extent[0] = -1.0f;
+	state->scissor.extent[1] = -1.0f;
 }
 
 static int nvg__ptEquals(float x1, float y1, float x2, float y2, float tol)

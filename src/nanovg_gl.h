@@ -750,7 +750,7 @@ static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms
 	frag->innerCol = glnvg__premulColor(paint->innerColor);
 	frag->outerCol = glnvg__premulColor(paint->outerColor);
 
-	if (scissor->extent[0] < 0.5f || scissor->extent[1] < 0.5f) {
+	if (scissor->extent[0] < -0.5f || scissor->extent[1] < -0.5f) {
 		memset(frag->scissorMat, 0, sizeof(frag->scissorMat));
 		frag->scissorExt[0] = 1.0f;
 		frag->scissorExt[1] = 1.0f;
