@@ -25,6 +25,11 @@ extern "C" {
 
 #define NVG_PI 3.14159265358979323846264338327f
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4201)  // nonstandard extension used : nameless struct/union
+#endif
+
 struct NVGcontext;
 
 struct NVGcolor {
@@ -583,6 +588,10 @@ struct NVGparams* nvgInternalParams(struct NVGcontext* ctx);
 
 // Debug function to dump cached path data.
 void nvgDebugDumpPathCache(struct NVGcontext* ctx);
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #define NVG_NOTUSED(v) for (;;) { (void)(1 ? (void)0 : ( (void)(v) ) ); break; }
 
