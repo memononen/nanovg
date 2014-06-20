@@ -828,8 +828,8 @@ void nvgResetScissor(struct NVGcontext* ctx)
 {
 	struct NVGstate* state = nvg__getState(ctx);
 	memset(state->scissor.xform, 0, sizeof(state->scissor.xform));
-	state->scissor.extent[0] = 0;
-	state->scissor.extent[1] = 0;
+	state->scissor.extent[0] = -1.f;
+	state->scissor.extent[1] = -1.f;
 }
 
 static int nvg__ptEquals(float x1, float y1, float x2, float y2, float tol)
