@@ -626,8 +626,7 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 
 #if defined (NANOVG_GL2)
     // GL 1.4 and later has support for generating mipmaps using a tex parameter.
-    if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS)
-    {    
+    if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {    
         glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
     }
 #endif
@@ -643,12 +642,10 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 #endif
 
-	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS)
-    {
+	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     }
-    else
-    {
+    else {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     }
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -662,8 +659,7 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 
     // The new way to build mipmaps on GLES and GL3
 #if !defined(NANOVG_GL2)
-    if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS)
-    {    
+    if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {    
         glGenerateMipmap(GL_TEXTURE_2D);
     }
 #endif
