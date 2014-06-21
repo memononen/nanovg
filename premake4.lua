@@ -81,26 +81,6 @@ solution "nanovg"
 			defines { "NDEBUG" }
 			flags { "Optimize", "ExtraWarnings"}
 
-    project "example_d3d11"
-		kind "ConsoleApp"
-		language "C"
-		files { "example/example_d3d11.c", "example/demo.c", "example/perf.c" }
-		includedirs { "src", "example" }
-		targetdir("build")
-		links { "nanovg" }
-
-		configuration { "windows" }
-			 links { "d3d11", "gdi32", "winmm", "user32", "kernel32" }
-			 defines { "NANOVG_D3D11", "_CRT_SECURE_NO_WARNINGS" }
-
-		configuration "Debug"
-			defines { "DEBUG" }
-			flags { "Symbols", "ExtraWarnings"}
-
-		configuration "Release"
-			defines { "NDEBUG" }
-			flags { "Optimize", "ExtraWarnings"}
-
 	project "example_gl2_msaa"
 		kind "ConsoleApp"
 		language "C"
