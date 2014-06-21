@@ -102,6 +102,9 @@ struct NVGtextRow {
 	float minx, maxx;	// Actual bounds of the row. Logical with and bounds can differ because of kerning and some parts over extending.
 };
 
+enum NVGimage {
+    NVG_IMAGE_GENERATE_MIPMAPS = 1 << 0     // Generate mipmaps during creation of the image.
+};
 
 // Begin drawing a new frame
 // Calls to nanovg drawing API should be wrapped in nvgBeginFrame() & nvgEndFrame()
@@ -305,15 +308,15 @@ float nvgRadToDeg(float rad);
 
 // Creates image by loading it from the disk from specified file name.
 // Returns handle to the image.
-int nvgCreateImage(struct NVGcontext* ctx, const char* filename);
+int nvgCreateImage(struct NVGcontext* ctx, const char* filename, int imageFlags);
 
 // Creates image by loading it from the specified chunk of memory.
 // Returns handle to the image.
-int nvgCreateImageMem(struct NVGcontext* ctx, unsigned char* data, int ndata);
+int nvgCreateImageMem(struct NVGcontext* ctx, int imageFlags, unsigned char* data, int ndata);
 
 // Creates image from specified image data.
 // Returns handle to the image.
-int nvgCreateImageRGBA(struct NVGcontext* ctx, int w, int h, const unsigned char* data);
+int nvgCreateImageRGBA(struct NVGcontext* ctx, int w, int h, int imageFlags, const unsigned char* data);
 
 // Updates image data specified by image handle.
 void nvgUpdateImage(struct NVGcontext* ctx, int image, const unsigned char* data);
@@ -568,7 +571,7 @@ struct NVGparams {
 	int atlasWidth, atlasHeight;
 	int edgeAntiAlias;
 	int (*renderCreate)(void* uptr);
-	int (*renderCreateTexture)(void* uptr, int type, int w, int h, const unsigned char* data);
+	int (*renderCreateTexture)(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data);
 	int (*renderDeleteTexture)(void* uptr, int image);
 	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);

@@ -75,7 +75,7 @@ void nvgDeleteGLES3(struct NVGcontext* ctx);
 enum NVGLtextureflags {
 	NVGL_TEXTURE_FLIP_Y   = 0x01,
 	NVGL_TEXTURE_NODELETE = 0x02,
-	NVGL_TEXTURE_PREMULTIPLIED = 0x04,
+	NVGL_TEXTURE_PREMULTIPLIED = 0x04
 };
 
 int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
@@ -604,7 +604,7 @@ static int glnvg__renderCreate(void* uptr)
 	return 1;
 }
 
-static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, const unsigned char* data)
+static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
 	struct GLNVGtexture* tex = glnvg__allocTexture(gl);
@@ -622,6 +622,14 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, const 
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->width);
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+#endif
+
+#if defined (NANOVG_GL2)
+    // GL 1.4 and later has support for generating mipmaps using a tex parameter.
+    if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS)
+    {    
+        glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+    }
 #endif
 
 	if (type == NVG_TEXTURE_RGBA)
@@ -643,6 +651,14 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, const 
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+#endif
+
+    // The new way to build mipmaps on GLES and GL3
+#if !defined(NANOVG_GL2)
+    if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS)
+    {    
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
 #endif
 
 	if (glnvg__checkError("create tex"))
