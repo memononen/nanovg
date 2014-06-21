@@ -643,9 +643,16 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 #endif
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
+	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS)
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    }
+    else
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 #ifndef NANOVG_GLES2
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
