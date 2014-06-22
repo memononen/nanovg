@@ -21,8 +21,8 @@
 #include "nanovg.h"
 #define FONTSTASH_IMPLEMENTATION
 #include "fontstash.h"
-#define STBI_HEADER_FILE_ONLY
-#include "stb_image.c"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4100)  // unreferenced formal parameter
