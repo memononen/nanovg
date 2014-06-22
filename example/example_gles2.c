@@ -82,7 +82,7 @@ int main()
 
 	glfwMakeContextCurrent(window);
 
-	vg = nvgCreateGLES2(512, 512, NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+	vg = nvgCreateGLES2(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
 		return -1;

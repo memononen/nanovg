@@ -52,28 +52,28 @@ extern "C" {
 
 #if defined NANOVG_GL2
 
-struct NVGcontext* nvgCreateGL2(int atlasw, int atlash, int flags);
+struct NVGcontext* nvgCreateGL2(int flags);
 void nvgDeleteGL2(struct NVGcontext* ctx);
 
 #endif
 
 #if defined NANOVG_GL3
 
-struct NVGcontext* nvgCreateGL3(int atlasw, int atlash, int flags);
+struct NVGcontext* nvgCreateGL3(int flags);
 void nvgDeleteGL3(struct NVGcontext* ctx);
 
 #endif
 
 #if defined NANOVG_GLES2
 
-struct NVGcontext* nvgCreateGLES2(int atlasw, int atlash, int edgeaa);
+struct NVGcontext* nvgCreateGLES2(int flags);
 void nvgDeleteGLES2(struct NVGcontext* ctx);
 
 #endif
 
 #if defined NANOVG_GLES3
 
-struct NVGcontext* nvgCreateGLES3(int atlasw, int atlash, int edgeaa);
+struct NVGcontext* nvgCreateGLES3(int flags);
 void nvgDeleteGLES3(struct NVGcontext* ctx);
 
 #endif
@@ -1348,13 +1348,13 @@ static void glnvg__renderDelete(void* uptr)
 
 
 #if defined NANOVG_GL2
-struct NVGcontext* nvgCreateGL2(int atlasw, int atlash, int flags)
+struct NVGcontext* nvgCreateGL2(int flags)
 #elif defined NANOVG_GL3
-struct NVGcontext* nvgCreateGL3(int atlasw, int atlash, int flags)
+struct NVGcontext* nvgCreateGL3(int flags)
 #elif defined NANOVG_GLES2
-struct NVGcontext* nvgCreateGLES2(int atlasw, int atlash, int flags)
+struct NVGcontext* nvgCreateGLES2(int flags)
 #elif defined NANOVG_GLES3
-struct NVGcontext* nvgCreateGLES3(int atlasw, int atlash, int flags)
+struct NVGcontext* nvgCreateGLES3(int flags)
 #endif
 {
 	struct NVGparams params;
@@ -1376,8 +1376,6 @@ struct NVGcontext* nvgCreateGLES3(int atlasw, int atlash, int flags)
 	params.renderTriangles = glnvg__renderTriangles;
 	params.renderDelete = glnvg__renderDelete;
 	params.userPtr = gl;
-	params.atlasWidth = atlasw;
-	params.atlasHeight = atlash;
 	params.edgeAntiAlias = flags & NVG_ANTIALIAS ? 1 : 0;
 
 	gl->flags = flags;

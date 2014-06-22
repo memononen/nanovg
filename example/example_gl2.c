@@ -92,9 +92,9 @@ int main()
 #endif
 
 #ifdef DEMO_MSAA
-	vg = nvgCreateGL2(512, 512, NVG_STENCIL_STROKES);
+	vg = nvgCreateGL2(NVG_STENCIL_STROKES);
 #else
-	vg = nvgCreateGL2(512, 512, NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+	vg = nvgCreateGL2(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 #endif
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");

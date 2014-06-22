@@ -565,7 +565,6 @@ struct NVGpath {
 
 struct NVGparams {
 	void* userPtr;
-	int atlasWidth, atlasHeight;
 	int edgeAntiAlias;
 	int (*renderCreate)(void* uptr);
 	int (*renderCreateTexture)(void* uptr, int type, int w, int h, const unsigned char* data);
