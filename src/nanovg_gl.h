@@ -55,17 +55,23 @@ extern "C" {
 struct NVGcontext* nvgCreateGL2(int atlasw, int atlash, int flags);
 void nvgDeleteGL2(struct NVGcontext* ctx);
 
-#elif defined NANOVG_GL3
+#endif
+
+#if defined NANOVG_GL3
 
 struct NVGcontext* nvgCreateGL3(int atlasw, int atlash, int flags);
 void nvgDeleteGL3(struct NVGcontext* ctx);
 
-#elif defined NANOVG_GLES2
+#endif
+
+#if defined NANOVG_GLES2
 
 struct NVGcontext* nvgCreateGLES2(int atlasw, int atlash, int edgeaa);
 void nvgDeleteGLES2(struct NVGcontext* ctx);
 
-#elif defined NANOVG_GLES3
+#endif
+
+#if defined NANOVG_GLES3
 
 struct NVGcontext* nvgCreateGLES3(int atlasw, int atlash, int edgeaa);
 void nvgDeleteGLES3(struct NVGcontext* ctx);
