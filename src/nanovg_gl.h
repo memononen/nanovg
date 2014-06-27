@@ -448,7 +448,7 @@ static int glnvg__renderCreate(void* uptr)
 		"#else\n"
 		" precision mediump float;\n"
 		"#endif\n"
-    	"#endif\n"
+		"#endif\n"
 		"#ifdef NANOVG_GL3\n"
 		"#ifdef USE_UNIFORMBUFFER\n"
 		"	layout(std140) uniform frag {\n"
