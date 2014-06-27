@@ -415,15 +415,9 @@ static int glnvg__renderCreate(void* uptr)
 		"#define NANOVG_GL3 1\n";
 #elif defined NANOVG_GLES2
 		"#version 100\n"
-		"#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
-		" precision highp float;\n"
-		"#else\n"
-		" precision mediump float;\n"
-		"#endif\n"
 		"#define NANOVG_GL2 1\n";
 #elif defined NANOVG_GLES3
 		"#version 300 es\n"
-		"precision highp float;\n"
 		"#define NANOVG_GL3 1\n";
 #endif
 
@@ -448,6 +442,13 @@ static int glnvg__renderCreate(void* uptr)
 		"}\n";
 
 	static const char* fillFragShader = 
+		"#ifdef GL_ES\n"
+        "#if defined(GL_FRAGMENT_PRECISION_HIGH) || defined(NANOVG_GL3)\n"
+		" precision highp float;\n"
+		"#else\n"
+		" precision mediump float;\n"
+		"#endif\n"
+    	"#endif\n"
 		"#ifdef NANOVG_GL3\n"
 		"#ifdef USE_UNIFORMBUFFER\n"
 		"	layout(std140) uniform frag {\n"
