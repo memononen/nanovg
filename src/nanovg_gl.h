@@ -443,7 +443,7 @@ static int glnvg__renderCreate(void* uptr)
 
 	static const char* fillFragShader = 
 		"#ifdef GL_ES\n"
-        "#if defined(GL_FRAGMENT_PRECISION_HIGH) || defined(NANOVG_GL3)\n"
+		"#if defined(GL_FRAGMENT_PRECISION_HIGH) || defined(NANOVG_GL3)\n"
 		" precision highp float;\n"
 		"#else\n"
 		" precision mediump float;\n"
