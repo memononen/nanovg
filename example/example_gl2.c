@@ -51,6 +51,42 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 		premult = !premult;
 }
 
+int createFbo(int w, int h, int* fboId, int* rboId, int* texId)
+{
+	// Texture
+	glGenTextures(1, texId);
+	glBindTexture(GL_TEXTURE_2D, *texId);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// FBO
+	glGenFramebuffersEXT(1, fboId);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, *fboId);
+
+	glGenRenderbuffersEXT(1, rboId);
+	glBindRenderbufferEXT(GL_RENDERBUFFER, *rboId);
+	glRenderbufferStorageEXT(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
+	glBindRenderbufferEXT(GL_RENDERBUFFER, 0);
+
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *texId, 0);
+
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *rboId);
+
+	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE)
+	{
+		printf("glCheckFramebufferStatus failed: %d\n", status);
+		return 0;
+	}
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+	return 1;
+}
+
 int main()
 {
 	GLFWwindow* window;
@@ -58,6 +94,9 @@ int main()
 	struct NVGcontext* vg = NULL;
 	struct PerfGraph fps;
 	double prevt = 0;
+	int fboWidth = 512, fboHeight = 512;
+	int fboId, rboId, fboTextureId;
+	int fboSupported;
 
 	if (!glfwInit()) {
 		printf("Failed to init GLFW.");
@@ -109,6 +148,8 @@ int main()
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
+	fboSupported = createFbo(fboWidth, fboHeight, &fboId, &rboId, &fboTextureId);
+
 	while (!glfwWindowShouldClose(window))
 	{
 		double mx, my, t, dt;
@@ -128,18 +169,46 @@ int main()
 		// Calculate pixel ration for hi-dpi devices.
 		pxRatio = (float)fbWidth / (float)winWidth;
 
+		if (fboSupported)
+		{
+			// Draw some stuff to an FBO as a test.
+			glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+			glViewport(0, 0, fboWidth, fboHeight);
+			glClearColor(0, 0, 0, 0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			nvgBeginFrame(vg, fboWidth, fboHeight, pxRatio, NVG_PREMULTIPLIED_ALPHA);
+			renderDemo(vg, mx, my, fboWidth, fboHeight, t, blowup, &data);
+			nvgEndFrame(vg);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+
 		// Update and render
 		glViewport(0, 0, fbWidth, fbHeight);
 		if (premult)
-			glClearColor(0,0,0,0);
+			glClearColor(0, 0, 0, 0);
 		else
 			glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
 		renderGraph(vg, 5,5, &fps);
+
+		if (fboSupported)
+		{
+			// And draw the FBO into the main scene.
+			struct NVGpaint imgPaint;
+			int nativeImage = nvgCreateImageNative(vg, fboWidth, fboHeight, fboTextureId);
+			imgPaint = nvgImagePattern(vg, 0, 0, 150, 150, 0, nativeImage, 0);
+			nvgBeginPath(vg);
+			nvgTranslate(vg, 550, 300);
+			nvgRect(vg, 0, 0, 150, 150);
+			nvgFillPaint(vg, imgPaint);
+			nvgFill(vg);
+		}
 
 		nvgEndFrame(vg);
 

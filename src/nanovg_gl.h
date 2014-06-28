@@ -659,6 +659,20 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, const 
 	return tex->id;
 }
 
+static int glnvg__renderCreateTextureNative(void* uptr, int type, int w, int h, unsigned int handle)
+{
+	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
+	struct GLNVGtexture* tex = glnvg__allocTexture(gl);
+
+	if (tex == NULL) return 0;
+
+	tex->tex = handle;
+	tex->width = w;
+	tex->height = h;
+	tex->type = type;
+
+	return tex->id;
+}
 
 static int glnvg__renderDeleteTexture(void* uptr, int image)
 {
@@ -1366,6 +1380,7 @@ struct NVGcontext* nvgCreateGLES3(int flags)
 	memset(&params, 0, sizeof(params));
 	params.renderCreate = glnvg__renderCreate;
 	params.renderCreateTexture = glnvg__renderCreateTexture;
+	params.renderCreateTextureNative = glnvg__renderCreateTextureNative;
 	params.renderDeleteTexture = glnvg__renderDeleteTexture;
 	params.renderUpdateTexture = glnvg__renderUpdateTexture;
 	params.renderGetTextureSize = glnvg__renderGetTextureSize;
