@@ -116,6 +116,9 @@ void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, fl
 // Ends drawing flushing remaining render state.
 void nvgEndFrame(struct NVGcontext* ctx);
 
+// Sets the current layer to render into.
+void nvgLayer(struct NVGcontext* ctx, int layer);
+
 //
 // Color utils
 //
@@ -573,9 +576,9 @@ struct NVGparams {
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
 	void (*renderViewport)(void* uptr, int width, int height);
 	void (*renderFlush)(void* uptr);
-	void (*renderFill)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float fringe, const float* bounds, const struct NVGpath* paths, int npaths);
-	void (*renderStroke)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float fringe, float strokeWidth, const struct NVGpath* paths, int npaths);
-	void (*renderTriangles)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, const struct NVGvertex* verts, int nverts);
+	void (*renderFill)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float fringe, const float* bounds, const struct NVGpath* paths, int npaths, int layer);
+	void (*renderStroke)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float fringe, float strokeWidth, const struct NVGpath* paths, int npaths, int layer);
+	void (*renderTriangles)(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, const struct NVGvertex* verts, int nverts, int layer);
 	void (*renderDelete)(void* uptr);
 };
 

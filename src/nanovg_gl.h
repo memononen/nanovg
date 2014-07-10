@@ -163,6 +163,7 @@ enum GLNVGcallType {
 };
 
 struct GLNVGcall {
+	int layer;
 	int type;
 	int image;
 	int pathOffset;
@@ -1066,7 +1067,7 @@ static int glnvg__maxVertCount(const struct NVGpath* paths, int npaths)
 	return count;
 }
 
-static struct GLNVGcall* glnvg__allocCall(struct GLNVGcontext* gl)
+static struct GLNVGcall* glnvg__allocCall(struct GLNVGcontext* gl, int layer)
 {
 	struct GLNVGcall* ret = NULL;
 	if (gl->ncalls+1 > gl->ccalls) {
@@ -1077,8 +1078,53 @@ static struct GLNVGcall* glnvg__allocCall(struct GLNVGcontext* gl)
 		gl->calls = calls;
 		gl->ccalls = ccalls;
 	}
-	ret = &gl->calls[gl->ncalls++];
+
+	// we need to keep our layers sorted in the call list, so we find the first appropiate position
+	
+	// trivially check if we can just add our layer at the end of the list
+	int pos = gl->ncalls - 1;
+	if (pos == 0 || gl->calls[pos].layer <= layer)
+	{
+		ret = &gl->calls[gl->ncalls++];
+	} else
+	// trivially check if our layer is lies below everything that's already been called
+	if (gl->calls[0].layer > layer)
+	{
+		// move the other calls forward so we can insert the new call
+		memmove(gl->calls + 1, gl->calls, sizeof(struct GLNVGcall) * gl->ncalls);
+		gl->ncalls++;
+		ret = &gl->calls[0];
+	} else
+	{
+		// find a position in the array between the current (or lower) layer and the next layer
+		int lo = 0;
+		int hi = pos - 1;
+		pos = 0; // if we don't find it, we need to add at start
+		while (lo < hi)
+		{
+			auto mid = (hi + lo) / 2;
+			const auto layer0 = gl->calls[mid].layer;
+			const auto layer1 = gl->calls[mid + 1].layer;
+			if (layer0 <= layer)
+			{
+				if (layer1 > layer)
+				{
+					// we need to insert after the found position, so we add one
+					pos = mid + 1;
+					break;
+				} else
+					lo = mid + 1;
+			} else
+				hi = mid;
+		}
+		// move the other calls forward so we can insert the new call
+		memmove(gl->calls + pos + 1, gl->calls + pos, sizeof(struct GLNVGcall) * (gl->ncalls - pos));
+		gl->ncalls++;
+		ret = &gl->calls[pos];
+	}
+
 	memset(ret, 0, sizeof(struct GLNVGcall));
+	ret->layer = layer;
 	return ret;
 }
 
@@ -1144,10 +1190,10 @@ static void glnvg__vset(struct NVGvertex* vtx, float x, float y, float u, float 
 }
 
 static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float fringe,
-							  const float* bounds, const struct NVGpath* paths, int npaths)
+							  const float* bounds, const struct NVGpath* paths, int npaths, int layer)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	struct GLNVGcall* call = glnvg__allocCall(gl);
+	struct GLNVGcall* call = glnvg__allocCall(gl, layer);
 	struct NVGvertex* quad;
 	struct GLNVGfragUniforms* frag;
 	int i, maxverts, offset;
@@ -1225,10 +1271,10 @@ error:
 }
 
 static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float fringe,
-								float strokeWidth, const struct NVGpath* paths, int npaths)
+								float strokeWidth, const struct NVGpath* paths, int npaths, int layer)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	struct GLNVGcall* call = glnvg__allocCall(gl);
+	struct GLNVGcall* call = glnvg__allocCall(gl, layer);
 	int i, maxverts, offset;
 
 	if (call == NULL) return;
@@ -1280,10 +1326,10 @@ error:
 }
 
 static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor,
-								   const struct NVGvertex* verts, int nverts)
+								   const struct NVGvertex* verts, int nverts, int layer)
 {
 	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	struct GLNVGcall* call = glnvg__allocCall(gl);
+	struct GLNVGcall* call = glnvg__allocCall(gl, layer);
 	struct GLNVGfragUniforms* frag;
 
 	if (call == NULL) return;
