@@ -78,6 +78,7 @@ struct NVGstate {
 	float fontBlur;
 	int textAlign;
 	int fontId;
+	int layer;
 };
 
 struct NVGpoint {
@@ -121,7 +122,6 @@ struct NVGcontext {
 	int fillTriCount;
 	int strokeTriCount;
 	int textTriCount;
-	int layer;
 };
 
 static float nvg__sqrtf(float a) { return sqrtf(a); }
@@ -296,7 +296,6 @@ void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, fl
 	ctx->fillTriCount = 0;
 	ctx->strokeTriCount = 0;
 	ctx->textTriCount = 0;
-	ctx->layer = 0;
 }
 
 void nvgEndFrame(struct NVGcontext* ctx)
@@ -327,12 +326,6 @@ void nvgEndFrame(struct NVGcontext* ctx)
 		for (i = j; i < NVG_MAX_FONTIMAGES; i++)
 			ctx->fontImages[i] = 0;
 	}
-}
-
-// Sets the current layer to render into.
-void nvgLayer(struct NVGcontext* ctx, int layer)
-{
-	ctx->layer = layer;
 }
 
 struct NVGcolor nvgRGB(unsigned char r, unsigned char g, unsigned char b)
@@ -584,9 +577,16 @@ void nvgReset(struct NVGcontext* ctx)
 	state->fontBlur = 0.0f;
 	state->textAlign = NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE;
 	state->fontId = 0;
+	state->layer = 0;
 }
 
 // State setting
+void nvgLayer(struct NVGcontext* ctx, int layer)
+{
+	struct NVGstate* state = nvg__getState(ctx);
+	state->layer = layer;
+}
+
 void nvgStrokeWidth(struct NVGcontext* ctx, float width)
 {
 	struct NVGstate* state = nvg__getState(ctx);
@@ -2060,7 +2060,7 @@ void nvgFill(struct NVGcontext* ctx)
 	fillPaint.outerColor.a *= state->alpha;
 
 	ctx->params.renderFill(ctx->params.userPtr, &fillPaint, &state->scissor, ctx->fringeWidth,
-						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths, ctx->layer);
+						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths, state->layer);
 
 	// Count triangles
 	for (i = 0; i < ctx->cache->npaths; i++) {
@@ -2101,7 +2101,7 @@ void nvgStroke(struct NVGcontext* ctx)
 		nvg__expandStroke(ctx, strokeWidth*0.5f, state->lineCap, state->lineJoin, state->miterLimit);
 
 	ctx->params.renderStroke(ctx->params.userPtr, &strokePaint, &state->scissor, ctx->fringeWidth,
-							 strokeWidth, ctx->cache->paths, ctx->cache->npaths, ctx->layer);
+							 strokeWidth, ctx->cache->paths, ctx->cache->npaths, state->layer);
 
 	// Count triangles
 	for (i = 0; i < ctx->cache->npaths; i++) {
@@ -2236,7 +2236,7 @@ static void nvg__renderText(struct NVGcontext* ctx, struct NVGvertex* verts, int
 	paint.innerColor.a *= state->alpha;
 	paint.outerColor.a *= state->alpha;
 
-	ctx->params.renderTriangles(ctx->params.userPtr, &paint, &state->scissor, verts, nverts, ctx->layer);
+	ctx->params.renderTriangles(ctx->params.userPtr, &paint, &state->scissor, verts, nverts, state->layer);
 
 	ctx->drawCallCount++;
 	ctx->textTriCount += nverts/3;

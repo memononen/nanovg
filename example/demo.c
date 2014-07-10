@@ -1024,7 +1024,12 @@ void renderDemo(struct NVGcontext* vg, float mx, float my, float width, float he
 
 	drawEyes(vg, width - 250, 50, 150, 100, mx, my, t);
 	drawParagraph(vg, width - 450, 50, 150, 100, mx, my);
-	drawGraph(vg, 0, height/2, width, height/2, t);
+
+	nvgSave(vg);
+	nvgLayer(vg, 1);
+	drawGraph(vg, 0, height / 2, width, height / 2, t);
+	nvgRestore(vg);
+
 	drawColorwheel(vg, width - 300, height - 300, 250.0f, 250.0f, t);
 
 	// Line joints

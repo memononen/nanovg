@@ -116,9 +116,6 @@ void nvgBeginFrame(struct NVGcontext* ctx, int windowWidth, int windowHeight, fl
 // Ends drawing flushing remaining render state.
 void nvgEndFrame(struct NVGcontext* ctx);
 
-// Sets the current layer to render into.
-void nvgLayer(struct NVGcontext* ctx, int layer);
-
 //
 // Color utils
 //
@@ -171,6 +168,13 @@ void nvgRestore(struct NVGcontext* ctx);
 
 // Resets current render state to default values. Does not affect the render state stack.
 void nvgReset(struct NVGcontext* ctx);
+
+//
+// Layers
+//
+
+// Sets the current layer to render into.
+void nvgLayer(struct NVGcontext* ctx, int layer);
 
 //
 // Render styles
