@@ -21,7 +21,7 @@
 //pfnGLGETQUERYOBJECTUI64V glGetQueryObjectui64v = 0;
 #endif
 
-void initGPUTimer(struct GPUtimer* timer)
+void initGPUTimer(GPUtimer* timer)
 {
 	memset(timer, 0, sizeof(*timer));
 
@@ -39,7 +39,7 @@ void initGPUTimer(struct GPUtimer* timer)
 	}*/
 }
 
-void startGPUTimer(struct GPUtimer* timer)
+void startGPUTimer(GPUtimer* timer)
 {
 	if (!timer->supported)
 		return;
@@ -47,7 +47,7 @@ void startGPUTimer(struct GPUtimer* timer)
 	timer->cur++;
 }
 
-int stopGPUTimer(struct GPUtimer* timer, float* times, int maxTimes)
+int stopGPUTimer(GPUtimer* timer, float* times, int maxTimes)
 {
 	NVG_NOTUSED(times);
 	NVG_NOTUSED(maxTimes);
@@ -74,21 +74,21 @@ int stopGPUTimer(struct GPUtimer* timer, float* times, int maxTimes)
 }
 
 
-void initGraph(struct PerfGraph* fps, int style, const char* name)
+void initGraph(PerfGraph* fps, int style, const char* name)
 {
-	memset(fps, 0, sizeof(struct PerfGraph));
+	memset(fps, 0, sizeof(PerfGraph));
 	fps->style = style;
 	strncpy(fps->name, name, sizeof(fps->name));
 	fps->name[sizeof(fps->name)-1] = '\0';
 }
 
-void updateGraph(struct PerfGraph* fps, float frameTime)
+void updateGraph(PerfGraph* fps, float frameTime)
 {
 	fps->head = (fps->head+1) % GRAPH_HISTORY_COUNT;
 	fps->values[fps->head] = frameTime;
 }
 
-float getGraphAverage(struct PerfGraph* fps)
+float getGraphAverage(PerfGraph* fps)
 {
 	int i;
 	float avg = 0;
@@ -98,7 +98,7 @@ float getGraphAverage(struct PerfGraph* fps)
 	return avg / (float)GRAPH_HISTORY_COUNT;
 }
 
-void renderGraph(struct NVGcontext* vg, float x, float y, struct PerfGraph* fps)
+void renderGraph(NVGcontext* vg, float x, float y, PerfGraph* fps)
 {
 	int i;
 	float avg, w, h;

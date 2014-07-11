@@ -57,10 +57,10 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 int main()
 {
 	GLFWwindow* window;
-	struct DemoData data;
-	struct NVGcontext* vg = NULL;
-	struct GPUtimer gpuTimer;
-	struct PerfGraph fps, cpuGraph, gpuGraph;
+	DemoData data;
+	NVGcontext* vg = NULL;
+	GPUtimer gpuTimer;
+	PerfGraph fps, cpuGraph, gpuGraph;
 	double prevt = 0, cpuTime = 0;
 
 	if (!glfwInit()) {

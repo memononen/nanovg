@@ -19,11 +19,12 @@ struct PerfGraph {
 	float values[GRAPH_HISTORY_COUNT];
 	int head;
 };
+typedef struct PerfGraph PerfGraph;
 
-void initGraph(struct PerfGraph* fps, int style, const char* name);
-void updateGraph(struct PerfGraph* fps, float frameTime);
-void renderGraph(struct NVGcontext* vg, float x, float y, struct PerfGraph* fps);
-float getGraphAverage(struct PerfGraph* fps);
+void initGraph(PerfGraph* fps, int style, const char* name);
+void updateGraph(PerfGraph* fps, float frameTime);
+void renderGraph(NVGcontext* vg, float x, float y, PerfGraph* fps);
+float getGraphAverage(PerfGraph* fps);
 
 #define GPU_QUERY_COUNT 5
 struct GPUtimer {
@@ -31,10 +32,11 @@ struct GPUtimer {
 	int cur, ret;
 	unsigned int queries[GPU_QUERY_COUNT];
 };
+typedef struct GPUtimer GPUtimer;
 
-void initGPUTimer(struct GPUtimer* timer);
-void startGPUTimer(struct GPUtimer* timer);
-int stopGPUTimer(struct GPUtimer* timer, float* times, int maxTimes);
+void initGPUTimer(GPUtimer* timer);
+void startGPUTimer(GPUtimer* timer);
+int stopGPUTimer(GPUtimer* timer, float* times, int maxTimes);
 
 #ifdef __cplusplus
 }

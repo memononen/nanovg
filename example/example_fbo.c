@@ -30,7 +30,7 @@
 #include "nanovg_gl_utils.h"
 #include "perf.h"
 
-void renderPattern(struct NVGcontext* vg, struct NVGLUframebuffer* fb, float t, float pxRatio)
+void renderPattern(NVGcontext* vg, NVGLUframebuffer* fb, float t, float pxRatio)
 {
 	int winWidth, winHeight;
 	int fboWidth, fboHeight;
@@ -70,7 +70,7 @@ void renderPattern(struct NVGcontext* vg, struct NVGLUframebuffer* fb, float t, 
 	nvgluBindFramebuffer(NULL);
 }
 
-int loadFonts(struct NVGcontext* vg)
+int loadFonts(NVGcontext* vg)
 {
 	int font;
 	font = nvgCreateFont(vg, "sans", "../example/Roboto-Regular.ttf");
@@ -102,11 +102,11 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 int main()
 {
 	GLFWwindow* window;
-	struct NVGcontext* vg = NULL;
-	struct GPUtimer gpuTimer;
-	struct PerfGraph fps, cpuGraph, gpuGraph;
+	NVGcontext* vg = NULL;
+	GPUtimer gpuTimer;
+	PerfGraph fps, cpuGraph, gpuGraph;
 	double prevt = 0, cpuTime = 0;
-	struct NVGLUframebuffer* fb = NULL;
+	NVGLUframebuffer* fb = NULL;
 	int winWidth, winHeight;
 	int fbWidth, fbHeight;
 	float pxRatio;
@@ -215,7 +215,7 @@ int main()
 
 		// Use the FBO as image pattern.
 		if (fb != NULL) {
-			struct NVGpaint img = nvgImagePattern(vg, 0, 0, 100, 100, 0, fb->image, NVG_REPEATX|NVG_REPEATY, 1.0f);
+			NVGpaint img = nvgImagePattern(vg, 0, 0, 100, 100, 0, fb->image, NVG_REPEATX|NVG_REPEATY, 1.0f);
 			nvgSave(vg);
 
 			for (i = 0; i < 20; i++) {
