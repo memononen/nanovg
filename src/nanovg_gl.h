@@ -52,29 +52,29 @@ extern "C" {
 
 #if defined NANOVG_GL2
 
-struct NVGcontext* nvgCreateGL2(int flags);
-void nvgDeleteGL2(struct NVGcontext* ctx);
+NVGcontext* nvgCreateGL2(int flags);
+void nvgDeleteGL2(NVGcontext* ctx);
 
 #endif
 
 #if defined NANOVG_GL3
 
-struct NVGcontext* nvgCreateGL3(int flags);
-void nvgDeleteGL3(struct NVGcontext* ctx);
+NVGcontext* nvgCreateGL3(int flags);
+void nvgDeleteGL3(NVGcontext* ctx);
 
 #endif
 
 #if defined NANOVG_GLES2
 
-struct NVGcontext* nvgCreateGLES2(int flags);
-void nvgDeleteGLES2(struct NVGcontext* ctx);
+NVGcontext* nvgCreateGLES2(int flags);
+void nvgDeleteGLES2(NVGcontext* ctx);
 
 #endif
 
 #if defined NANOVG_GLES3
 
-struct NVGcontext* nvgCreateGLES3(int flags);
-void nvgDeleteGLES3(struct NVGcontext* ctx);
+NVGcontext* nvgCreateGLES3(int flags);
+void nvgDeleteGLES3(NVGcontext* ctx);
 
 #endif
 
@@ -84,9 +84,9 @@ enum NVGLtextureflags {
 	NVGL_TEXTURE_PREMULTIPLIED = 0x04
 };
 
-int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
-GLuint nvglImageHandle(struct NVGcontext* ctx, int image);
-void nvglImageFlags(struct NVGcontext* ctx, int image, int flags);
+int nvglCreateImageFromHandle(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
+GLuint nvglImageHandle(NVGcontext* ctx, int image);
+void nvglImageFlags(NVGcontext* ctx, int image, int flags);
 
 
 #ifdef __cplusplus
@@ -145,6 +145,7 @@ struct GLNVGshader {
 	GLuint vert;
 	GLint loc[GLNVG_MAX_LOCS];
 };
+typedef struct GLNVGshader GLNVGshader;
 
 struct GLNVGtexture {
 	int id;
@@ -153,6 +154,7 @@ struct GLNVGtexture {
 	int type;
 	int flags;
 };
+typedef struct GLNVGtexture GLNVGtexture;
 
 enum GLNVGcallType {
 	GLNVG_NONE = 0,
@@ -171,6 +173,7 @@ struct GLNVGcall {
 	int triangleCount;
 	int uniformOffset;
 };
+typedef struct GLNVGcall GLNVGcall;
 
 struct GLNVGpath {
 	int fillOffset;
@@ -178,6 +181,7 @@ struct GLNVGpath {
 	int strokeOffset;
 	int strokeCount;
 };
+typedef struct GLNVGpath GLNVGpath;
 
 struct GLNVGfragUniforms {
 	float scissorMat[12]; // matrices are actually 3 vec4s
@@ -194,10 +198,11 @@ struct GLNVGfragUniforms {
 	int texType;
 	int type;
 };
+typedef struct GLNVGfragUniforms GLNVGfragUniforms;
 
 struct GLNVGcontext {
-	struct GLNVGshader shader;
-	struct GLNVGtexture* textures;
+	GLNVGshader shader;
+	GLNVGtexture* textures;
 	float view[2];
 	int ntextures;
 	int ctextures;
@@ -213,10 +218,10 @@ struct GLNVGcontext {
 	int flags;
 
 	// Per frame buffers
-	struct GLNVGcall* calls;
+	GLNVGcall* calls;
 	int ccalls;
 	int ncalls;
-	struct GLNVGpath* paths;
+	GLNVGpath* paths;
 	int cpaths;
 	int npaths;
 	struct NVGvertex* verts;
@@ -226,12 +231,13 @@ struct GLNVGcontext {
 	int cuniforms;
 	int nuniforms;
 };
+typedef struct GLNVGcontext GLNVGcontext;
 
 static int glnvg__maxi(int a, int b) { return a > b ? a : b; }
 
-static struct GLNVGtexture* glnvg__allocTexture(struct GLNVGcontext* gl)
+static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 {
-	struct GLNVGtexture* tex = NULL;
+	GLNVGtexture* tex = NULL;
 	int i;
 
 	for (i = 0; i < gl->ntextures; i++) {
@@ -242,9 +248,9 @@ static struct GLNVGtexture* glnvg__allocTexture(struct GLNVGcontext* gl)
 	}
 	if (tex == NULL) {
 		if (gl->ntextures+1 > gl->ctextures) {
-			struct GLNVGtexture* textures;
+			GLNVGtexture* textures;
 			int ctextures = glnvg__maxi(gl->ntextures+1, 4) +  gl->ctextures/2; // 1.5x Overallocate
-			textures = (struct GLNVGtexture*)realloc(gl->textures, sizeof(struct GLNVGtexture)*ctextures);
+			textures = (GLNVGtexture*)realloc(gl->textures, sizeof(GLNVGtexture)*ctextures);
 			if (textures == NULL) return NULL;
 			gl->textures = textures;
 			gl->ctextures = ctextures;
@@ -258,7 +264,7 @@ static struct GLNVGtexture* glnvg__allocTexture(struct GLNVGcontext* gl)
 	return tex;
 }
 
-static struct GLNVGtexture* glnvg__findTexture(struct GLNVGcontext* gl, int id)
+static GLNVGtexture* glnvg__findTexture(GLNVGcontext* gl, int id)
 {
 	int i;
 	for (i = 0; i < gl->ntextures; i++)
@@ -267,7 +273,7 @@ static struct GLNVGtexture* glnvg__findTexture(struct GLNVGcontext* gl, int id)
 	return NULL;
 }
 
-static int glnvg__deleteTexture(struct GLNVGcontext* gl, int id)
+static int glnvg__deleteTexture(GLNVGcontext* gl, int id)
 {
 	int i;
 	for (i = 0; i < gl->ntextures; i++) {
@@ -311,7 +317,7 @@ static int glnvg__checkError(const char* str)
 	return 0;
 }
 
-static int glnvg__createShader(struct GLNVGshader* shader, const char* name, const char* header, const char* opts, const char* vshader, const char* fshader)
+static int glnvg__createShader(GLNVGshader* shader, const char* name, const char* header, const char* opts, const char* vshader, const char* fshader)
 {
 	GLint status;
 	GLuint prog, vert, frag;
@@ -363,7 +369,7 @@ static int glnvg__createShader(struct GLNVGshader* shader, const char* name, con
 	return 1;
 }
 
-static void glnvg__deleteShader(struct GLNVGshader* shader)
+static void glnvg__deleteShader(GLNVGshader* shader)
 {
 	if (shader->prog != 0)
 		glDeleteProgram(shader->prog);
@@ -373,7 +379,7 @@ static void glnvg__deleteShader(struct GLNVGshader* shader)
 		glDeleteShader(shader->frag);
 }
 
-static void glnvg__getUniforms(struct GLNVGshader* shader)
+static void glnvg__getUniforms(GLNVGshader* shader)
 {
 	shader->loc[GLNVG_LOC_VIEWSIZE] = glGetUniformLocation(shader->prog, "viewSize");
 	shader->loc[GLNVG_LOC_TEX] = glGetUniformLocation(shader->prog, "tex");
@@ -399,7 +405,7 @@ static void glnvg__getUniforms(struct GLNVGshader* shader)
 
 static int glnvg__renderCreate(void* uptr)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	int align = 4;
 
 	// TODO: mediump float may not be enough for GLES2 in iOS.
@@ -602,7 +608,7 @@ static int glnvg__renderCreate(void* uptr)
 	glGenBuffers(1, &gl->fragBuf); 
 	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
 #endif
-	gl->fragSize = sizeof(struct GLNVGfragUniforms) + align - sizeof(struct GLNVGfragUniforms) % align;
+	gl->fragSize = sizeof(GLNVGfragUniforms) + align - sizeof(GLNVGfragUniforms) % align;
 
 	glnvg__checkError("create done");
 
@@ -613,8 +619,8 @@ static int glnvg__renderCreate(void* uptr)
 
 static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	struct GLNVGtexture* tex = glnvg__allocTexture(gl);
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	GLNVGtexture* tex = glnvg__allocTexture(gl);
 
 	if (tex == NULL) return 0;
 
@@ -682,14 +688,14 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 
 static int glnvg__renderDeleteTexture(void* uptr, int image)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	return glnvg__deleteTexture(gl, image);
 }
 
 static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	GLNVGtexture* tex = glnvg__findTexture(gl, image);
 
 	if (tex == NULL) return 0;
 	glBindTexture(GL_TEXTURE_2D, tex->tex);
@@ -733,8 +739,8 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 
 static int glnvg__renderGetTextureSize(void* uptr, int image, int* w, int* h)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	GLNVGtexture* tex = glnvg__findTexture(gl, image);
 	if (tex == NULL) return 0;
 	*w = tex->width;
 	*h = tex->height;
@@ -757,7 +763,7 @@ static void glnvg__xformToMat3x4(float* m3, float* t)
 	m3[11] = 0.0f;
 }
 
-static struct NVGcolor glnvg__premulColor(struct NVGcolor c)
+static NVGcolor glnvg__premulColor(NVGcolor c)
 {
 	c.r *= c.a;
 	c.g *= c.a;
@@ -765,10 +771,10 @@ static struct NVGcolor glnvg__premulColor(struct NVGcolor c)
 	return c;
 }
 
-static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms* frag, struct NVGpaint* paint,
-							   struct NVGscissor* scissor, float width, float fringe, float strokeThr)
+static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpaint* paint,
+							   NVGscissor* scissor, float width, float fringe, float strokeThr)
 {
-	struct GLNVGtexture* tex = NULL;
+	GLNVGtexture* tex = NULL;
 	float invxform[6];
 
 	memset(frag, 0, sizeof(*frag));
@@ -825,7 +831,7 @@ static int glnvg__convertPaint(struct GLNVGcontext* gl, struct GLNVGfragUniforms
 	return 1;
 }
 
-static struct GLNVGfragUniforms* nvg__fragUniformPtr(struct GLNVGcontext* gl, int i);
+static GLNVGfragUniforms* nvg__fragUniformPtr(GLNVGcontext* gl, int i);
 
 #if !NANOVG_GL_USE_UNIFORMBUFFER
 static void glnvg__mat3(float* dst, float* src)
@@ -844,12 +850,12 @@ static void glnvg__mat3(float* dst, float* src)
 }
 #endif
 
-static void glnvg__setUniforms(struct GLNVGcontext* gl, int uniformOffset, int image)
+static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 {
 #if NANOVG_GL_USE_UNIFORMBUFFER
-	glBindBufferRange(GL_UNIFORM_BUFFER, GLNVG_FRAG_BINDING, gl->fragBuf, uniformOffset, sizeof(struct GLNVGfragUniforms));
+	glBindBufferRange(GL_UNIFORM_BUFFER, GLNVG_FRAG_BINDING, gl->fragBuf, uniformOffset, sizeof(GLNVGfragUniforms));
 #else
-	struct GLNVGfragUniforms* frag = nvg__fragUniformPtr(gl, uniformOffset);
+	GLNVGfragUniforms* frag = nvg__fragUniformPtr(gl, uniformOffset);
 	float tmp[9]; // Maybe there's a way to get rid of this...
 	glnvg__mat3(tmp, frag->scissorMat);
 	glUniformMatrix3fv(gl->shader.loc[GLNVG_LOC_SCISSORMAT], 1, GL_FALSE, tmp);
@@ -869,7 +875,7 @@ static void glnvg__setUniforms(struct GLNVGcontext* gl, int uniformOffset, int i
 #endif
 
 	if (image != 0) {
-		struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
+		GLNVGtexture* tex = glnvg__findTexture(gl, image);
 		glBindTexture(GL_TEXTURE_2D, tex != NULL ? tex->tex : 0);
 		glnvg__checkError("tex paint tex");
 	} else {
@@ -879,14 +885,14 @@ static void glnvg__setUniforms(struct GLNVGcontext* gl, int uniformOffset, int i
 
 static void glnvg__renderViewport(void* uptr, int width, int height)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	gl->view[0] = (float)width;
 	gl->view[1] = (float)height;
 }
 
-static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
+static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 {
-	struct GLNVGpath* paths = &gl->paths[call->pathOffset];
+	GLNVGpath* paths = &gl->paths[call->pathOffset];
 	int i, npaths = call->pathCount;
 
 	// Draw shapes
@@ -928,9 +934,9 @@ static void glnvg__fill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 	glDisable(GL_STENCIL_TEST);
 }
 
-static void glnvg__convexFill(struct GLNVGcontext* gl, struct GLNVGcall* call)
+static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 {
-	struct GLNVGpath* paths = &gl->paths[call->pathOffset];
+	GLNVGpath* paths = &gl->paths[call->pathOffset];
 	int i, npaths = call->pathCount;
 
 	glnvg__setUniforms(gl, call->uniformOffset, call->image);
@@ -945,9 +951,9 @@ static void glnvg__convexFill(struct GLNVGcontext* gl, struct GLNVGcall* call)
 	}
 }
 
-static void glnvg__stroke(struct GLNVGcontext* gl, struct GLNVGcall* call)
+static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 {
-	struct GLNVGpath* paths = &gl->paths[call->pathOffset];
+	GLNVGpath* paths = &gl->paths[call->pathOffset];
 	int npaths = call->pathCount, i;
 
 	if (gl->flags & NVG_STENCIL_STROKES) {
@@ -992,7 +998,7 @@ static void glnvg__stroke(struct GLNVGcontext* gl, struct GLNVGcall* call)
 	}
 }
 
-static void glnvg__triangles(struct GLNVGcontext* gl, struct GLNVGcall* call)
+static void glnvg__triangles(GLNVGcontext* gl, GLNVGcall* call)
 {
 	glnvg__setUniforms(gl, call->uniformOffset, call->image);
 	glnvg__checkError("triangles fill");
@@ -1002,7 +1008,7 @@ static void glnvg__triangles(struct GLNVGcontext* gl, struct GLNVGcall* call)
 
 static void glnvg__renderFlush(void* uptr)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	int i;
 
 	if (gl->ncalls > 0) {
@@ -1034,11 +1040,11 @@ static void glnvg__renderFlush(void* uptr)
 		glBindVertexArray(gl->vertArr);
 #endif
 		glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
-		glBufferData(GL_ARRAY_BUFFER, gl->nverts * sizeof(struct NVGvertex), gl->verts, GL_STREAM_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, gl->nverts * sizeof(NVGvertex), gl->verts, GL_STREAM_DRAW);
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(size_t)0);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(struct NVGvertex), (const GLvoid*)(0 + 2*sizeof(float)));
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(NVGvertex), (const GLvoid*)(size_t)0);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(NVGvertex), (const GLvoid*)(0 + 2*sizeof(float)));
 
 		// Set view and texture just once per frame.
 		glUniform1i(gl->shader.loc[GLNVG_LOC_TEX], 0);
@@ -1049,7 +1055,7 @@ static void glnvg__renderFlush(void* uptr)
 #endif
 
 		for (i = 0; i < gl->ncalls; i++) {
-			struct GLNVGcall* call = &gl->calls[i];
+			GLNVGcall* call = &gl->calls[i];
 			if (call->type == GLNVG_FILL)
 				glnvg__fill(gl, call);
 			else if (call->type == GLNVG_CONVEXFILL)
@@ -1076,7 +1082,7 @@ static void glnvg__renderFlush(void* uptr)
 	gl->nuniforms = 0;
 }
 
-static int glnvg__maxVertCount(const struct NVGpath* paths, int npaths)
+static int glnvg__maxVertCount(const NVGpath* paths, int npaths)
 {
 	int i, count = 0;
 	for (i = 0; i < npaths; i++) {
@@ -1086,29 +1092,29 @@ static int glnvg__maxVertCount(const struct NVGpath* paths, int npaths)
 	return count;
 }
 
-static struct GLNVGcall* glnvg__allocCall(struct GLNVGcontext* gl)
+static GLNVGcall* glnvg__allocCall(GLNVGcontext* gl)
 {
-	struct GLNVGcall* ret = NULL;
+	GLNVGcall* ret = NULL;
 	if (gl->ncalls+1 > gl->ccalls) {
-		struct GLNVGcall* calls;
+		GLNVGcall* calls;
 		int ccalls = glnvg__maxi(gl->ncalls+1, 128) + gl->ccalls/2; // 1.5x Overallocate
-		calls = (struct GLNVGcall*)realloc(gl->calls, sizeof(struct GLNVGcall) * ccalls);
+		calls = (GLNVGcall*)realloc(gl->calls, sizeof(GLNVGcall) * ccalls);
 		if (calls == NULL) return NULL;
 		gl->calls = calls;
 		gl->ccalls = ccalls;
 	}
 	ret = &gl->calls[gl->ncalls++];
-	memset(ret, 0, sizeof(struct GLNVGcall));
+	memset(ret, 0, sizeof(GLNVGcall));
 	return ret;
 }
 
-static int glnvg__allocPaths(struct GLNVGcontext* gl, int n)
+static int glnvg__allocPaths(GLNVGcontext* gl, int n)
 {
 	int ret = 0;
 	if (gl->npaths+n > gl->cpaths) {
-		struct GLNVGpath* paths;
+		GLNVGpath* paths;
 		int cpaths = glnvg__maxi(gl->npaths + n, 128) + gl->cpaths/2; // 1.5x Overallocate
-		paths = (struct GLNVGpath*)realloc(gl->paths, sizeof(struct GLNVGpath) * cpaths);
+		paths = (GLNVGpath*)realloc(gl->paths, sizeof(GLNVGpath) * cpaths);
 		if (paths == NULL) return -1;
 		gl->paths = paths;
 		gl->cpaths = cpaths;
@@ -1118,13 +1124,13 @@ static int glnvg__allocPaths(struct GLNVGcontext* gl, int n)
 	return ret;
 }
 
-static int glnvg__allocVerts(struct GLNVGcontext* gl, int n)
+static int glnvg__allocVerts(GLNVGcontext* gl, int n)
 {
 	int ret = 0;
 	if (gl->nverts+n > gl->cverts) {
-		struct NVGvertex* verts;
+		NVGvertex* verts;
 		int cverts = glnvg__maxi(gl->nverts + n, 4096) + gl->cverts/2; // 1.5x Overallocate
-		verts = (struct NVGvertex*)realloc(gl->verts, sizeof(struct NVGvertex) * cverts);
+		verts = (NVGvertex*)realloc(gl->verts, sizeof(NVGvertex) * cverts);
 		if (verts == NULL) return -1;
 		gl->verts = verts;
 		gl->cverts = cverts;
@@ -1134,7 +1140,7 @@ static int glnvg__allocVerts(struct GLNVGcontext* gl, int n)
 	return ret;
 }
 
-static int glnvg__allocFragUniforms(struct GLNVGcontext* gl, int n)
+static int glnvg__allocFragUniforms(GLNVGcontext* gl, int n)
 {
 	int ret = 0, structSize = gl->fragSize;
 	if (gl->nuniforms+n > gl->cuniforms) {
@@ -1150,12 +1156,12 @@ static int glnvg__allocFragUniforms(struct GLNVGcontext* gl, int n)
 	return ret;
 }
 
-static struct GLNVGfragUniforms* nvg__fragUniformPtr(struct GLNVGcontext* gl, int i)
+static GLNVGfragUniforms* nvg__fragUniformPtr(GLNVGcontext* gl, int i)
 {
-	return (struct GLNVGfragUniforms*)&gl->uniforms[i];
+	return (GLNVGfragUniforms*)&gl->uniforms[i];
 }
 
-static void glnvg__vset(struct NVGvertex* vtx, float x, float y, float u, float v)
+static void glnvg__vset(NVGvertex* vtx, float x, float y, float u, float v)
 {
 	vtx->x = x;
 	vtx->y = y;
@@ -1163,13 +1169,13 @@ static void glnvg__vset(struct NVGvertex* vtx, float x, float y, float u, float 
 	vtx->v = v;
 }
 
-static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float fringe,
-							  const float* bounds, const struct NVGpath* paths, int npaths)
+static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe,
+							  const float* bounds, const NVGpath* paths, int npaths)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	struct GLNVGcall* call = glnvg__allocCall(gl);
-	struct NVGvertex* quad;
-	struct GLNVGfragUniforms* frag;
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	GLNVGcall* call = glnvg__allocCall(gl);
+	NVGvertex* quad;
+	GLNVGfragUniforms* frag;
 	int i, maxverts, offset;
 
 	if (call == NULL) return;
@@ -1189,19 +1195,19 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 	if (offset == -1) goto error;
 
 	for (i = 0; i < npaths; i++) {
-		struct GLNVGpath* copy = &gl->paths[call->pathOffset + i];
-		const struct NVGpath* path = &paths[i];
-		memset(copy, 0, sizeof(struct GLNVGpath));
+		GLNVGpath* copy = &gl->paths[call->pathOffset + i];
+		const NVGpath* path = &paths[i];
+		memset(copy, 0, sizeof(GLNVGpath));
 		if (path->nfill > 0) {
 			copy->fillOffset = offset;
 			copy->fillCount = path->nfill;
-			memcpy(&gl->verts[offset], path->fill, sizeof(struct NVGvertex) * path->nfill);
+			memcpy(&gl->verts[offset], path->fill, sizeof(NVGvertex) * path->nfill);
 			offset += path->nfill;
 		}
 		if (path->nstroke > 0) {
 			copy->strokeOffset = offset;
 			copy->strokeCount = path->nstroke;
-			memcpy(&gl->verts[offset], path->stroke, sizeof(struct NVGvertex) * path->nstroke);
+			memcpy(&gl->verts[offset], path->stroke, sizeof(NVGvertex) * path->nstroke);
 			offset += path->nstroke;
 		}
 	}
@@ -1244,11 +1250,11 @@ error:
 	if (gl->ncalls > 0) gl->ncalls--;
 }
 
-static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor, float fringe,
-								float strokeWidth, const struct NVGpath* paths, int npaths)
+static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe,
+								float strokeWidth, const NVGpath* paths, int npaths)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	struct GLNVGcall* call = glnvg__allocCall(gl);
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	GLNVGcall* call = glnvg__allocCall(gl);
 	int i, maxverts, offset;
 
 	if (call == NULL) return;
@@ -1265,13 +1271,13 @@ static void glnvg__renderStroke(void* uptr, struct NVGpaint* paint, struct NVGsc
 	if (offset == -1) goto error;
 
 	for (i = 0; i < npaths; i++) {
-		struct GLNVGpath* copy = &gl->paths[call->pathOffset + i];
-		const struct NVGpath* path = &paths[i];
-		memset(copy, 0, sizeof(struct GLNVGpath));
+		GLNVGpath* copy = &gl->paths[call->pathOffset + i];
+		const NVGpath* path = &paths[i];
+		memset(copy, 0, sizeof(GLNVGpath));
 		if (path->nstroke) {
 			copy->strokeOffset = offset;
 			copy->strokeCount = path->nstroke;
-			memcpy(&gl->verts[offset], path->stroke, sizeof(struct NVGvertex) * path->nstroke);
+			memcpy(&gl->verts[offset], path->stroke, sizeof(NVGvertex) * path->nstroke);
 			offset += path->nstroke;
 		}
 	}
@@ -1299,12 +1305,12 @@ error:
 	if (gl->ncalls > 0) gl->ncalls--;
 }
 
-static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NVGscissor* scissor,
-								   const struct NVGvertex* verts, int nverts)
+static void glnvg__renderTriangles(void* uptr, NVGpaint* paint, NVGscissor* scissor,
+								   const NVGvertex* verts, int nverts)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
-	struct GLNVGcall* call = glnvg__allocCall(gl);
-	struct GLNVGfragUniforms* frag;
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	GLNVGcall* call = glnvg__allocCall(gl);
+	GLNVGfragUniforms* frag;
 
 	if (call == NULL) return;
 
@@ -1316,7 +1322,7 @@ static void glnvg__renderTriangles(void* uptr, struct NVGpaint* paint, struct NV
 	if (call->triangleOffset == -1) goto error;
 	call->triangleCount = nverts;
 
-	memcpy(&gl->verts[call->triangleOffset], verts, sizeof(struct NVGvertex) * nverts);
+	memcpy(&gl->verts[call->triangleOffset], verts, sizeof(NVGvertex) * nverts);
 
 	// Fill shader
 	call->uniformOffset = glnvg__allocFragUniforms(gl, 1);
@@ -1335,7 +1341,7 @@ error:
 
 static void glnvg__renderDelete(void* uptr)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)uptr;
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	int i;
 	if (gl == NULL) return;
 
@@ -1368,20 +1374,20 @@ static void glnvg__renderDelete(void* uptr)
 
 
 #if defined NANOVG_GL2
-struct NVGcontext* nvgCreateGL2(int flags)
+NVGcontext* nvgCreateGL2(int flags)
 #elif defined NANOVG_GL3
-struct NVGcontext* nvgCreateGL3(int flags)
+NVGcontext* nvgCreateGL3(int flags)
 #elif defined NANOVG_GLES2
-struct NVGcontext* nvgCreateGLES2(int flags)
+NVGcontext* nvgCreateGLES2(int flags)
 #elif defined NANOVG_GLES3
-struct NVGcontext* nvgCreateGLES3(int flags)
+NVGcontext* nvgCreateGLES3(int flags)
 #endif
 {
-	struct NVGparams params;
-	struct NVGcontext* ctx = NULL;
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)malloc(sizeof(struct GLNVGcontext));
+	NVGparams params;
+	NVGcontext* ctx = NULL;
+	GLNVGcontext* gl = (GLNVGcontext*)malloc(sizeof(GLNVGcontext));
 	if (gl == NULL) goto error;
-	memset(gl, 0, sizeof(struct GLNVGcontext));
+	memset(gl, 0, sizeof(GLNVGcontext));
 
 	memset(&params, 0, sizeof(params));
 	params.renderCreate = glnvg__renderCreate;
@@ -1412,22 +1418,22 @@ error:
 }
 
 #if NANOVG_GL2
-void nvgDeleteGL2(struct NVGcontext* ctx)
+void nvgDeleteGL2(NVGcontext* ctx)
 #elif NANOVG_GL3
-void nvgDeleteGL3(struct NVGcontext* ctx)
+void nvgDeleteGL3(NVGcontext* ctx)
 #elif NANOVG_GLES2
-void nvgDeleteGLES2(struct NVGcontext* ctx)
+void nvgDeleteGLES2(NVGcontext* ctx)
 #elif NANOVG_GLES3
-void nvgDeleteGLES3(struct NVGcontext* ctx)
+void nvgDeleteGLES3(NVGcontext* ctx)
 #endif
 {
 	nvgDeleteInternal(ctx);
 }
 
-int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int w, int h, int flags)
+int nvglCreateImageFromHandle(NVGcontext* ctx, GLuint textureId, int w, int h, int flags)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
-	struct GLNVGtexture* tex = glnvg__allocTexture(gl);
+	GLNVGcontext* gl = (GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
+	GLNVGtexture* tex = glnvg__allocTexture(gl);
 
 	if (tex == NULL) return 0;
 
@@ -1440,17 +1446,17 @@ int nvglCreateImageFromHandle(struct NVGcontext* ctx, GLuint textureId, int w, i
 	return tex->id;
 }
 
-GLuint nvglImageHandle(struct NVGcontext* ctx, int image)
+GLuint nvglImageHandle(NVGcontext* ctx, int image)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
-	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
+	GLNVGcontext* gl = (GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
+	GLNVGtexture* tex = glnvg__findTexture(gl, image);
 	return tex->tex;
 }
 
-void nvglImageFlags(struct NVGcontext* ctx, int image, int flags)
+void nvglImageFlags(NVGcontext* ctx, int image, int flags)
 {
-	struct GLNVGcontext* gl = (struct GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
-	struct GLNVGtexture* tex = glnvg__findTexture(gl, image);
+	GLNVGcontext* gl = (GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
+	GLNVGtexture* tex = glnvg__findTexture(gl, image);
 	tex->flags = flags;
 }
 

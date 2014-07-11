@@ -49,6 +49,8 @@ void startGPUTimer(struct GPUtimer* timer)
 
 int stopGPUTimer(struct GPUtimer* timer, float* times, int maxTimes)
 {
+	NVG_NOTUSED(times);
+	NVG_NOTUSED(maxTimes);
 	GLint available = 1;
 	int n = 0;
 	if (!timer->supported)

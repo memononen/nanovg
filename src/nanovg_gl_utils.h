@@ -19,16 +19,17 @@
 #define NANOVG_GL_UTILS_H
 
 struct NVGLUframebuffer {
-	struct NVGcontext* ctx;
+	NVGcontext* ctx;
 	GLuint fbo;
 	GLuint rbo;
 	GLuint texture;
 	int image;
 };
+typedef struct NVGLUframebuffer NVGLUframebuffer;
 
 // Helper function to create GL frame buffer to render to.
-struct NVGLUframebuffer* nvgluCreateFramebuffer(struct NVGcontext* ctx, int w, int h);
-void nvgluDeleteFramebuffer(struct NVGcontext* ctx, struct NVGLUframebuffer* fb);
+NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h);
+void nvgluDeleteFramebuffer(NVGcontext* ctx, NVGLUframebuffer* fb);
 
 #endif // NANOVG_GL_UTILS_H
 
@@ -45,13 +46,13 @@ void nvgluDeleteFramebuffer(struct NVGcontext* ctx, struct NVGLUframebuffer* fb)
 #	endif
 #endif
 
-struct NVGLUframebuffer* nvgluCreateFramebuffer(struct NVGcontext* ctx, int w, int h)
+NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h)
 {
 #ifdef NANOVG_FBO_VALID
-	struct NVGLUframebuffer* fb = NULL;
-	fb = (struct NVGLUframebuffer*)malloc(sizeof(struct NVGLUframebuffer));
+	NVGLUframebuffer* fb = NULL;
+	fb = (NVGLUframebuffer*)malloc(sizeof(NVGLUframebuffer));
 	if (fb == NULL) goto error;
-	memset(fb, 0, sizeof(struct NVGLUframebuffer));
+	memset(fb, 0, sizeof(NVGLUframebuffer));
 
 	fb->image = nvgCreateImageRGBA(ctx, w, h, 0, NULL);
 	fb->texture = nvglImageHandle(ctx, fb->image);
@@ -84,7 +85,7 @@ error:
 #endif
 }
 
-void nvgluBindFramebuffer(struct NVGLUframebuffer* fb)
+void nvgluBindFramebuffer(NVGLUframebuffer* fb)
 {
 #ifdef NANOVG_FBO_VALID
 	glBindFramebuffer(GL_FRAMEBUFFER, fb != NULL ? fb->fbo : 0);
@@ -93,7 +94,7 @@ void nvgluBindFramebuffer(struct NVGLUframebuffer* fb)
 #endif
 }
 
-void nvgluDeleteFramebuffer(struct NVGcontext* ctx, struct NVGLUframebuffer* fb)
+void nvgluDeleteFramebuffer(NVGcontext* ctx, NVGLUframebuffer* fb)
 {
 #ifdef NANOVG_FBO_VALID
 	if (fb == NULL) return;
