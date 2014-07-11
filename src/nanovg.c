@@ -238,7 +238,7 @@ struct NVGcontext* nvgCreateInternal(struct NVGparams* params)
 	if (ctx->fs == NULL) goto error;
 
 	// Create font texture
-	ctx->fontImages[0] = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, fontParams.width, fontParams.height, NULL);
+	ctx->fontImages[0] = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, fontParams.width, fontParams.height, 0, NULL);
 	if (ctx->fontImages[0] == 0) goto error;
 	ctx->fontImageIdx = 0;
 
@@ -695,7 +695,7 @@ void nvgFillPaint(struct NVGcontext* ctx, struct NVGpaint paint)
 	nvgTransformMultiply(state->fill.xform, state->xform);
 }
 
-int nvgCreateImage(struct NVGcontext* ctx, const char* filename)
+int nvgCreateImage(struct NVGcontext* ctx, const char* filename, int imageFlags)
 {
 	int w, h, n, image;
 	unsigned char* img;
@@ -706,12 +706,12 @@ int nvgCreateImage(struct NVGcontext* ctx, const char* filename)
 //		printf("Failed to load %s - %s\n", filename, stbi_failure_reason());
 		return 0;
 	}
-	image = nvgCreateImageRGBA(ctx, w, h, img);
+	image = nvgCreateImageRGBA(ctx, w, h, imageFlags, img);
 	stbi_image_free(img);
 	return image;
 }
 
-int nvgCreateImageMem(struct NVGcontext* ctx, unsigned char* data, int ndata)
+int nvgCreateImageMem(struct NVGcontext* ctx, int imageFlags, unsigned char* data, int ndata)
 {
 	int w, h, n, image;
 	unsigned char* img = stbi_load_from_memory(data, ndata, &w, &h, &n, 4);
@@ -719,14 +719,14 @@ int nvgCreateImageMem(struct NVGcontext* ctx, unsigned char* data, int ndata)
 //		printf("Failed to load %s - %s\n", filename, stbi_failure_reason());
 		return 0;
 	}
-	image = nvgCreateImageRGBA(ctx, w, h, img);
+	image = nvgCreateImageRGBA(ctx, w, h, imageFlags, img);
 	stbi_image_free(img);
 	return image;
 }
 
-int nvgCreateImageRGBA(struct NVGcontext* ctx, int w, int h, const unsigned char* data)
+int nvgCreateImageRGBA(struct NVGcontext* ctx, int w, int h, int imageFlags, const unsigned char* data)
 {
-	return ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_RGBA, w, h, data);
+	return ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_RGBA, w, h, imageFlags, data);
 }
 
 void nvgUpdateImage(struct NVGcontext* ctx, int image, const unsigned char* data)
@@ -2209,7 +2209,7 @@ static int nvg__allocTextAtlas(struct NVGcontext* ctx)
 			iw *= 2;
 		if (iw > NVG_MAX_FONTIMAGE_SIZE || ih > NVG_MAX_FONTIMAGE_SIZE)
 			iw = ih = NVG_MAX_FONTIMAGE_SIZE;
-		ctx->fontImages[ctx->fontImageIdx+1] = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, iw, ih, NULL);
+		ctx->fontImages[ctx->fontImageIdx+1] = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, iw, ih, 0, NULL);
 	}
 	++ctx->fontImageIdx;
 	fonsResetAtlas(ctx->fs, iw, ih);

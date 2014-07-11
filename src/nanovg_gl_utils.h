@@ -53,7 +53,7 @@ struct NVGLUframebuffer* nvgluCreateFramebuffer(struct NVGcontext* ctx, int w, i
 	if (fb == NULL) goto error;
 	memset(fb, 0, sizeof(struct NVGLUframebuffer));
 
-	fb->image = nvgCreateImageRGBA(ctx, w, h, NULL);
+	fb->image = nvgCreateImageRGBA(ctx, w, h, 0, NULL);
 	fb->texture = nvglImageHandle(ctx, fb->image);
 	nvglImageFlags(ctx, fb->image, NVGL_TEXTURE_FLIP_Y | NVGL_TEXTURE_PREMULTIPLIED);
 

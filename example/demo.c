@@ -812,7 +812,7 @@ int loadDemoData(struct NVGcontext* vg, struct DemoData* data)
 	for (i = 0; i < 12; i++) {
 		char file[128];
 		snprintf(file, 128, "../example/images/image%d.jpg", i+1);
-		data->images[i] = nvgCreateImage(vg, file);
+		data->images[i] = nvgCreateImage(vg, file, 0);
 		if (data->images[i] == 0) {
 			printf("Could not load %s.\n", file);
 			return -1;
