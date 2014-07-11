@@ -5,15 +5,15 @@ solution "nanovg"
 	location ( "build" )
 	configurations { "Debug", "Release" }
 	platforms {"native", "x64", "x32"}
-
+	
    	project "nanovg"
 		language "C"
 		kind "StaticLib"
 		includedirs { "src" }
 		files { "src/*.c" }
 		targetdir("build")
-		--defines { "FONS_USE_FREETYPE" }	-- Uncomment to compile with FreeType support
-
+		defines { "_CRT_SECURE_NO_WARNINGS" } --,"FONS_USE_FREETYPE" } Uncomment to compile with FreeType support
+		
 		configuration "Debug"
 			defines { "DEBUG" }
 			flags { "Symbols", "ExtraWarnings"}
@@ -23,6 +23,7 @@ solution "nanovg"
 			flags { "Optimize", "ExtraWarnings"}
 
 	project "example_gl2"
+
 		kind "ConsoleApp"
 		language "C"
 		files { "example/example_gl2.c", "example/demo.c", "example/perf.c" }
@@ -36,8 +37,8 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
-			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
-			 defines { "NANOVG_GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32", "kernel32" }
+			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
 			links { "glfw3" }
@@ -65,8 +66,8 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
-			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
-			 defines { "NANOVG_GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32", "kernel32" }
+			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
 			links { "glfw3" }
@@ -95,8 +96,8 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
-			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
-			 defines { "NANOVG_GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32", "kernel32" }
+			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
 			links { "glfw3" }
@@ -125,8 +126,8 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
-			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
-			 defines { "NANOVG_GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32", "kernel32" }
+			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
 			links { "glfw3" }
@@ -153,8 +154,8 @@ solution "nanovg"
 			 links { "GL", "GLU", "m", "GLEW" }
 
 		configuration { "windows" }
-			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
-			 defines { "NANOVG_GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32", "kernel32" }
+			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
 			links { "glfw3" }
@@ -181,8 +182,8 @@ solution "nanovg"
 			 links { "GL", "GLU", "m", "GLEW" }
 
 		configuration { "windows" }
-			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
-			 defines { "NANOVG_GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32", "kernel32" }
+			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
 			links { "glfw3" }
@@ -209,8 +210,8 @@ solution "nanovg"
 			 links { "GL", "GLU", "m", "GLEW" }
 
 		configuration { "windows" }
-			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32" }
-			 defines { "NANOVG_GLEW" }
+			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32", "kernel32" }
+			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
 			links { "glfw3" }
