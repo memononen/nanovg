@@ -246,13 +246,13 @@ void nvgTransform(NVGcontext* ctx, float a, float b, float c, float d, float e, 
 // Translates current coordinate system.
 void nvgTranslate(NVGcontext* ctx, float x, float y);
 
-// Rotates current coordinate system. Angle is specifid in radians.
+// Rotates current coordinate system. Angle is specified in radians.
 void nvgRotate(NVGcontext* ctx, float angle);
 
-// Skews the current coordinate system along X axis. Angle is specifid in radians.
+// Skews the current coordinate system along X axis. Angle is specified in radians.
 void nvgSkewX(NVGcontext* ctx, float angle);
 
-// Skews the current coordinate system along Y axis. Angle is specifid in radians.
+// Skews the current coordinate system along Y axis. Angle is specified in radians.
 void nvgSkewY(NVGcontext* ctx, float angle);
 
 // Scales the current coordinat system.
@@ -265,6 +265,9 @@ void nvgScale(NVGcontext* ctx, float x, float y);
 // There should be space for 6 floats in the return buffer for the values a-f.
 void nvgCurrentTransform(NVGcontext* ctx, float* xform);
 
+// Restore current transformation matrix from specified buffer.
+// See also nvgCurrentTransform()
+void nvgSetTransform(NVGcontext* ctx, const float* xform);
 
 // The following functions can be used to make calculations on 2x3 transformation matrices.
 // A 2x3 matrix is representated as float[6].
@@ -278,13 +281,13 @@ void nvgTransformTranslate(float* dst, float tx, float ty);
 // Sets the transform to scale matrix.
 void nvgTransformScale(float* dst, float sx, float sy);
 
-// Sets the transform to rotate matrix. Angle is specifid in radians.
+// Sets the transform to rotate matrix. Angle is specified in radians.
 void nvgTransformRotate(float* dst, float a);
 
-// Sets the transform to skew-x matrix. Angle is specifid in radians.
+// Sets the transform to skew-x matrix. Angle is specified in radians.
 void nvgTransformSkewX(float* dst, float a);
 
-// Sets the transform to skew-y matrix. Angle is specifid in radians.
+// Sets the transform to skew-y matrix. Angle is specified in radians.
 void nvgTransformSkewY(float* dst, float a);
 
 // Sets the transform to the result of multiplication of two transforms, of A = A*B.
