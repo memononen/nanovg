@@ -370,9 +370,17 @@ NVGpaint nvgImagePattern(NVGcontext* ctx, float ox, float oy, float ex, float ey
 // Scissoring allows you to clip the rendering into a rectangle. This is useful for varius
 // user interface cases like rendering a text edit or a timeline. 
 
-// Sets the current 
+// Sets the current scissor rectangle.
 // The scissor rectangle is transformed by the current transform.
 void nvgScissor(NVGcontext* ctx, float x, float y, float w, float h);
+
+// Intersects current scissor rectangle with the specified rectangle.
+// The scissor rectangle is transformed by the current transform.
+// Note: in case the rotation of previous scissor rect differs from
+// the current one, the intersection will be done between the specified
+// rectangle and the previous scissor rectangle transformed in the current
+// transform space. The resulting shape is always rectangle.
+void nvgIntersectScissor(NVGcontext* ctx, float x, float y, float w, float h);
 
 // Reset and disables scissoring.
 void nvgResetScissor(NVGcontext* ctx);

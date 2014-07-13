@@ -1017,6 +1017,42 @@ void drawCaps(NVGcontext* vg, float x, float y, float width)
 	nvgRestore(vg);
 }
 
+void drawScissor(NVGcontext* vg, float x, float y, float t)
+{
+	nvgSave(vg);
+
+	// Draw first rect and set scissor to it's area.
+	nvgTranslate(vg, x, y);
+	nvgRotate(vg, nvgDegToRad(5));
+	nvgBeginPath(vg);
+	nvgRect(vg, -20,-20,60,40);
+	nvgFillColor(vg, nvgRGBA(255,0,0,255));
+	nvgFill(vg);
+	nvgScissor(vg, -20,-20,60,40);
+
+	// Draw second rectangle with offset and rotation.
+	nvgTranslate(vg, 40,0);
+	nvgRotate(vg, t);
+
+	// Draw the intended second rectangle without any scissoring.
+	nvgSave(vg);
+	nvgResetScissor(vg);
+	nvgBeginPath(vg);
+	nvgRect(vg, -20,-10,60,30);
+	nvgFillColor(vg, nvgRGBA(255,128,0,64));
+	nvgFill(vg);
+	nvgRestore(vg);
+
+	// Draw second rectangle with combined scissoring.
+	nvgIntersectScissor(vg, -20,-10,60,30);
+	nvgBeginPath(vg);
+	nvgRect(vg, -20,-10,60,30);
+	nvgFillColor(vg, nvgRGBA(255,128,0,255));
+	nvgFill(vg);
+
+	nvgRestore(vg);
+}
+
 void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, DemoData* data)
 {
@@ -1028,13 +1064,15 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	drawColorwheel(vg, width - 300, height - 300, 250.0f, 250.0f, t);
 
 	// Line joints
-	drawLines(vg, 50, height-50, 600, 50, t);
+	drawLines(vg, 120, height-50, 600, 50, t);
 
 	// Line caps
 	drawWidths(vg, 10, 50, 30);
 
 	// Line caps
 	drawCaps(vg, 10, 300, 30);
+
+	drawScissor(vg, 50, height-80, t);
 
 	nvgSave(vg);
 	if (blowup) {
