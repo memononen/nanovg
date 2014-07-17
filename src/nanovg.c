@@ -970,6 +970,11 @@ static void nvg__appendCommands(NVGcontext* ctx, float* vals, int nvals)
 		ctx->ccommands = ccommands;
 	}
 
+	if ((int)vals[0] != NVG_CLOSE && (int)vals[0] != NVG_WINDING) {
+		ctx->commandx = vals[nvals-2];
+		ctx->commandy = vals[nvals-1];
+	}
+
 	// transform commands
 	i = 0;
 	while (i < nvals) {
@@ -1003,11 +1008,6 @@ static void nvg__appendCommands(NVGcontext* ctx, float* vals, int nvals)
 	memcpy(&ctx->commands[ctx->ncommands], vals, nvals*sizeof(float));
 
 	ctx->ncommands += nvals;
-
-	if ((int)vals[0] != NVG_CLOSE && (int)vals[0] != NVG_WINDING) {
-		ctx->commandx = vals[nvals-2];
-		ctx->commandy = vals[nvals-1];
-	}
 }
 
 
