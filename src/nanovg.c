@@ -575,7 +575,7 @@ void nvgReset(NVGcontext* ctx)
 
 	state->fontSize = 16.0f;
 	state->letterSpacing = 0.0f;
-	state->lineHeight = 0.0f;
+	state->lineHeight = 1.0f;
 	state->fontBlur = 0.0f;
 	state->textAlign = NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE;
 	state->fontId = 0;
