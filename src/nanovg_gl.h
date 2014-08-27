@@ -1070,7 +1070,9 @@ static void glnvg__renderFlush(void* uptr)
 		glDisableVertexAttribArray(1);
 #if defined NANOVG_GL3
 		glBindVertexArray(0);
-#endif
+#endif	
+		glDisable(GL_CULL_FACE);
+        	glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glUseProgram(0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
