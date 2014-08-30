@@ -336,7 +336,11 @@ static int glnvg__checkError(const char* str)
 	return 0;
 }
 #else
-#define glnvg__checkError(str) (0)
+static int glnvg__checkError(const char* str)
+{
+    (void)(str); // silence unused warning
+    return 0;
+}
 #endif
 
 static int glnvg__createShader(GLNVGshader* shader, const char* name, const char* header, const char* opts, const char* vshader, const char* fshader)
