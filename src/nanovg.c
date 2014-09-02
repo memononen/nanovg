@@ -843,7 +843,7 @@ NVGpaint nvgBoxGradient(NVGcontext* ctx,
 
 NVGpaint nvgImagePattern(NVGcontext* ctx,
 								float cx, float cy, float w, float h, float angle,
-								int image, int repeat, float alpha)
+								int image, float alpha)
 {
 	NVGpaint p;
 	NVG_NOTUSED(ctx);
@@ -857,7 +857,6 @@ NVGpaint nvgImagePattern(NVGcontext* ctx,
 	p.extent[1] = h;
 
 	p.image = image;
-	p.repeat = repeat;
 
 	p.innerColor = p.outerColor = nvgRGBAf(1,1,1,alpha);
 
