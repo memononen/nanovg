@@ -24,12 +24,15 @@ extern "C" {
 
 // Create flags
 
-// Flag indicating if geoemtry based anti-aliasing is used (may not be needed when using MSAA).
-#define NVG_ANTIALIAS 1 	
-
-// Flag indicating if strokes should be drawn using stencil buffer. The rendering will be a little
-// slower, but path overlaps (i.e. self-intersecting or sharp turns) will be drawn just once.
-#define NVG_STENCIL_STROKES 2
+enum NVGcreateFlags {
+	// Flag indicating if geometry based anti-aliasing is used (may not be needed when using MSAA).
+	NVG_ANTIALIAS 		= 1<<0,
+	// Flag indicating if strokes should be drawn using stencil buffer. The rendering will be a little
+	// slower, but path overlaps (i.e. self-intersecting or sharp turns) will be drawn just once.
+	NVG_STENCIL_STROKES	= 1<<1,
+	// Flag indicating that additional debug checks are done.
+	NVG_DEBUG 			= 1<<2,
+};
 
 #if defined NANOVG_GL2_IMPLEMENTATION
 #  define NANOVG_GL2 1
@@ -307,14 +310,15 @@ static void glnvg__dumpProgramError(GLuint prog, const char* name)
 	printf("Program %s error:\n%s\n", name, str);
 }
 
-static int glnvg__checkError(const char* str)
+static void glnvg__checkError(GLNVGcontext* gl, const char* str)
 {
-	GLenum err = glGetError();
+	GLenum err;
+	if ((gl->flags & NVG_DEBUG) == 0) return;
+	err = glGetError();
 	if (err != GL_NO_ERROR) {
 		printf("Error %08x after %s\n", err, str);
-		return 1;
+		return;
 	}
-	return 0;
 }
 
 static int glnvg__createShader(GLNVGshader* shader, const char* name, const char* header, const char* opts, const char* vshader, const char* fshader)
@@ -583,7 +587,7 @@ static int glnvg__renderCreate(void* uptr)
 		"#endif\n"
 		"}\n";
 
-	glnvg__checkError("init");
+	glnvg__checkError(gl, "init");
 
 	if (gl->flags & NVG_ANTIALIAS) {
 		if (glnvg__createShader(&gl->shader, "shader", shaderHeader, "#define EDGE_AA 1\n", fillVertShader, fillFragShader) == 0)
@@ -593,7 +597,7 @@ static int glnvg__renderCreate(void* uptr)
 			return 0;
 	}
 
-	glnvg__checkError("uniform locations");
+	glnvg__checkError(gl, "uniform locations");
 	glnvg__getUniforms(&gl->shader);
 
 	// Create dynamic vertex array
@@ -610,7 +614,7 @@ static int glnvg__renderCreate(void* uptr)
 #endif
 	gl->fragSize = sizeof(GLNVGfragUniforms) + align - sizeof(GLNVGfragUniforms) % align;
 
-	glnvg__checkError("create done");
+	glnvg__checkError(gl, "create done");
 
 	glFinish();
 
@@ -680,8 +684,7 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
     }
 #endif
 
-	if (glnvg__checkError("create tex"))
-		return 0;
+	glnvg__checkError(gl, "create tex");
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -880,7 +883,7 @@ static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 	if (image != 0) {
 		GLNVGtexture* tex = glnvg__findTexture(gl, image);
 		glBindTexture(GL_TEXTURE_2D, tex != NULL ? tex->tex : 0);
-		glnvg__checkError("tex paint tex");
+		glnvg__checkError(gl, "tex paint tex");
 	} else {
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
@@ -906,7 +909,7 @@ static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 
 	// set bindpoint for solid loc
 	glnvg__setUniforms(gl, call->uniformOffset, 0);
-	glnvg__checkError("fill simple");
+	glnvg__checkError(gl, "fill simple");
 
 	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
 	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
@@ -919,7 +922,7 @@ static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 	glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image);
-	glnvg__checkError("fill fill");
+	glnvg__checkError(gl, "fill fill");
 
 	if (gl->flags & NVG_ANTIALIAS) {
 		glStencilFunc(GL_EQUAL, 0x00, 0xff);
@@ -943,7 +946,7 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 	int i, npaths = call->pathCount;
 
 	glnvg__setUniforms(gl, call->uniformOffset, call->image);
-	glnvg__checkError("convex fill");
+	glnvg__checkError(gl, "convex fill");
 
 	for (i = 0; i < npaths; i++)
 		glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
@@ -968,7 +971,7 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 		glStencilFunc(GL_EQUAL, 0x0, 0xff);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 		glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image);
-		glnvg__checkError("stroke fill 0");
+		glnvg__checkError(gl, "stroke fill 0");
 		for (i = 0; i < npaths; i++)
 			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 
@@ -983,7 +986,7 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glStencilFunc(GL_ALWAYS, 0x0, 0xff);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
-		glnvg__checkError("stroke fill 1");
+		glnvg__checkError(gl, "stroke fill 1");
 		for (i = 0; i < npaths; i++)
 			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -994,7 +997,7 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 
 	} else {
 		glnvg__setUniforms(gl, call->uniformOffset, call->image);
-		glnvg__checkError("stroke fill");
+		glnvg__checkError(gl, "stroke fill");
 		// Draw Strokes
 		for (i = 0; i < npaths; i++)
 			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
@@ -1004,7 +1007,7 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 static void glnvg__triangles(GLNVGcontext* gl, GLNVGcall* call)
 {
 	glnvg__setUniforms(gl, call->uniformOffset, call->image);
-	glnvg__checkError("triangles fill");
+	glnvg__checkError(gl, "triangles fill");
 
 	glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
 }
