@@ -22,6 +22,24 @@
 extern "C" {
 #endif
 
+// GL error checking flags:
+//
+// By default glGetError is not called when NDEBUG is defined
+// (which is defacto-standard for release mode with optimizations on)
+// This automatic behaviour can be overridden with
+// NVG_GL_ERRORCHECK_FORCE_ON or NVG_GL_ERRORCHECK_FORCE_OFF
+#ifndef NVG_GL_ERRORCHECK_FORCE_ON
+#define NVG_GL_ERRORCHECK_FORCE_ON 0        // set to (1) to also perform error check in release mode
+#endif
+#ifndef NVG_GL_ERRORCHECK_FORCE_OFF
+#define NVG_GL_ERRORCHECK_FORCE_OFF 0       // set to (1) to never perform error checks
+#endif
+#if (defined(NDEBUG) || NVG_GL_ERRORCHECK_FORCE_OFF) && !NVG_GL_ERRORCHECK_FORCE_ON
+#define NVG_GL_DO_ERRORCHECK 0
+#else
+#define NVG_GL_DO_ERRORCHECK 1
+#endif
+
 // Create flags
 
 // Flag indicating if geoemtry based anti-aliasing is used (may not be needed when using MSAA).
@@ -307,6 +325,7 @@ static void glnvg__dumpProgramError(GLuint prog, const char* name)
 	printf("Program %s error:\n%s\n", name, str);
 }
 
+#if NVG_GL_DO_ERRORCHECK
 static int glnvg__checkError(const char* str)
 {
 	GLenum err = glGetError();
@@ -316,6 +335,13 @@ static int glnvg__checkError(const char* str)
 	}
 	return 0;
 }
+#else
+static int glnvg__checkError(const char* str)
+{
+    (void)(str); // silence unused warning
+    return 0;
+}
+#endif
 
 static int glnvg__createShader(GLNVGshader* shader, const char* name, const char* header, const char* opts, const char* vshader, const char* fshader)
 {
