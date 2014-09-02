@@ -168,7 +168,8 @@ int main()
 	// Calculate pixel ration for hi-dpi devices.
 	pxRatio = (float)fbWidth / (float)winWidth;
 
-	fb = nvgluCreateFramebuffer(vg, (int)(100*pxRatio), (int)(100*pxRatio));
+	// The image pattern is tiled, set repeat on x and y.
+	fb = nvgluCreateFramebuffer(vg, (int)(100*pxRatio), (int)(100*pxRatio), NVG_IMAGE_REPEATX | NVG_IMAGE_REPEATY);
 	if (fb == NULL) {
 		printf("Could not create FBO.\n");
 		return -1;
@@ -215,7 +216,7 @@ int main()
 
 		// Use the FBO as image pattern.
 		if (fb != NULL) {
-			NVGpaint img = nvgImagePattern(vg, 0, 0, 100, 100, 0, fb->image, NVG_REPEATX|NVG_REPEATY, 1.0f);
+			NVGpaint img = nvgImagePattern(vg, 0, 0, 100, 100, 0, fb->image, 1.0f);
 			nvgSave(vg);
 
 			for (i = 0; i < 20; i++) {

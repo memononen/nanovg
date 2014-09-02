@@ -85,15 +85,13 @@ void nvgDeleteGLES3(NVGcontext* ctx);
 
 #endif
 
-enum NVGLtextureflags {
-	NVGL_TEXTURE_FLIP_Y   = 0x01,
-	NVGL_TEXTURE_NODELETE = 0x02,
-	NVGL_TEXTURE_PREMULTIPLIED = 0x04
+// These are additional flags on top of NVGimageFlags.
+enum NVGimageFlagsGL {
+	NVG_IMAGE_NODELETE			= 1<<16,	// Do not delete GL texture handle.
 };
 
 int nvglCreateImageFromHandle(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
 GLuint nvglImageHandle(NVGcontext* ctx, int image);
-void nvglImageFlags(NVGcontext* ctx, int image, int flags);
 
 
 #ifdef __cplusplus
@@ -265,6 +263,20 @@ typedef struct GLNVGcontext GLNVGcontext;
 
 static int glnvg__maxi(int a, int b) { return a > b ? a : b; }
 
+#ifdef NANOVG_GLES2
+static unsigned int glnvg__nearestPow2(unsigned int num)
+{
+	unsigned n = num > 0 ? num - 1 : 0;
+	n |= n >> 1;
+	n |= n >> 2;
+	n |= n >> 4;
+	n |= n >> 8;
+	n |= n >> 16;
+	n++;
+	return n;
+}
+#endif
+
 static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 {
 	GLNVGtexture* tex = NULL;
@@ -308,7 +320,7 @@ static int glnvg__deleteTexture(GLNVGcontext* gl, int id)
 	int i;
 	for (i = 0; i < gl->ntextures; i++) {
 		if (gl->textures[i].id == id) {
-			if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVGL_TEXTURE_NODELETE) == 0)
+			if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVG_IMAGE_NODELETE) == 0)
 				glDeleteTextures(1, &gl->textures[i].tex);
 			memset(&gl->textures[i], 0, sizeof(gl->textures[i]));
 			return 1;
@@ -694,10 +706,27 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 
 	if (tex == NULL) return 0;
 
+#ifdef NANOVG_GLES2
+	// Check for non-power of 2.
+	if (glnvg__nearestPow2(w) != (unsigned int)w || glnvg__nearestPow2(h) == (unsigned int)h) {
+		// No repeat
+		if ((imageFlags & NVG_IMAGE_REPEATX) != 0 || (imageFlags & NVG_IMAGE_REPEATY) != 0) {
+			printf("Repeat X/Y is not supported for non power-of-two textures (%d x %d)\n", w, h);
+			imageFlags &= ~(NVG_IMAGE_REPEATX | NVG_IMAGE_REPEATY);
+		}
+		// No mips. 
+		if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+			printf("Mip-maps is not support for non power-of-two textures (%d x %d)\n", w, h);
+			imageFlags &= ~NVG_IMAGE_GENERATE_MIPMAPS;
+		}
+	}
+#endif
+
 	glGenTextures(1, &tex->tex);
 	tex->width = w;
 	tex->height = h;
 	tex->type = type;
+	tex->flags = imageFlags;
 	glBindTexture(GL_TEXTURE_2D, tex->tex);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -708,10 +737,10 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 #endif
 
 #if defined (NANOVG_GL2)
-    // GL 1.4 and later has support for generating mipmaps using a tex parameter.
-    if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {    
-        glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-    }
+	// GL 1.4 and later has support for generating mipmaps using a tex parameter.
+	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+	}
 #endif
 
 	if (type == NVG_TEXTURE_RGBA)
@@ -726,15 +755,21 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 #endif
 
 	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    }
-    else {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	} else {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	if (imageFlags & NVG_IMAGE_REPEATX)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	else
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+
+	if (imageFlags & NVG_IMAGE_REPEATY)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	else
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 #ifndef NANOVG_GLES2
@@ -743,11 +778,11 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 #endif
 
-    // The new way to build mipmaps on GLES and GL3
+	// The new way to build mipmaps on GLES and GL3
 #if !defined(NANOVG_GL2)
-    if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {    
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
+	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
 #endif
 
 	glnvg__checkError(gl, "create tex");
@@ -876,7 +911,7 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 	if (paint->image != 0) {
 		tex = glnvg__findTexture(gl, paint->image);
 		if (tex == NULL) return 0;
-		if ((tex->flags & NVGL_TEXTURE_FLIP_Y) != 0) {
+		if ((tex->flags & NVG_IMAGE_FLIPY) != 0) {
 			float flipped[6];
 			nvgTransformScale(flipped, 1.0f, -1.0f);
 			nvgTransformMultiply(flipped, paint->xform);
@@ -887,7 +922,7 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 		frag->type = NSVG_SHADER_FILLIMG;
 
 		if (tex->type == NVG_TEXTURE_RGBA)
-			frag->texType = (tex->flags & NVGL_TEXTURE_PREMULTIPLIED) ? 0 : 1;
+			frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0 : 1;
 		else
 			frag->texType = 2;
 //		printf("frag->texType = %d\n", frag->texType);
@@ -1147,7 +1182,7 @@ static void glnvg__renderFlush(void* uptr)
 		glBindVertexArray(0);
 #endif	
 		glDisable(GL_CULL_FACE);
-        	glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glUseProgram(0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
@@ -1436,7 +1471,7 @@ static void glnvg__renderDelete(void* uptr)
 		glDeleteBuffers(1, &gl->vertBuf);
 
 	for (i = 0; i < gl->ntextures; i++) {
-		if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVGL_TEXTURE_NODELETE) == 0)
+		if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVG_IMAGE_NODELETE) == 0)
 			glDeleteTextures(1, &gl->textures[i].tex);
 	}
 	free(gl->textures);
@@ -1507,7 +1542,7 @@ void nvgDeleteGLES3(NVGcontext* ctx)
 	nvgDeleteInternal(ctx);
 }
 
-int nvglCreateImageFromHandle(NVGcontext* ctx, GLuint textureId, int w, int h, int flags)
+int nvglCreateImageFromHandle(NVGcontext* ctx, GLuint textureId, int w, int h, int imageFlags)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
 	GLNVGtexture* tex = glnvg__allocTexture(gl);
@@ -1516,7 +1551,7 @@ int nvglCreateImageFromHandle(NVGcontext* ctx, GLuint textureId, int w, int h, i
 
 	tex->type = NVG_TEXTURE_RGBA;
 	tex->tex = textureId;
-	tex->flags = flags;
+	tex->flags = imageFlags;
 	tex->width = w;
 	tex->height = h;
 
@@ -1528,13 +1563,6 @@ GLuint nvglImageHandle(NVGcontext* ctx, int image)
 	GLNVGcontext* gl = (GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
 	GLNVGtexture* tex = glnvg__findTexture(gl, image);
 	return tex->tex;
-}
-
-void nvglImageFlags(NVGcontext* ctx, int image, int flags)
-{
-	GLNVGcontext* gl = (GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
-	GLNVGtexture* tex = glnvg__findTexture(gl, image);
-	tex->flags = flags;
 }
 
 #endif /* NANOVG_GL_IMPLEMENTATION */

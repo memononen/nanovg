@@ -28,7 +28,7 @@ struct NVGLUframebuffer {
 typedef struct NVGLUframebuffer NVGLUframebuffer;
 
 // Helper function to create GL frame buffer to render to.
-NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h);
+NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h, int imageFlags);
 void nvgluDeleteFramebuffer(NVGcontext* ctx, NVGLUframebuffer* fb);
 
 #endif // NANOVG_GL_UTILS_H
@@ -46,7 +46,7 @@ void nvgluDeleteFramebuffer(NVGcontext* ctx, NVGLUframebuffer* fb);
 #	endif
 #endif
 
-NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h)
+NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h, int imageFlags)
 {
 #ifdef NANOVG_FBO_VALID
 	NVGLUframebuffer* fb = NULL;
@@ -54,9 +54,8 @@ NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h)
 	if (fb == NULL) goto error;
 	memset(fb, 0, sizeof(NVGLUframebuffer));
 
-	fb->image = nvgCreateImageRGBA(ctx, w, h, 0, NULL);
+	fb->image = nvgCreateImageRGBA(ctx, w, h, imageFlags | NVG_IMAGE_FLIPY | NVG_IMAGE_PREMULTIPLIED, NULL);
 	fb->texture = nvglImageHandle(ctx, fb->image);
-	nvglImageFlags(ctx, fb->image, NVGL_TEXTURE_FLIP_Y | NVGL_TEXTURE_PREMULTIPLIED);
 
 	// frame buffer object
 	glGenFramebuffers(1, &fb->fbo);
@@ -81,6 +80,7 @@ error:
 	NVG_NOTUSED(ctx);
 	NVG_NOTUSED(w);
 	NVG_NOTUSED(h);
+	NVG_NOTUSED(imageFlags);
 	return NULL;
 #endif
 }
