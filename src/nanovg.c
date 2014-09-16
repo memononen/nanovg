@@ -300,6 +300,11 @@ void nvgBeginFrame(NVGcontext* ctx, int windowWidth, int windowHeight, float dev
 	ctx->textTriCount = 0;
 }
 
+void nvgCancelFrame(NVGcontext* ctx)
+{
+	ctx->params.renderCancel(ctx->params.userPtr);
+}
+
 void nvgEndFrame(NVGcontext* ctx)
 {
 	ctx->params.renderFlush(ctx->params.userPtr);
