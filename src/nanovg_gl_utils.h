@@ -29,6 +29,7 @@ typedef struct NVGLUframebuffer NVGLUframebuffer;
 
 // Helper function to create GL frame buffer to render to.
 NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h, int imageFlags);
+void nvgluBindFramebuffer(NVGLUframebuffer* fb);
 void nvgluDeleteFramebuffer(NVGcontext* ctx, NVGLUframebuffer* fb);
 
 #endif // NANOVG_GL_UTILS_H
