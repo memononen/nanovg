@@ -1428,13 +1428,13 @@ error:
 	return NULL;
 }
 
-#if NANOVG_GL2
+#if defined NANOVG_GL2
 void nvgDeleteGL2(NVGcontext* ctx)
-#elif NANOVG_GL3
+#elif defined NANOVG_GL3
 void nvgDeleteGL3(NVGcontext* ctx)
-#elif NANOVG_GLES2
+#elif defined NANOVG_GLES2
 void nvgDeleteGLES2(NVGcontext* ctx)
-#elif NANOVG_GLES3
+#elif defined NANOVG_GLES3
 void nvgDeleteGLES3(NVGcontext* ctx)
 #endif
 {
