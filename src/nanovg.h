@@ -117,6 +117,9 @@ enum NVGimageFlags {
 // devicePixelRatio to: frameBufferWidth / windowWidth.
 void nvgBeginFrame(NVGcontext* ctx, int windowWidth, int windowHeight, float devicePixelRatio);
 
+// Cancels drawing the current frame.
+void nvgCancelFrame(NVGcontext* ctx);
+
 // Ends drawing flushing remaining render state.
 void nvgEndFrame(NVGcontext* ctx);
 
@@ -586,6 +589,7 @@ struct NVGparams {
 	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
 	void (*renderViewport)(void* uptr, int width, int height);
+	void (*renderCancel)(void* uptr);
 	void (*renderFlush)(void* uptr);
 	void (*renderFill)(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths);
 	void (*renderStroke)(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe, float strokeWidth, const NVGpath* paths, int npaths);
