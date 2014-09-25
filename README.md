@@ -43,7 +43,7 @@ Calling `nvgBeginPath()` will clear any existing paths and start drawing from bl
 
 ## Understanding Composite Paths
 
-Because of the way the rendering backend is build in NanoVG, drawing a composite path, that is path consisting from multiple paths defining holes and fills, is a bit more involved. NanoVG uses even-odd filling rule and by default the paths are wound in counter clockwise order. Keep that in mind when drawing using the low level draw API. In order to wind one of the predefined shapes as a hole, you should call nvgPathWinding(vg, `NVG_HOLE`), or `nvgPathWinding(vg, NVG_CV)` _after_ defining the path.
+Because of the way the rendering backend is build in NanoVG, drawing a composite path, that is path consisting from multiple paths defining holes and fills, is a bit more involved. NanoVG uses even-odd filling rule and by default the paths are wound in counter clockwise order. Keep that in mind when drawing using the low level draw API. In order to wind one of the predefined shapes as a hole, you should call `nvgPathWinding(vg, NVG_HOLE)`, or `nvgPathWinding(vg, NVG_CW)` _after_ defining the path.
 
 ``` C
 nvgBeginPath(vg);
