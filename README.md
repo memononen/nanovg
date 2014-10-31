@@ -22,9 +22,13 @@ The drawing context is created using platform specific constructor function. If 
 #define NANOVG_GL2_IMPLEMENTATION	// Use GL2 implementation.
 #include "nanovg_gl.h"
 ...
-struct NVGcontext* vg = nvgCreateGL2(512, 512, NVG_ANTIALIAS);
+struct NVGcontext* vg = nvgCreateGL2(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 ```
-The first two values passed to the constructor define the size of the texture atlas used for text rendering, 512x512 is a good starting point. If you're rendering retina sized text or plan to use a lot of different fonts, 1024x1024 is better choice. The third parameter defines if anti-aliasing should be used, passing 0 means no AA (useful when you're using MSAA).
+
+The first parameter defines flags for creating the renderer.
+
+- `NVG_ANTIALIAS` means that the renderer adjusts the geometry to include anti-aliasing. If you're using MSAA, you can omit this flags. 
+- `NVG_STENCIL_STROKES` means that the render uses better quality rendering for (overlapping) strokes. The quality is mostly visible on wider strokes. If you want speed, you can omit this flag.
 
 Currently there is an OpenGL back-end for NanoVG: [nanovg_gl.h](/src/nanovg_gl.h) for OpenGL 2.0, OpenGL ES 2.0, OpenGL 3.2 core profile and OpenGL ES 3. The implementation can be chosen using a define as in above example. See the header file and examples for further info.
 
@@ -60,6 +64,7 @@ nvgFill(vg);
 - make sure you have initialised OpenGL with stencil buffer
 - make sure you have cleared stencil buffer
 - make sure all rendering calls happen between `nvgBeginFrame()` and `nvgEndFrame()`
+- to eanble more checks for OpenGL errors, add `NVG_DEBUG` flag to `nvgCreatexxx()`
 - if the problem still persists, please report an issue!
 
 ## OpenGL state touched by the backend
