@@ -153,9 +153,10 @@ typedef struct FONSttFontImpl FONSttFontImpl;
 
 static FT_Library ftLibrary;
 
-int fons__tt_init()
-{
+int fons__tt_init(FONScontext *context)
+{ 
 	FT_Error ftError;
+        FONS_NOTUSED(context);
 	ftError = FT_Init_FreeType(&ftLibrary);
 	return ftError == 0;
 }
