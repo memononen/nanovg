@@ -28,6 +28,7 @@ struct NVGLUframebuffer {
 typedef struct NVGLUframebuffer NVGLUframebuffer;
 
 // Helper function to create GL frame buffer to render to.
+void nvgluBindFramebuffer(NVGLUframebuffer* fb);
 NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h, int imageFlags);
 void nvgluDeleteFramebuffer(NVGcontext* ctx, NVGLUframebuffer* fb);
 
@@ -54,12 +55,13 @@ NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h, int imag
 	GLint defaultFBO;
 	GLint defaultRBO;
 	NVGLUframebuffer* fb = NULL;
-	fb = (NVGLUframebuffer*)malloc(sizeof(NVGLUframebuffer));
-	if (fb == NULL) goto error;
-	memset(fb, 0, sizeof(NVGLUframebuffer));
 
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &defaultFBO);
 	glGetIntegerv(GL_RENDERBUFFER_BINDING, &defaultRBO);
+
+	fb = (NVGLUframebuffer*)malloc(sizeof(NVGLUframebuffer));
+	if (fb == NULL) goto error;
+	memset(fb, 0, sizeof(NVGLUframebuffer));
 
 	fb->image = nvgCreateImageRGBA(ctx, w, h, imageFlags | NVG_IMAGE_FLIPY | NVG_IMAGE_PREMULTIPLIED, NULL);
 	fb->texture = nvglImageHandle(ctx, fb->image);
@@ -83,6 +85,8 @@ NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h, int imag
 	glBindRenderbuffer(GL_RENDERBUFFER, defaultRBO);
 	return fb;
 error:
+	glBindFramebuffer(GL_FRAMEBUFFER, defaultFBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, defaultRBO);
 	nvgluDeleteFramebuffer(ctx, fb);
 	return NULL;
 #else
