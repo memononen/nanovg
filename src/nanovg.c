@@ -1060,7 +1060,7 @@ static void nvg__addPoint(NVGcontext* ctx, float x, float y, int flags)
 	NVGpoint* pt;
 	if (path == NULL) return;
 
-	if (ctx->cache->npoints > 0) {
+	if (path->count > 0 && ctx->cache->npoints > 0) {
 		pt = nvg__lastPoint(ctx);
 		if (nvg__ptEquals(pt->x,pt->y, x,y, ctx->distTol)) {
 			pt->flags |= flags;
