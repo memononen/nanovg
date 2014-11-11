@@ -49,6 +49,7 @@ enum NVGcreateFlags {
 #  define NANOVG_GL_IMPLEMENTATION 1
 #endif
 
+#define NANOVG_GL_USE_STATE_FILTER (1)
 
 // Creates NanoVG contexts for different OpenGL (ES) versions.
 // Flags should be combination of the create flags above.
@@ -239,6 +240,15 @@ struct GLNVGcontext {
 	unsigned char* uniforms;
 	int cuniforms;
 	int nuniforms;
+
+	// cached state
+	#if NANOVG_GL_USE_STATE_FILTER
+	GLuint boundTexture;
+	GLuint stencilMask;
+	GLenum stencilFunc;
+	GLint stencilFuncRef;
+	GLuint stencilFuncMask;
+	#endif
 };
 typedef struct GLNVGcontext GLNVGcontext;
 
@@ -257,6 +267,47 @@ static unsigned int glnvg__nearestPow2(unsigned int num)
 	return n;
 }
 #endif
+
+static void glnvg__bindTexture(GLNVGcontext* gl, GLuint tex)
+{
+#if NANOVG_GL_USE_STATE_FILTER
+	if (gl->boundTexture != tex) {
+		gl->boundTexture = tex;
+		glBindTexture(GL_TEXTURE_2D, tex);
+	}
+#else
+	glBindTexture(GL_TEXTURE_2D, tex);
+#endif
+}
+
+static void glnvg__stencilMask(GLNVGcontext* gl, GLuint mask)
+{
+#if NANOVG_GL_USE_STATE_FILTER
+	if (gl->stencilMask != mask) {
+		gl->stencilMask = mask;
+		glStencilMask(mask);
+	}
+#else
+	glStencilMask(mask);
+#endif
+}
+
+static void glnvg__stencilFunc(GLNVGcontext* gl, GLenum func, GLint ref, GLuint mask)
+{
+#if NANOVG_GL_USE_STATE_FILTER
+	if ((gl->stencilFunc != func) ||
+		(gl->stencilFuncRef != ref) ||
+		(gl->stencilFuncMask != mask)) {
+		
+		gl->stencilFunc = func;
+		gl->stencilFuncRef = ref;
+		gl->stencilFuncMask = mask;
+		glStencilFunc(func, ref, mask);
+	}
+#else
+	glStencilFunc(func, ref, mask);
+#endif
+}
 
 static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 {
@@ -652,7 +703,7 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 	tex->height = h;
 	tex->type = type;
 	tex->flags = imageFlags;
-	glBindTexture(GL_TEXTURE_2D, tex->tex);
+	glnvg__bindTexture(gl, tex->tex);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 #ifndef NANOVG_GLES2
@@ -711,8 +762,7 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 #endif
 
 	glnvg__checkError(gl, "create tex");
-
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glnvg__bindTexture(gl, 0);
 
 	return tex->id;
 }
@@ -730,7 +780,7 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 	GLNVGtexture* tex = glnvg__findTexture(gl, image);
 
 	if (tex == NULL) return 0;
-	glBindTexture(GL_TEXTURE_2D, tex->tex);
+	glnvg__bindTexture(gl, tex->tex);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 
@@ -764,7 +814,7 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 #endif
 
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glnvg__bindTexture(gl, 0);
 
 	return 1;
 }
@@ -876,10 +926,10 @@ static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 
 	if (image != 0) {
 		GLNVGtexture* tex = glnvg__findTexture(gl, image);
-		glBindTexture(GL_TEXTURE_2D, tex != NULL ? tex->tex : 0);
+		glnvg__bindTexture(gl, tex != NULL ? tex->tex : 0);
 		glnvg__checkError(gl, "tex paint tex");
 	} else {
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glnvg__bindTexture(gl, 0);
 	}
 }
 
@@ -897,8 +947,8 @@ static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 
 	// Draw shapes
 	glEnable(GL_STENCIL_TEST);
-	glStencilMask(0xff);
-	glStencilFunc(GL_ALWAYS, 0, 0xff);
+	glnvg__stencilMask(gl, 0xff);
+	glnvg__stencilFunc(gl, GL_ALWAYS, 0, 0xff);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 	// set bindpoint for solid loc
@@ -919,7 +969,7 @@ static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 	glnvg__checkError(gl, "fill fill");
 
 	if (gl->flags & NVG_ANTIALIAS) {
-		glStencilFunc(GL_EQUAL, 0x00, 0xff);
+		glnvg__stencilFunc(gl, GL_EQUAL, 0x00, 0xff);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 		// Draw fringes
 		for (i = 0; i < npaths; i++)
@@ -927,7 +977,7 @@ static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 	}
 
 	// Draw fill
-	glStencilFunc(GL_NOTEQUAL, 0x0, 0xff);
+	glnvg__stencilFunc(gl, GL_NOTEQUAL, 0x0, 0xff);
 	glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 	glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
 
@@ -959,10 +1009,10 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 	if (gl->flags & NVG_STENCIL_STROKES) {
 
 		glEnable(GL_STENCIL_TEST);
-		glStencilMask(0xff);
+		glnvg__stencilMask(gl, 0xff);
 
 		// Fill the stroke base without overlap
-		glStencilFunc(GL_EQUAL, 0x0, 0xff);
+		glnvg__stencilFunc(gl, GL_EQUAL, 0x0, 0xff);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 		glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image);
 		glnvg__checkError(gl, "stroke fill 0");
@@ -971,14 +1021,14 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 
 		// Draw anti-aliased pixels.
 		glnvg__setUniforms(gl, call->uniformOffset, call->image);
-		glStencilFunc(GL_EQUAL, 0x00, 0xff);
+		glnvg__stencilFunc(gl, GL_EQUAL, 0x00, 0xff);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 		for (i = 0; i < npaths; i++)
 			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 
 		// Clear stencil buffer.		
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glStencilFunc(GL_ALWAYS, 0x0, 0xff);
+		glnvg__stencilFunc(gl, GL_ALWAYS, 0x0, 0xff);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 		glnvg__checkError(gl, "stroke fill 1");
 		for (i = 0; i < npaths; i++)
@@ -1036,6 +1086,14 @@ static void glnvg__renderFlush(void* uptr)
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 		glStencilFunc(GL_ALWAYS, 0, 0xffffffff);
 		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		#if NANOVG_GL_USE_STATE_FILTER
+		gl->boundTexture = 0;
+		gl->stencilMask = 0xffffffff;
+		gl->stencilFunc = GL_ALWAYS;
+		gl->stencilFuncRef = 0;
+		gl->stencilFuncMask = 0xffffffff;
+		#endif
 
 #if NANOVG_GL_USE_UNIFORMBUFFER
 		// Upload ubo for frag shaders
@@ -1082,7 +1140,7 @@ static void glnvg__renderFlush(void* uptr)
 		glDisable(GL_CULL_FACE);
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glUseProgram(0);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glnvg__bindTexture(gl, 0);
 	}
 
 	// Reset calls
