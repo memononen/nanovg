@@ -1619,7 +1619,7 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, int lineCap, int lineJoin
 	for (i = 0; i < cache->npaths; i++) {
 		NVGpath* path = &cache->paths[i];
 		int loop = (path->closed == 0) ? 0 : 1;
-		if (lineCap == NVG_ROUND)
+		if (lineJoin == NVG_ROUND)
 			cverts += (path->count + path->nbevel*(ncap+2) + 1) * 2; // plus one for loop
 		else
 			cverts += (path->count + path->nbevel*5 + 1) * 2; // plus one for loop
