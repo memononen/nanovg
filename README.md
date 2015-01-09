@@ -17,7 +17,7 @@ The NanoVG API is modeled loosely on HTML5 canvas API. If you know canvas, you'r
 
 ## Creating drawing context
 
-The drawing context is created using platform specific constructor function. If you're using the a OpenGL 2.0 back-end the context is created as follows:
+The drawing context is created using platform specific constructor function. If you're using the OpenGL 2.0 back-end the context is created as follows:
 ```C
 #define NANOVG_GL2_IMPLEMENTATION	// Use GL2 implementation.
 #include "nanovg_gl.h"

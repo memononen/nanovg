@@ -41,7 +41,7 @@
 #define NVG_INIT_VERTS_SIZE 256
 #define NVG_MAX_STATES 32
 
-#define NVG_KAPPA90 0.5522847493f	// Lenght proportional to radius of a cubic bezier handle for 90deg arcs.
+#define NVG_KAPPA90 0.5522847493f	// Length proportional to radius of a cubic bezier handle for 90deg arcs.
 
 #define NVG_COUNTOF(arr) (sizeof(arr) / sizeof(0[arr]))
 
@@ -2327,7 +2327,7 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 				break;
 		}
 		prevIter = iter;
-		// Trasnform corners.
+		// Transform corners.
 		nvgTransformPoint(&c[0],&c[1], state->xform, q.x0*invscale, q.y0*invscale);
 		nvgTransformPoint(&c[2],&c[3], state->xform, q.x1*invscale, q.y0*invscale);
 		nvgTransformPoint(&c[4],&c[5], state->xform, q.x1*invscale, q.y1*invscale);
@@ -2587,7 +2587,7 @@ int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, floa
 						wordStartX = iter.x;
 						wordMinX = q.x0 - rowStartX;
 					} else {
-						// Break the line from the end of the last word, and start new line from the begining of the new.
+						// Break the line from the end of the last word, and start new line from the beginning of the new.
 						rows[nrows].start = rowStart;
 						rows[nrows].end = breakEnd;
 						rows[nrows].width = breakWidth * invscale;
@@ -2617,7 +2617,7 @@ int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, floa
 		ptype = type;
 	}
 
-	// Break the line from the end of the last word, and start new line from the begining of the new.
+	// Break the line from the end of the last word, and start new line from the beginning of the new.
 	if (rowStart != NULL) {
 		rows[nrows].start = rowStart;
 		rows[nrows].end = rowEnd;
