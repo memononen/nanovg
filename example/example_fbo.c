@@ -45,7 +45,7 @@ void renderPattern(NVGcontext* vg, NVGLUframebuffer* fb, float t, float pxRatio)
 	winWidth = (int)(fboWidth / pxRatio);
 	winHeight = (int)(fboHeight / pxRatio);
 
-	// Draw some stull to an FBO as a test
+	// Draw some stuff to an FBO as a test
 	nvgluBindFramebuffer(fb);
 	glViewport(0, 0, fboWidth, fboHeight);
 	glClearColor(0, 0, 0, 0);
