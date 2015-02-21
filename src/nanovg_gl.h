@@ -59,12 +59,18 @@ enum NVGcreateFlags {
 NVGcontext* nvgCreateGL2(int flags);
 void nvgDeleteGL2(NVGcontext* ctx);
 
+int nvglCreateImageFromHandleGL2(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
+GLuint nvglImageFromHandleGL2(NVGcontext* ctx, int image);
+
 #endif
 
 #if defined NANOVG_GL3
 
 NVGcontext* nvgCreateGL3(int flags);
 void nvgDeleteGL3(NVGcontext* ctx);
+
+int nvglCreateImageFromHandleGL3(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
+GLuint nvglImageHandleGL3(NVGcontext* ctx, int image);
 
 #endif
 
@@ -73,6 +79,9 @@ void nvgDeleteGL3(NVGcontext* ctx);
 NVGcontext* nvgCreateGLES2(int flags);
 void nvgDeleteGLES2(NVGcontext* ctx);
 
+int nvglCreateImageFromHandleGLES2(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
+GLuint nvglImageHandleGLES2(NVGcontext* ctx, int image);
+
 #endif
 
 #if defined NANOVG_GLES3
@@ -80,16 +89,15 @@ void nvgDeleteGLES2(NVGcontext* ctx);
 NVGcontext* nvgCreateGLES3(int flags);
 void nvgDeleteGLES3(NVGcontext* ctx);
 
+int nvglCreateImageFromHandleGLES3(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
+GLuint nvglImageHandleGLES3(NVGcontext* ctx, int image);
+
 #endif
 
 // These are additional flags on top of NVGimageFlags.
 enum NVGimageFlagsGL {
 	NVG_IMAGE_NODELETE			= 1<<16,	// Do not delete GL texture handle.
 };
-
-int nvglCreateImageFromHandle(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
-GLuint nvglImageHandle(NVGcontext* ctx, int image);
-
 
 #ifdef __cplusplus
 }
@@ -1499,7 +1507,15 @@ void nvgDeleteGLES3(NVGcontext* ctx)
 	nvgDeleteInternal(ctx);
 }
 
-int nvglCreateImageFromHandle(NVGcontext* ctx, GLuint textureId, int w, int h, int imageFlags)
+#if defined NANOVG_GL2
+int nvglCreateImageFromHandleGL2(NVGcontext* ctx, GLuint textureId, int w, int h, int imageFlags)
+#elif defined NANOVG_GL3
+int nvglCreateImageFromHandleGL3(NVGcontext* ctx, GLuint textureId, int w, int h, int imageFlags)
+#elif defined NANOVG_GLES2
+int nvglCreateImageFromHandleGLES2(NVGcontext* ctx, GLuint textureId, int w, int h, int imageFlags)
+#elif defined NANOVG_GLES3
+int nvglCreateImageFromHandleGLES3(NVGcontext* ctx, GLuint textureId, int w, int h, int imageFlags)
+#endif
 {
 	GLNVGcontext* gl = (GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
 	GLNVGtexture* tex = glnvg__allocTexture(gl);
@@ -1515,7 +1531,15 @@ int nvglCreateImageFromHandle(NVGcontext* ctx, GLuint textureId, int w, int h, i
 	return tex->id;
 }
 
-GLuint nvglImageHandle(NVGcontext* ctx, int image)
+#if defined NANOVG_GL2
+GLuint nvglImageHandleGL2(NVGcontext* ctx, int image)
+#elif defined NANOVG_GL3
+GLuint nvglImageHandleGL3(NVGcontext* ctx, int image)
+#elif defined NANOVG_GLES2
+GLuint nvglImageHandleGLES2(NVGcontext* ctx, int image)
+#elif defined NANOVG_GLES3
+GLuint nvglImageHandleGLES3(NVGcontext* ctx, int image)
+#endif
 {
 	GLNVGcontext* gl = (GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
 	GLNVGtexture* tex = glnvg__findTexture(gl, image);
