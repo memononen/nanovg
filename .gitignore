@@ -26,3 +26,7 @@ build/*
 
 ## xcode specific
 *xcuserdata*
+
+# Biicode build
+bii
+bin
