@@ -936,6 +936,18 @@ void nvgResetScissor(NVGcontext* ctx)
 	state->scissor.extent[1] = -1.0f;
 }
 
+void nvgSetScissor(NVGcontext* ctx, const NVGscissor* scissor)
+{
+	NVGstate* state = nvg__getState(ctx);
+	memcpy(&(state->scissor), scissor, sizeof(NVGscissor));
+}
+
+void nvgCurrentScissor(NVGcontext* ctx, NVGscissor* scissor)
+{
+	NVGstate* state = nvg__getState(ctx);
+	memcpy(scissor, &(state->scissor), sizeof(NVGscissor));
+}
+
 static int nvg__ptEquals(float x1, float y1, float x2, float y2, float tol)
 {
 	float dx = x2 - x1;
