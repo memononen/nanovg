@@ -53,6 +53,12 @@ struct NVGpaint {
 };
 typedef struct NVGpaint NVGpaint;
 
+struct NVGscissor {
+	float xform[6];
+	float extent[2];
+};
+typedef struct NVGscissor NVGscissor;
+
 enum NVGwinding {
 	NVG_CCW = 1,			// Winding for solid shapes
 	NVG_CW = 2,				// Winding for holes
@@ -385,6 +391,12 @@ void nvgIntersectScissor(NVGcontext* ctx, float x, float y, float w, float h);
 // Reset and disables scissoring.
 void nvgResetScissor(NVGcontext* ctx);
 
+// Overrides current scissor rectangle, ignoring the current transform.
+void nvgSetScissor(NVGcontext* ctx, const NVGscissor* scissor);
+
+// Stores current scissor rectangle in to the specified NVGscissor structure.
+void nvgCurrentScissor(NVGcontext* ctx, NVGscissor* scissor);
+
 //
 // Paths
 //
@@ -554,12 +566,6 @@ enum NVGtexture {
 	NVG_TEXTURE_ALPHA = 0x01,
 	NVG_TEXTURE_RGBA = 0x02,
 };
-
-struct NVGscissor {
-	float xform[6];
-	float extent[2];
-};
-typedef struct NVGscissor NVGscissor;
 
 struct NVGvertex {
 	float x,y,u,v;
