@@ -259,7 +259,7 @@ int main()
 		glfwPollEvents();
 	}
 
-	nvgluDeleteFramebuffer(vg, fb);
+	nvgluDeleteFramebuffer(fb);
 
 	nvgDeleteGL3(vg);
 
