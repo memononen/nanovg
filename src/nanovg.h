@@ -159,6 +159,10 @@ NVGcolor nvgHSL(float h, float s, float l);
 // HSL values are all in range [0..1], alpha in range [0..255]
 NVGcolor nvgHSLA(float h, float s, float l, unsigned char a);
 
+// Returns a color value from input color with format 0xAARRGGBB
+NVGcolor nvgColorHex(unsigned int color);
+
+
 //
 // State Handling
 //

@@ -430,6 +430,24 @@ NVGcolor nvgHSLA(float h, float s, float l, unsigned char a)
 	return col;
 }
 
+NVGcolor nvgColorHex(unsigned int color)
+{
+	// input format 0xAARRGGBB
+	float b = (float)(0x000000FF & color) / 255.f;
+	color = color >> 8;
+	float g = (float)(0x000000FF & color) / 255.f;
+	color = color >> 8;
+	float r = (float)(0x000000FF & color) / 255.f;
+	color = color >> 8;
+	float a = (float)(0x000000FF & color) / 255.f;
+
+	NVGcolor nvgColor;
+	nvgColor.r = r;
+	nvgColor.g = g;
+	nvgColor.b = b;
+	nvgColor.a = a;
+	return nvgColor;
+}
 
 static NVGstate* nvg__getState(NVGcontext* ctx)
 {
