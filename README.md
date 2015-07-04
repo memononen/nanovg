@@ -94,6 +94,33 @@ The data for the whole frame is buffered and flushed in `nvgEndFrame()`. The fol
 	glBindTexture(GL_TEXTURE_2D, tex);
 ```
 
+## Picking
+
+Picking (path selection based on a XY position) has been added to the base nanovg. This is zero cost if you don't use this functionality (other than larger code size). 
+
+To specify paths that you want to be pickable first specify your path and then use either
+```C
+	nvgPickFill(vg, pathID);
+```
+or
+```C
+	nvgPickStroke(vg, pathID);
+```
+to associate the integer ID pathID with the path's fill or stroke. You do not need to render a path for picking to work - just specifying it is enough (thus you can have one simple pick path for a button that is rendered with >1 paths for example).
+
+To query the ID of the top-most path at a specific position use:
+```C
+	int PickedID = nvgPick(vg, X, Y);
+```
+(returns -1 if no path was at X,Y)
+
+To query the IDs of all the paths at a specific position use:
+```C
+	int PickedIDs[32];
+	int nPicked = nvgPickAll(vg, X, Y, PickedIDs, 32);
+```
+PickedIDs will be filled with nPicked IDs (up to the maximum you specify) sorted in depth order (top-most first).
+
 ## API Reference
 
 See the header file [nanovg.h](/src/nanovg.h) for API reference.
