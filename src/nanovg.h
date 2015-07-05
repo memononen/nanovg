@@ -508,6 +508,11 @@ void nvgFill(NVGcontext* ctx);
 // Fills the current path with current stroke style.
 void nvgStroke(NVGcontext* ctx);
 
+// Marks the fill of the current path as pickable with the specified id.
+void nvgPickFill(NVGcontext* ctx, int id);
+
+// Marks the stroke of the current path as pickable with the specified id.
+void nvgPickStroke(NVGcontext* ctx, int id);
 
 //
 // Text
@@ -611,6 +616,17 @@ void nvgTextMetrics(NVGcontext* ctx, float* ascender, float* descender, float* l
 // White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
 // Words longer than the max width are slit at nearest character (i.e. no hyphenation).
 int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, float breakRowWidth, NVGtextRow* rows, int maxRows);
+
+//
+// Picking Queries
+//
+
+// Returns the id of the topmost pickable shape containing x,y or -1 if not shape is found.
+int nvgPick(NVGcontext* ctx, float x, float y);
+
+// Fills ids with a list of the top most maxids ids under the specified position.
+// Returns the number of ids filled.
+int nvgPickAll(NVGcontext* ctx, float x, float y, int* ids, int maxids);
 
 //
 // Internal Render API

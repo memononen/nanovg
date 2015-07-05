@@ -128,9 +128,11 @@ int main()
 		glEnable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);
 
+		int pickedID = nvgPick(vg, mx, my);
+
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
-		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
+		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, pickedID, &data);
 		renderGraph(vg, 5,5, &fps);
 
 		nvgEndFrame(vg);
