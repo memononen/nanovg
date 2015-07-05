@@ -104,6 +104,8 @@ struct NVGpathCache {
 };
 typedef struct NVGpathCache NVGpathCache;
 
+typedef struct NVGpickScene NVGpickScene;
+
 struct NVGcontext {
 	NVGparams params;
 	float* commands;
@@ -124,7 +126,11 @@ struct NVGcontext {
 	int fillTriCount;
 	int strokeTriCount;
 	int textTriCount;
+	NVGpickScene* pickScene;
 };
+
+static void nvg__pickBeginFrame(NVGcontext* ctx, int width, int height);
+static void nvg__pickSceneFree(NVGpickScene* ps);
 
 static float nvg__sqrtf(float a) { return sqrtf(a); }
 static float nvg__modf(float a, float b) { return fmodf(a, b); }
@@ -277,6 +283,9 @@ void nvgDeleteInternal(NVGcontext* ctx)
 	if (ctx->params.renderDelete != NULL)
 		ctx->params.renderDelete(ctx->params.userPtr);
 
+	if (ctx->pickScene != NULL)
+		nvg__pickSceneFree(ctx->pickScene);
+
 	free(ctx);
 }
 
@@ -298,6 +307,8 @@ void nvgBeginFrame(NVGcontext* ctx, int windowWidth, int windowHeight, float dev
 	ctx->fillTriCount = 0;
 	ctx->strokeTriCount = 0;
 	ctx->textTriCount = 0;
+	
+	nvg__pickBeginFrame(ctx, windowWidth, windowHeight);
 }
 
 void nvgCancelFrame(NVGcontext* ctx)
@@ -2749,4 +2760,7 @@ void nvgTextMetrics(NVGcontext* ctx, float* ascender, float* descender, float* l
 	if (lineh != NULL)
 		*lineh *= invscale;
 }
+
+#include "nanovg_pick.c"
+
 // vim: ft=c nu noet ts=4
