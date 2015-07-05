@@ -137,7 +137,7 @@ int main()
 			glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-		int pickedID = nvgPick(vg, mx, my);
+		int pickedID = nvgHitTest(vg, mx, my, NVG_TEST_ALL);
 
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
