@@ -1,3 +1,5 @@
+#include "nanovg_internal.h"
+
 #define NVG_PICK_EPS	0.0001f
 
 // Segment flags
@@ -702,7 +704,7 @@ static void nvg__pickSceneClear(NVGpickScene* ps)
 	ps->nsegments = 0;
 }
 
-static void nvg__pickSceneFree(NVGpickScene* ps)
+void nvg__pickSceneFree(NVGpickScene* ps)
 {
 	nvg__pickSceneClear(ps);
 	if (ps->levels)
@@ -734,7 +736,7 @@ static NVGpickScene* nvg__pickSceneGet(NVGcontext* ctx)
 }
 
 // Marks the fill of the current path as pickable with the specified id.
-void nvgPickFill(NVGcontext* ctx, int id)
+void nvgFillHitRegion(NVGcontext* ctx, int id)
 {
 	NVGpickScene* ps = nvg__pickSceneGet(ctx);
 	
@@ -744,7 +746,7 @@ void nvgPickFill(NVGcontext* ctx, int id)
 }
 
 // Marks the stroke of the current path as pickable with the specified id.
-void nvgPickStroke(NVGcontext* ctx, int id)
+void nvgStrokeHitRegion(NVGcontext* ctx, int id)
 {
 	NVGpickScene* ps = nvg__pickSceneGet(ctx);
 	
@@ -1178,7 +1180,7 @@ static int nvg__pickSubPathStroke(const NVGpickScene* ps, const NVGpickSubPath* 
 					break;
 		
 				default:
-					break;
+					continue;
 			}
 
 			d[0] = x - closest[0];
@@ -1361,7 +1363,7 @@ static int nvg__comparePaths(const void* a, const void* b)
 
 // Fills ids with a list of the top most maxids ids under the specified position.
 // Returns the number of ids written into ids, up to maxids.
-int nvgPickAll(NVGcontext* ctx, float x, float y, int* ids, int maxids)
+int nvgHitTestAll(NVGcontext* ctx, float x, float y, int flags, int* ids, int maxids)
 {
 	if (ctx->pickScene == NULL)	
 		return -1;
@@ -1382,10 +1384,10 @@ int nvgPickAll(NVGcontext* ctx, float x, float y, int* ids, int maxids)
 		while(pp)
 		{
 			hit = 0;
-			if (pp->flags & NVG_PICK_STROKE )
+			if ((flags & NVG_TEST_STROKE) && (pp->flags & NVG_PICK_STROKE))
 				hit = nvg__pickPathStroke(ps, pp, x, y);
 
-			if (!hit && pp->flags & NVG_PICK_FILL)
+			if (!hit && (flags & NVG_TEST_FILL) && (pp->flags & NVG_PICK_FILL))
 				hit = nvg__pickPath(ps, pp, x, y);
 
 			if (hit)
@@ -1422,7 +1424,7 @@ int nvgPickAll(NVGcontext* ctx, float x, float y, int* ids, int maxids)
 }
 
 // Returns the id of the pickable shape containing x,y or -1 if not shape is found.
-int nvgPick(NVGcontext* ctx, float x, float y)
+int nvgHitTest(NVGcontext* ctx, float x, float y, int flags)
 {
 	if (ctx->pickScene == NULL)	
 		return -1;
@@ -1447,10 +1449,10 @@ int nvgPick(NVGcontext* ctx, float x, float y)
 				&& 	pp->bounds[1] <= y
 				&&	pp->bounds[3] >= y)
 			{		
-				if (pp->flags & NVG_PICK_STROKE )
+				if ((flags & NVG_TEST_STROKE) && (pp->flags & NVG_PICK_STROKE))
 					hit = nvg__pickPathStroke(ps, pp, x, y);
 
-				if (!hit && pp->flags & NVG_PICK_FILL)
+				if (!hit && (flags & NVG_TEST_FILL) && (pp->flags & NVG_PICK_FILL))
 					hit = nvg__pickPath(ps, pp, x, y);
 					
 				if (hit)
@@ -1472,6 +1474,83 @@ int nvgPick(NVGcontext* ctx, float x, float y)
 	
 	return bestID;
 }
+
+int nvgInFill(NVGcontext* ctx, float x, float y)
+{
+	NVGpickScene* ps = nvg__pickSceneGet(ctx);
+
+	int oldnpoints = ps->npoints;
+	int oldnsegments = ps->nsegments;	
+
+	NVGpickPath* pp = nvg__pickPathCreate(ctx, 1, 0);
+
+	if (	x < pp->bounds[0]
+		||	y < pp->bounds[1]
+		||	x > pp->bounds[2]
+		||	y > pp->bounds[3])
+		return 0;
+	
+	int	hit = nvg__pickPath(ps, pp, x, y);
+
+	{	
+		NVGpickSubPath* psp = NULL;
+		for (psp = pp->subPaths; psp && psp->next; psp = psp->next)
+		{}
+
+		if (psp)
+		{
+			psp->next = ps->freeSubPaths;
+			ps->freeSubPaths = pp->subPaths;
+		}
+		
+		pp->next = ps->freePaths;
+		ps->freePaths = pp;
+	}
+
+	ps->npoints = oldnpoints;
+	ps->nsegments = oldnsegments;
+		
+	return hit;		
+}
+
+int nvgInStroke(NVGcontext* ctx, float x, float y)
+{
+	NVGpickScene* ps = nvg__pickSceneGet(ctx);
+
+	int oldnpoints = ps->npoints;
+	int oldnsegments = ps->nsegments;	
+
+	NVGpickPath* pp = nvg__pickPathCreate(ctx, 1, 1);
+
+	if (	x < pp->bounds[0]
+		||	y < pp->bounds[1]
+		||	x > pp->bounds[2]
+		||	y > pp->bounds[3])
+		return 0;
+	
+	int	hit = nvg__pickPathStroke(ps, pp, x, y);
+
+	{	
+		NVGpickSubPath* psp = NULL;
+		for (psp = pp->subPaths; psp && psp->next; psp = psp->next)
+		{}
+
+		if (psp)
+		{
+			psp->next = ps->freeSubPaths;
+			ps->freeSubPaths = pp->subPaths;
+		}
+		
+		pp->next = ps->freePaths;
+		ps->freePaths = pp;
+	}
+
+	ps->npoints = oldnpoints;
+	ps->nsegments = oldnsegments;
+		
+	return hit;		
+}
+
 
 static int nvg__countBitsUsed(int v)
 {
@@ -1582,7 +1661,7 @@ static void nvg__pickSceneInsert(NVGpickScene* ps, NVGpickPath* pp)
 	++ps->npaths;
 }
 
-static void nvg__pickBeginFrame(NVGcontext* ctx, int width, int height)
+void nvg__pickBeginFrame(NVGcontext* ctx, int width, int height)
 {
 	NVGpickScene* ps = nvg__pickSceneGet(ctx);
 
@@ -1601,7 +1680,7 @@ static void nvg__pickBeginFrame(NVGcontext* ctx, int width, int height)
 			if (psp)
 			{
 				psp->next = ps->freeSubPaths;
-				ps->freeSubPaths = psp;
+				ps->freeSubPaths = pp->subPaths;
 			}
 			
 			if (!pp->next)

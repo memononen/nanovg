@@ -127,7 +127,7 @@ int main()
 		glEnable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);
 
-		int pickedID = nvgPick(vg, mx, my);
+		int pickedID = nvgHitTest(vg, mx, my, NVG_TEST_ALL);
 
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 

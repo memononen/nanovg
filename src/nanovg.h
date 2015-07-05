@@ -450,10 +450,10 @@ void nvgFill(NVGcontext* ctx);
 void nvgStroke(NVGcontext* ctx);
 
 // Marks the fill of the current path as pickable with the specified id.
-void nvgPickFill(NVGcontext* ctx, int id);
+void nvgFillHitRegion(NVGcontext* ctx, int id);
 
 // Marks the stroke of the current path as pickable with the specified id.
-void nvgPickStroke(NVGcontext* ctx, int id);
+void nvgStrokeHitRegion(NVGcontext* ctx, int id);
 
 //
 // Text
@@ -553,15 +553,29 @@ void nvgTextMetrics(NVGcontext* ctx, float* ascender, float* descender, float* l
 int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, float breakRowWidth, NVGtextRow* rows, int maxRows);
 
 //
-// Picking Queries
+// Hit Region Queries
 //
 
-// Returns the id of the topmost pickable shape containing x,y or -1 if not shape is found.
-int nvgPick(NVGcontext* ctx, float x, float y);
+enum NVGPickFlags {
+	NVG_TEST_FILL	= 1,
+	NVG_TEST_STROKE = 2,
+	NVG_TEST_ALL = 3,
+};
+
+// Returns the id of the topmost pickable hit region containing x,y or -1 if not shape is found.
+int nvgHitTest(NVGcontext* ctx, float x, float y, int flags);
 
 // Fills ids with a list of the top most maxids ids under the specified position.
 // Returns the number of ids filled.
-int nvgPickAll(NVGcontext* ctx, float x, float y, int* ids, int maxids);
+int nvgHitTestAll(NVGcontext* ctx, float x, float y, int flags, int* ids, int maxids);
+
+// Returns 1 if the given point is within the fill of the currently defined path.
+// Returns 0 otherwise.
+int nvgInFill(NVGcontext* ctx, float x, float y);
+
+// Returns 1 if the given point is within the stroke of the currently defined path.
+// Returns 0 otherwise.
+int nvgInStroke(NVGcontext* ctx, float x, float y);
 
 //
 // Internal Render API
