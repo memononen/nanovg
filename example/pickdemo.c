@@ -56,14 +56,14 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, int pickedID, DemoData* data)
 {
 	int id = 0;
-	int DoPick = 1;
+	int doPick = 1;
 	
 	// Filled rect
 	nvgBeginPath(vg);
 	nvgRect(vg, 40, 20, 100, 100);
 	nvgFillColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 128, 0) );
 	nvgFill(vg);
-	if (DoPick) nvgFillHitRegion(vg, id++);
+	if (doPick) nvgFillHitRegion(vg, id++);
 
 	// Stroked rect
 	nvgBeginPath(vg);
@@ -72,7 +72,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgStrokeColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 128, 0) );
 	nvgLineJoin(vg, NVG_MITER);
 	nvgStroke(vg);
-	if (DoPick) nvgStrokeHitRegion(vg, id++);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
 
 	// Overlapping rects
 
@@ -82,13 +82,13 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgStrokeColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
 	nvgLineJoin(vg, NVG_MITER);
 	nvgStroke(vg);
-	if (DoPick) nvgStrokeHitRegion(vg, id++);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
 
 	nvgBeginPath(vg);
 	nvgRect(vg, 40, 420, 100, 100);
 	nvgFillColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 128, 0) );
 	nvgFill(vg);
-	if (DoPick) nvgFillHitRegion(vg, id++);
+	if (doPick) nvgFillHitRegion(vg, id++);
 	
 	// Lines
 	
@@ -99,7 +99,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgMoveTo(vg, 300, 50);
 	nvgLineTo(vg, 300, 150);
 	nvgStroke(vg);
-	if (DoPick) nvgStrokeHitRegion(vg, id++);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
 
 	nvgBeginPath(vg);
 	nvgLineCap(vg, NVG_BUTT);
@@ -108,7 +108,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgMoveTo(vg, 400, 50);
 	nvgLineTo(vg, 400, 150);
 	nvgStroke(vg);
-	if (DoPick) nvgStrokeHitRegion(vg, id++);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
 
 	nvgBeginPath(vg);
 	nvgLineCap(vg, NVG_SQUARE);
@@ -117,7 +117,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgMoveTo(vg, 500, 50);
 	nvgLineTo(vg, 500, 150);
 	nvgStroke(vg);
-	if (DoPick) nvgStrokeHitRegion(vg, id++);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
 
 	// Curves
 	nvgBeginPath(vg);
@@ -127,7 +127,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgMoveTo(vg, 300, 300);
 	nvgBezierTo(vg, 200, 350,  400, 450,  300, 500);
 	nvgStroke(vg);
-	if (DoPick) nvgStrokeHitRegion(vg, id++);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
 
 	nvgBeginPath(vg);
 	nvgLineCap(vg, NVG_BUTT);
@@ -136,7 +136,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgMoveTo(vg, 400, 300);
 	nvgBezierTo(vg, 300, 350,  500, 450,  400, 500);
 	nvgStroke(vg);
-	if (DoPick) nvgStrokeHitRegion(vg, id++);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
 
 	nvgBeginPath(vg);
 	nvgLineCap(vg, NVG_SQUARE);
@@ -145,7 +145,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgMoveTo(vg, 500, 300);
 	nvgBezierTo(vg, 400, 350,  600, 450,  500, 500);
 	nvgStroke(vg);
-	if (DoPick) nvgStrokeHitRegion(vg, id++);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
 
 	// Curve Fill
 	nvgBeginPath(vg);
@@ -156,7 +156,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgClosePath(vg);
 	nvgFillColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
 	nvgFill(vg);
-	if (DoPick) nvgFillHitRegion(vg, id++);
+	if (doPick) nvgFillHitRegion(vg, id++);
 
 	// Curve Stroke
 	nvgBeginPath(vg);
@@ -168,7 +168,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgLineJoin(vg, NVG_BEVEL);
 	nvgStrokeColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
 	nvgStroke(vg);
-	if (DoPick) nvgStrokeHitRegion(vg, id++);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
 
 	// Rect Fill - Alternate pick api
 	nvgBeginPath(vg);
@@ -183,6 +183,18 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgStrokeColor(vg, (nvgInStroke(vg, mx, my)) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
 	nvgStroke(vg);
 
+	// Rect Fill & Rotated Scissor
+	nvgTranslate(vg, 900, 450);	
+	nvgRotate(vg, nvgDegToRad(45.0f));
+	nvgScissor(vg, -50, -50, 100, 100);
+	nvgResetTransform(vg);
+
+	nvgBeginPath(vg);
+	nvgRect(vg, 850, 400, 100, 100);
+	nvgFillColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
+	nvgFill(vg);
+	if (doPick) nvgFillHitRegion(vg, id++);
+	nvgResetTransform(vg);
 }
 
 void saveScreenShot(int w, int h, int premult, const char* name)

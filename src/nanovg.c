@@ -152,7 +152,7 @@ void nvgDeleteInternal(NVGcontext* ctx)
 		ctx->params.renderDelete(ctx->params.userPtr);
 
 	if (ctx->pickScene != NULL)
-		nvg__pickSceneFree(ctx->pickScene);
+		nvg__deletePickScene(ctx->pickScene);
 
 	free(ctx);
 }

@@ -168,7 +168,7 @@ NVGstate* nvg__getState(NVGcontext* ctx);
 
 // Required by nanovg.c
 void nvg__pickBeginFrame(NVGcontext* ctx, int width, int height);
-void nvg__pickSceneFree(NVGpickScene* ps);
+void nvg__deletePickScene(NVGpickScene* ps);
 
 #ifdef __cplusplus
 }
