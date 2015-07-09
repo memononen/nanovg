@@ -1,59 +1,151 @@
-#include "demo.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 #ifdef NANOVG_GLEW
-#  include <GL/glew.h>
+#	include <GL/glew.h>
+#endif
+#ifdef __APPLE__
+#	define GLFW_INCLUDE_GLCOREARB
 #endif
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#define NANOVG_GL2_IMPLEMENTATION
+#include "nanovg_gl.h"
+#include "nanovg_gl_utils.h"
+#include "perf.h"
 
-int loadDemoData(NVGcontext* vg, DemoData* data)
+void render(NVGcontext* vg, float mx, float my, int pickedID);
+
+int loadFonts(NVGcontext* vg)
 {
-	int i;
-
-	if (vg == NULL)
-		return -1;
-
-	for (i = 0; i < 12; i++) {
-		char file[128];
-		snprintf(file, 128, "../example/images/image%d.jpg", i+1);
-		data->images[i] = nvgCreateImage(vg, file, 0);
-		if (data->images[i] == 0) {
-			printf("Could not load %s.\n", file);
-			return -1;
-		}
-	}
-
-	data->fontIcons = nvgCreateFont(vg, "icons", "../example/entypo.ttf");
-	if (data->fontIcons == -1) {
-		printf("Could not add font icons.\n");
+	int font;
+	font = nvgCreateFont(vg, "sans", "../example/Roboto-Regular.ttf");
+	if (font == -1) {
+		printf("Could not add font regular.\n");
 		return -1;
 	}
-	data->fontNormal = nvgCreateFont(vg, "sans", "../example/Roboto-Regular.ttf");
-	if (data->fontNormal == -1) {
-		printf("Could not add font italic.\n");
-		return -1;
-	}
-	data->fontBold = nvgCreateFont(vg, "sans-bold", "../example/Roboto-Bold.ttf");
-	if (data->fontBold == -1) {
+	font = nvgCreateFont(vg, "sans-bold", "../example/Roboto-Bold.ttf");
+	if (font == -1) {
 		printf("Could not add font bold.\n");
 		return -1;
 	}
-
 	return 0;
 }
 
-void freeDemoData(NVGcontext* vg, DemoData* data)
+void errorcb(int error, const char* desc)
 {
-	if (vg == NULL)
-		return;
+	printf("GLFW error %d: %s\n", error, desc);
 }
 
-void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
-				float t, int blowup, int pickedID, DemoData* data)
+static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	NVG_NOTUSED(scancode);
+	NVG_NOTUSED(mods);
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, GL_TRUE);
+}
+
+int main()
+{
+	GLFWwindow* window;
+	NVGcontext* vg = NULL;
+	PerfGraph fps;
+	double prevt = 0;
+	int pickedID = -1;
+
+	if (!glfwInit()) {
+		printf("Failed to init GLFW.");
+		return -1;
+	}
+
+	initGraph(&fps, GRAPH_RENDER_FPS, "Frame Time");
+
+	glfwSetErrorCallback(errorcb);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
+#ifdef DEMO_MSAA
+	glfwWindowHint(GLFW_SAMPLES, 4);
+#endif
+	window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
+	if (!window) {
+		glfwTerminate();
+		return -1;
+	}
+
+	glfwSetKeyCallback(window, key);
+
+	glfwMakeContextCurrent(window);
+#ifdef NANOVG_GLEW
+	glewExperimental = GL_TRUE;
+	if(glewInit() != GLEW_OK) {
+		printf("Could not init glew.\n");
+		return -1;
+	}
+	// GLEW generates GL error because it calls glGetString(GL_EXTENSIONS), we'll consume it here.
+	glGetError();
+#endif
+
+#ifdef DEMO_MSAA
+	vg = nvgCreateGL2(NVG_STENCIL_STROKES | NVG_DEBUG);
+#else
+	vg = nvgCreateGL2(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+#endif
+	if (vg == NULL) {
+		printf("Could not init nanovg.\n");
+		return -1;
+	}
+
+	loadFonts(vg);
+
+	glfwSwapInterval(0);
+
+	glfwSetTime(0);
+	prevt = glfwGetTime();
+
+	while (!glfwWindowShouldClose(window))
+	{
+		double mx, my, t, dt;
+		int winWidth, winHeight;
+		int fbWidth, fbHeight;
+		float pxRatio;
+
+		t = glfwGetTime();
+		dt = t - prevt;
+		prevt = t;
+		updateGraph(&fps, dt);
+
+		glfwGetCursorPos(window, &mx, &my);
+		glfwGetWindowSize(window, &winWidth, &winHeight);
+		glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+
+		// Calculate pixel ration for hi-dpi devices.
+		pxRatio = (float)fbWidth / (float)winWidth;
+
+		// Update and render
+		glViewport(0, 0, fbWidth, fbHeight);
+		glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+
+		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
+
+		render(vg, mx,my, pickedID);
+		renderGraph(vg, 5,5, &fps);
+
+		pickedID = nvgHitTest(vg, mx, my, NVG_TEST_ALL);
+		nvgEndFrame(vg);
+		
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
+
+	nvgDeleteGL2(vg);
+
+	glfwTerminate();
+	return 0;
+}
+
+void render(NVGcontext* vg, float mx, float my, int pickedID)
 {
 	int id = 0;
 	int doPick = 1;
@@ -185,7 +277,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 
 	// Rect Fill & Rotated Scissor
 	nvgTranslate(vg, 900, 450);	
-	nvgRotate(vg, nvgDegToRad(45.0f));
+	nvgRotate(vg, nvgDegToRad(22.5f));
 	nvgScissor(vg, -50, -50, 100, 100);
 	nvgResetTransform(vg);
 
@@ -195,9 +287,6 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgFill(vg);
 	if (doPick) nvgFillHitRegion(vg, id++);
 	nvgResetTransform(vg);
-}
-
-void saveScreenShot(int w, int h, int premult, const char* name)
-{
+	nvgResetScissor(vg);
 }
 

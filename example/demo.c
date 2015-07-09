@@ -1054,7 +1054,7 @@ void drawScissor(NVGcontext* vg, float x, float y, float t)
 }
 
 void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
-				float t, int blowup, int pickedID, DemoData* data)
+				float t, int blowup, DemoData* data)
 {
 	float x,y,popy;
 
