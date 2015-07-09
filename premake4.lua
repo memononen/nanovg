@@ -225,11 +225,11 @@ solution "nanovg"
 			defines { "NDEBUG" }
 			flags { "Optimize", "ExtraWarnings"}
 
-	project "example_pick"
+	project "example_hittest"
 
 		kind "ConsoleApp"
 		language "C"
-		files { "example/example_gl2.c", "example/pickdemo.c", "example/perf.c" }
+		files { "example/example_hittest.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
 		links { "nanovg" }

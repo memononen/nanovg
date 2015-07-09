@@ -154,11 +154,9 @@ int main()
 			glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-		int pickedID = nvgHitTest(vg, mx, my, NVG_TEST_ALL);
-
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
-		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, pickedID, &data);
+		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
 
 		renderGraph(vg, 5,5, &fps);
 		renderGraph(vg, 5+200+5,5, &cpuGraph);

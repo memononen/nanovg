@@ -1321,8 +1321,8 @@ static int nvg__pickPathTestBounds(const NVGpickScene* ps, const NVGpickPath* pp
 			float rx = x - scissor[4];
 			float ry = y - scissor[5];
 								
-			if ( nvg__absf((scissor[0] * rx) + (scissor[2] * ry)) > scissor[6] ||
-				 nvg__absf((scissor[1] * rx) + (scissor[3] * ry)) > scissor[7])
+			if ( nvg__absf((scissor[0] * rx) + (scissor[1] * ry)) > scissor[6] ||
+				 nvg__absf((scissor[2] * rx) + (scissor[3] * ry)) > scissor[7])
 				return 0;
 		}
 
@@ -1454,19 +1454,7 @@ int nvgInFill(NVGcontext* ctx, float x, float y)
 	
 	int	hit = nvg__pickPath(ps, pp, x, y);
 
-	{	
-		NVGpickSubPath* psp = NULL;
-		for (psp = pp->subPaths; psp && psp->next; psp = psp->next) {
-		}
-
-		if (psp) {
-			psp->next = ps->freeSubPaths;
-			ps->freeSubPaths = pp->subPaths;
-		}
-		
-		pp->next = ps->freePaths;
-		ps->freePaths = pp;
-	}
+	nvg__returnPickPath(ps, pp);
 
 	ps->npoints = oldnpoints;
 	ps->nsegments = oldnsegments;
@@ -1491,19 +1479,7 @@ int nvgInStroke(NVGcontext* ctx, float x, float y)
 	
 	int	hit = nvg__pickPathStroke(ps, pp, x, y);
 
-	{	
-		NVGpickSubPath* psp = NULL;
-		for (psp = pp->subPaths; psp && psp->next; psp = psp->next) {
-		}
-
-		if (psp) {
-			psp->next = ps->freeSubPaths;
-			ps->freeSubPaths = pp->subPaths;
-		}
-		
-		pp->next = ps->freePaths;
-		ps->freePaths = pp;
-	}
+	nvg__returnPickPath(ps, pp);
 
 	ps->npoints = oldnpoints;
 	ps->nsegments = oldnsegments;
