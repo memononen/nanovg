@@ -183,6 +183,15 @@ static void nvg__intersectBounds(float bounds[4], const float boundsB[4])
 	bounds[3] = nvg__maxf(bounds[1], bounds[3]);
 }
 
+static int nvg__pointInBounds(float x, float y, const float bounds[4])
+{
+	if (x >= bounds[0] && x <= bounds[2] &&
+		y >= bounds[1] && y <= bounds[3])
+		return 1;
+	else
+		return 0;
+}
+
 //
 // Building paths & sub paths
 //
@@ -240,8 +249,7 @@ static void nvg__segmentDir(NVGpickScene* ps, NVGpickSubPath* psp, NVGsegment* s
 	switch(seg->type) {
 	case NVG_LINETO:
 		d[0] = x1 - x0;
-		d[1] = y1 - y0;
-		
+		d[1] = y1 - y0;		
 		nvg__normalize(&d[0], &d[1]);
 		break;
 	case NVG_BEZIERTO:		
@@ -254,12 +262,12 @@ static void nvg__segmentDir(NVGpickScene* ps, NVGpickSubPath* psp, NVGsegment* s
 		omt2 = omt * omt;
 		t2 = t * t;
 
-		d[0] =		3.0f * omt2 * (x1 - x0)
-				+	6.0f * omt * t * (x2 - x1)
-				+	3.0f * t2 * (x3 - x2);	
-		d[1] =		3.0f * omt2 * (y1 - y0)
-				+	6.0f * omt * t * (y2 - y1)
-				+	3.0f * t2 * (y3 - y2);
+		d[0] = 3.0f * omt2 * (x1 - x0) +
+			6.0f * omt * t * (x2 - x1) +
+			3.0f * t2 * (x3 - x2);
+		d[1] = 3.0f * omt2 * (y1 - y0) +
+			6.0f * omt * t * (y2 - y1) +
+			3.0f * t2 * (y3 - y2);
 
 		nvg__normalize(&d[0], &d[1]);				
 		break;
@@ -496,14 +504,15 @@ static NVGpickPath* nvg__pickPathCreate(NVGcontext* context, int id, int forStro
 			nvg__bezierInflections(points, 0, &ninflections, inflections);
 			
 			if (ninflections) {
-				nvg__smallsort(inflections, ninflections);
-
 				float previnfl = 0;
 				float t;
 				
 				float pointsA[8], pointsB[8];
 
 				int infl;
+
+				nvg__smallsort(inflections, ninflections);
+
 				for (infl = 0; infl < ninflections; ++infl) {
 					if (nvg__absf(inflections[infl] - previnfl) < NVG_PICK_EPS)
 						continue;
@@ -609,7 +618,7 @@ static NVGpickPath* nvg__allocPickPath(NVGpickScene* ps)
 }
 
 // Return a pick path and any sub paths to the free lists
-static void nvg__returnPickPath(NVGpickScene* ps, NVGpickPath* pp)
+static void nvg__freePickPath(NVGpickScene* ps, NVGpickPath* pp)
 {
 	// Add all sub paths to the sub path free list.
 	// Finds the end of the path sub paths, links that to the current
@@ -662,11 +671,6 @@ static void nvg__returnPickSubPath(NVGpickScene* ps, NVGpickSubPath* psp)
 	ps->freeSubPaths = psp;
 }
 
-static void nvg__deletePickSubPath(NVGpickSubPath* psp)
-{
-	free(psp);
-}
-
 static NVGpickScene* nvg__allocPickScene()
 {
 	NVGpickScene* ps = (NVGpickScene*)malloc(sizeof(NVGpickScene));
@@ -684,21 +688,27 @@ void nvg__deletePickScene(NVGpickScene* ps)
 	// Add all paths (and thus sub paths)  to the free list(s).
 	while(ps->paths) {		
 		pp = ps->paths->next;
-		nvg__returnPickPath(ps, ps->paths);
+		nvg__freePickPath(ps, ps->paths);
 		ps->paths = pp;
 	}
 	
 	// Delete all paths
 	while(ps->freePaths) {
-		pp = ps->freePaths->next;
-		nvg__deletePickPath(ps->freePaths);
-		ps->freePaths = pp;
+		pp = ps->freePaths;
+		ps->freePaths = pp->next;
+
+		while (pp->subPaths) {
+			psp = pp->subPaths;
+			pp->subPaths = psp->next;
+			free(psp);
+		}
+		free(pp);
 	}
 
 	// Delete all sub paths
 	while(ps->freeSubPaths) {
 		psp = ps->freeSubPaths->next;
-		nvg__deletePickSubPath(ps->freeSubPaths);
+		free(ps->freeSubPaths);
 		ps->freeSubPaths = psp;
 	}
 	
@@ -930,6 +940,7 @@ static void nvg__bezierBounds(const float* points, float* bounds)
 // Checks to see if a line originating from x,y along the +ve x axis 
 // intersects the given line (points[0],points[1]) -> (points[2], points[3]).
 // Returns 1 on intersection, 0 on no intersection.
+// Horizontal lines are never hit.
 static int nvg__intersectLine(const float* points, float x, float y)
 {
 	float x1 = points[0];
@@ -937,9 +948,15 @@ static int nvg__intersectLine(const float* points, float x, float y)
 	float x2 = points[2];
 	float y2 = points[3];
 	
-	float d = (x2 - x1) / (y2 - y1);
-	float lineX = x1 + (y - y1) * d;
-	return lineX > x;
+	float d = y2 - y1;
+	float s, lineX;
+	
+	if (d > 0) {
+		s = (x2 - x1) / d;	
+		lineX = x1 + (y - y1) * s;
+		return lineX > x;
+	}
+	else return 0;
 }
 
 // Checks to see if a line originating from x,y along the +ve x axis 
@@ -952,11 +969,17 @@ static int nvg__intersectBezier(const float* points, float x, float y)
 	float x0 = points[0*2+0], x1 = points[1*2+0], x2 = points[2*2+0], x3 = points[3*2+0];
 	float y0 = points[0*2+1], y1 = points[1*2+1], y2 = points[2*2+1], y3 = points[3*2+1];
 
-	// Initial t guess
-	float t = (y - y0) / (y3 - y0);
+	float t;
 	float ty;
 	float dty;
 	float omt, omt2, omt3, t2, t3;
+
+	if (y0 == y1 && y1 == y2 && y2 == y3) return 0;
+
+	// Initial t guess
+	if (y3 != y0) t = (y - y0) / (y3 - y0);
+	else if (x3 != x0) t = (x - x0) / (x3 - x0);
+	else t = 0.5f;		
 
 	// A few Newton iterations	
 	int iter;
@@ -967,16 +990,19 @@ static int nvg__intersectBezier(const float* points, float x, float y)
 		omt3 = omt2 * omt;
 		t3 = t2 * t;
 		
-		ty = 		y0 * omt3
-				+	y1 * 3.0f * omt2 * t
-				+	y2 * 3.0f * omt * t2
-				+	y3 * t3;
+		ty = y0 * omt3 +
+			y1 * 3.0f * omt2 * t +
+			y2 * 3.0f * omt * t2 +
+			y3 * t3;
 
 		// Newton iteration
-		dty =		3.0f * omt2 * (y1 - y0)
-				+	6.0f * omt * t * (y2 - y1)
-				+	3.0f * t2 * (y3 - y2);	
-		
+		dty = 3.0f * omt2 * (y1 - y0) +
+			6.0f * omt * t * (y2 - y1) +
+			3.0f * t2 * (y3 - y2);	
+
+		// dty will never == 0 since:
+		//  Either omt, omt2 are zero OR t2 is zero
+		//	y0 != y1 != y2 != y3 (checked above)
 		t = t - ( ty - y ) / dty;
  	}	
  	
@@ -987,10 +1013,10 @@ static int nvg__intersectBezier(const float* points, float x, float y)
 	t3 = t2 * t;
 	float tx;
 	
-	tx = 		x0 * omt3
-			+	x1 * 3.0f * omt2 * t
-			+	x2 * 3.0f * omt * t2
-			+	x3 * t3;
+	tx = x0 * omt3 +
+		x1 * 3.0f * omt2 * t +
+		x2 * 3.0f * omt * t2 +
+		x3 * t3;
 
 	if (tx > x)
 		return 1;
@@ -1005,26 +1031,18 @@ static void nvg__closestLine(const float* points, float x, float y, float* close
 	float y1 = points[1];
 	float x2 = points[2];
 	float y2 = points[3];
-	
-	float dx, dy;
-	float len;
-	float t;
-	
-	dx = x2 - x1;
-	dy = y2 - y1;
-	
-	len = nvg__sqrtf( dx*dx + dy*dy );
-	dx /= len;
-	dy /= len;
-
-	t = (x - x1) * dx + (y - y1) * dy;
-	
-	t = nvg__maxf(0, nvg__minf(len, t)); 
-	
-	closest[0] = x1 + dx * t;
-	closest[1] = y1 + dy * t;
-	
-	*ot = t / len;
+	float pqx = x2 - x1;
+	float pqz = y2 - y1;
+	float dx = x - x1;
+	float dz = y - y1;
+	float d = pqx*pqx + pqz*pqz;
+	float t = pqx*dx + pqz*dz;
+	if (d > 0) t /= d;
+	if (t < 0) t = 0;
+	else if (t > 1) t = 1;
+	closest[0] = x1 + t*pqx;
+	closest[1] = y1 + t*pqz;
+	*ot = t;
 }
 
 // Finds the closest point on a curve for a given point (x,y).
@@ -1037,10 +1055,11 @@ static void nvg__closestBezier(const float* points, float x, float y, float* clo
 	// This assumes that the curve has no dy=0 inflection points.
 	
 	// Initial t guess
-	float t = 0.5f; // (y - y0) / (y3 - y0);
+	float t = 0.5f;
 	float ty, dty, ddty, errory;
 	float tx, dtx, ddtx, errorx;
 	float omt, omt2, omt3, t2, t3;
+	float n, d;
 
 	// A few Newton iterations	
 	int iter;
@@ -1051,36 +1070,41 @@ static void nvg__closestBezier(const float* points, float x, float y, float* clo
 		omt3 = omt2 * omt;
 		t3 = t2 * t;
 		
-		ty = 		y0 * omt3
-				+	y1 * 3.0f * omt2 * t
-				+	y2 * 3.0f * omt * t2
-				+	y3 * t3;
+		ty = y0 * omt3 +
+			y1 * 3.0f * omt2 * t +
+			y2 * 3.0f * omt * t2 +
+			y3 * t3;
 
-		tx = 		x0 * omt3
-				+	x1 * 3.0f * omt2 * t
-				+	x2 * 3.0f * omt * t2
-				+	x3 * t3;
+		tx = x0 * omt3 +
+			x1 * 3.0f * omt2 * t +
+			x2 * 3.0f * omt * t2 +
+			x3 * t3;
 
 		// Newton iteration
-		dty =		3.0f * omt2 * (y1 - y0)
-				+	6.0f * omt * t * (y2 - y1)
-				+	3.0f * t2 * (y3 - y2);	
+		dty = 3.0f * omt2 * (y1 - y0) +
+			6.0f * omt * t * (y2 - y1)+
+			3.0f * t2 * (y3 - y2);	
 
-		ddty =		6.0f * omt * (y2 - 2.0f * y1 + y0)
-				+	6.0f * t * (y3 - 2.0f * y2 + y1);
+		ddty = 6.0f * omt * (y2 - 2.0f * y1 + y0) +
+			6.0f * t * (y3 - 2.0f * y2 + y1);
 
-		dtx =		3.0f * omt2 * (x1 - x0)
-				+	6.0f * omt * t * (x2 - x1)
-				+	3.0f * t2 * (x3 - x2);	
+		dtx = 3.0f * omt2 * (x1 - x0) +
+			6.0f * omt * t * (x2 - x1) +
+			3.0f * t2 * (x3 - x2);	
 
-		ddtx =		6.0f * omt * (x2 - 2.0f * x1 + x0)
-				+	6.0f * t * (x3 - 2.0f * x2 + x1);
+		ddtx = 6.0f * omt * (x2 - 2.0f * x1 + x0) +
+			6.0f * t * (x3 - 2.0f * x2 + x1);
 				
 		errorx = tx - x;
 		errory = ty - y;
 
-		t = t - ( errorx * dtx + errory * dty ) / (dtx * dtx + dty * dty + errorx * ddtx + errory * ddty);
- 	}	
+		n = errorx * dtx + errory * dty;
+		if (n == 0.0f) break;
+			
+		d = dtx * dtx + dty * dty + errorx * ddtx + errory * ddty;
+		if (d != 0.0f) t = t - n / d;
+		else break;
+ 	}
 
  	t = nvg__maxf(0, nvg__minf(1.0 ,t)); 
  	
@@ -1092,15 +1116,15 @@ static void nvg__closestBezier(const float* points, float x, float y, float* clo
 	omt3 = omt2 * omt;
 	t3 = t2 * t;
 
-	ty = 		y0 * omt3
-			+	y1 * 3.0f * omt2 * t
-			+	y2 * 3.0f * omt * t2
-			+	y3 * t3;
+	ty = y0 * omt3 +
+		y1 * 3.0f * omt2 * t +
+		y2 * 3.0f * omt * t2 +
+		y3 * t3;
 
-	tx = 		x0 * omt3
-			+	x1 * 3.0f * omt2 * t
-			+	x2 * 3.0f * omt * t2
-			+	x3 * t3;
+	tx = x0 * omt3 +
+		x1 * 3.0f * omt2 * t +
+		x2 * 3.0f * omt * t2 +
+		x3 * t3;
 
 	closest[0] = tx;
 	closest[1] = ty;
@@ -1112,27 +1136,32 @@ static void nvg__closestBezier(const float* points, float x, float y, float* clo
 //	0	If (x,y) is not contained by the path.
 static int nvg__pickSubPathStroke(const NVGpickScene* ps, const NVGpickSubPath* psp, float x, float y, float strokeWidth, int lineCap, int lineJoin)
 {
-	if (x < psp->bounds[0] || x > psp->bounds[2] ||
-		y < psp->bounds[1] || y > psp->bounds[3])
-			return 0;
-
-	// Trace a line from x,y out along the positive x axis and count the
-	// number of intersections.
-	int nsegments = psp->nsegments;
-	const NVGsegment * seg = ps->segments + psp->firstSegment;
+	int nsegments;
+	const NVGsegment * seg;
 	float closest[2];
 	float t;
 	
 	float distSqd = 0;
 	float d[2];
-	float strokeWidthSqd = strokeWidth * strokeWidth;
-	
-	const NVGsegment* prevseg = psp->closed ? &ps->segments[psp->firstSegment + nsegments - 1] : NULL;
+	float strokeWidthSqd;
+
+	const NVGsegment* prevseg;
 	int s;
+	
+	if (nvg__pointInBounds(x, y, psp->bounds) == 0)
+		return 0;
+
+	// Trace a line from x,y out along the positive x axis and count the
+	// number of intersections.
+	nsegments = psp->nsegments;
+	seg = ps->segments + psp->firstSegment;
+	
+	strokeWidthSqd = strokeWidth * strokeWidth;
+	
+	prevseg = psp->closed ? &ps->segments[psp->firstSegment + nsegments - 1] : NULL;
 		
 	for (s = 0; s < nsegments; ++s, prevseg=seg, ++seg) {
-		if (seg->bounds[1] <= y && seg->bounds[3] >= y &&
-			seg->bounds[0] <= x && seg->bounds[2] >= x) { 
+		if (nvg__pointInBounds(x, y, seg->bounds) != 0) {
 			// Line potentially hits stroke.
 			switch(seg->type) {
 			case NVG_LINETO:
@@ -1232,9 +1261,8 @@ static int nvg__pickSubPath(const NVGpickScene* ps, const NVGpickSubPath* psp, f
 	int nintersections = 0;
 	int s;
 
-	if (x < psp->bounds[0] || x > psp->bounds[2] ||
-		y < psp->bounds[1] || y > psp->bounds[3])
-			return 0;
+	if (nvg__pointInBounds(x, y, psp->bounds) == 0)
+		return 0;
 
 	// Trace a line from x,y out along the positive x axis and count the
 	// number of intersections.
@@ -1310,13 +1338,8 @@ static int nvg__comparePaths(const void* a, const void* b)
 
 static int nvg__pickPathTestBounds(const NVGpickScene* ps, const NVGpickPath* pp, float x, float y)
 {
-	if (pp->bounds[0] <= x &&
-		pp->bounds[2] >= x &&
-		pp->bounds[1] <= y &&
-		pp->bounds[3] >= y) {		
-
-		if (pp->flags & NVG_PICK_SCISSOR)
-		{
+	if (nvg__pointInBounds(x, y, pp->bounds) != 0) {
+		if (pp->flags & NVG_PICK_SCISSOR) {
 			const float* scissor = &ps->points[pp->scissor*2];
 			float rx = x - scissor[4];
 			float ry = y - scissor[5];
@@ -1335,20 +1358,22 @@ static int nvg__pickPathTestBounds(const NVGpickScene* ps, const NVGpickPath* pp
 // Fills ids with a list of the top most maxids ids under the specified position.
 // Returns the number of ids written into ids, up to maxids.
 int nvgHitTestAll(NVGcontext* ctx, float x, float y, int flags, int* ids, int maxids)
-{
-	if (ctx->pickScene == NULL)	
-		return -1;
-		
-	NVGpickScene* ps = ctx->pickScene;
-
-	int levelwidth = 1 << (ps->nlevels - 1);
-	int cellx = nvg__clampi((int)(x / ps->xdim), 0, levelwidth);
-	int celly = nvg__clampi((int)(y / ps->ydim), 0, levelwidth);
-
+{	
+	NVGpickScene* ps;
 	int npicked = 0;
 	int hit;
 	int lvl;
 	int id;	
+	int levelwidth;
+	int cellx, celly;
+
+	if (ctx->pickScene == NULL)	
+		return 0;
+
+	ps = ctx->pickScene;
+	levelwidth = 1 << (ps->nlevels - 1);
+	cellx = nvg__clampi((int)(x / ps->xdim), 0, levelwidth);
+	celly = nvg__clampi((int)(y / ps->ydim), 0, levelwidth);
 
 	for (lvl = ps->nlevels - 1; lvl >= 0; --lvl) {
 		NVGpickPath* pp = ps->levels[lvl][celly*levelwidth + cellx];
@@ -1395,18 +1420,22 @@ int nvgHitTestAll(NVGcontext* ctx, float x, float y, int flags, int* ids, int ma
 // Returns the id of the pickable shape containing x,y or -1 if not shape is found.
 int nvgHitTest(NVGcontext* ctx, float x, float y, int flags)
 {
-	if (ctx->pickScene == NULL)	
-		return -1;
-	NVGpickScene* ps = ctx->pickScene;
-
-	int levelwidth = 1 << (ps->nlevels - 1);
-	int cellx = nvg__clampi((int)(x / ps->xdim), 0, levelwidth-1);
-	int celly = nvg__clampi((int)(y / ps->ydim), 0, levelwidth-1);
-
+	NVGpickScene* ps;
+	int levelwidth;
+	int cellx, celly;
 	int bestOrder = -1;
 	int bestID = -1;
 	int hit = 0;
 	int lvl;	
+
+	if (ctx->pickScene == NULL)	
+		return -1;
+
+	ps = ctx->pickScene;
+
+	levelwidth = 1 << (ps->nlevels - 1);
+	cellx = nvg__clampi((int)(x / ps->xdim), 0, levelwidth-1);
+	celly = nvg__clampi((int)(y / ps->ydim), 0, levelwidth-1);
 
 	for (lvl = ps->nlevels - 1; lvl >= 0; --lvl) {
 		NVGpickPath* pp = ps->levels[lvl][celly*levelwidth + cellx];
@@ -1445,16 +1474,14 @@ int nvgInFill(NVGcontext* ctx, float x, float y)
 	int oldnsegments = ps->nsegments;	
 
 	NVGpickPath* pp = nvg__pickPathCreate(ctx, 1, 0);
+	int hit;
 
-	if (x < pp->bounds[0] ||
-		y < pp->bounds[1] ||
-		x > pp->bounds[2] ||
-		y > pp->bounds[3])
+	if (nvg__pointInBounds(x, y, pp->bounds) == 0)
 		return 0;
 	
-	int	hit = nvg__pickPath(ps, pp, x, y);
+	hit = nvg__pickPath(ps, pp, x, y);
 
-	nvg__returnPickPath(ps, pp);
+	nvg__freePickPath(ps, pp);
 
 	ps->npoints = oldnpoints;
 	ps->nsegments = oldnsegments;
@@ -1470,16 +1497,14 @@ int nvgInStroke(NVGcontext* ctx, float x, float y)
 	int oldnsegments = ps->nsegments;	
 
 	NVGpickPath* pp = nvg__pickPathCreate(ctx, 1, 1);
+	int hit;
 
-	if (x < pp->bounds[0] ||
-		y < pp->bounds[1] ||
-		x > pp->bounds[2] ||
-		y > pp->bounds[3])
+	if (nvg__pointInBounds(x, y, pp->bounds) == 0)
 		return 0;
 	
-	int	hit = nvg__pickPathStroke(ps, pp, x, y);
+	hit = nvg__pickPathStroke(ps, pp, x, y);
 
-	nvg__returnPickPath(ps, pp);
+	nvg__freePickPath(ps, pp);
 
 	ps->npoints = oldnpoints;
 	ps->nsegments = oldnsegments;
@@ -1546,14 +1571,7 @@ static void nvg__pickSceneInsert(NVGpickScene* ps, NVGpickPath* pp)
 	cellbounds[1] = (int)(pp->bounds[1] / ps->ydim);
 	cellbounds[2] = (int)(pp->bounds[2] / ps->xdim);
 	cellbounds[3] = (int)(pp->bounds[3] / ps->ydim);
-/*
-	printf("Inserting (%f, %f -> %f, %f):\n"
-			,	pp->bounds[0], pp->bounds[1]
-			,	pp->bounds[2], pp->bounds[3]);
-	printf("   GridBox (%i, %i -> %i, %i) into level "
-			,	cellbounds[0], cellbounds[1]
-			,	cellbounds[2], cellbounds[3]);
-*/	
+
 	// Find which bits differ between the min/max x/y coords
 	cellbounds[0] ^= cellbounds[2];
 	cellbounds[1] ^= cellbounds[3];
@@ -1571,8 +1589,6 @@ static void nvg__pickSceneInsert(NVGpickScene* ps, NVGpickPath* pp)
 	levelx = nvg__clampi(cellbounds[2] >> levelshift, 0, levelwidth - 1);
 	levely = nvg__clampi(cellbounds[3] >> levelshift, 0, levelwidth - 1);
 
-//	printf("%i @ (%i, %i)\n", level, levelx, levely);
-	
 	// Insert the path into the linked list at that cell.
 	cell = &ps->levels[level][levely * levelwidth + levelx];
 
@@ -1592,14 +1608,14 @@ static void nvg__pickSceneInsert(NVGpickScene* ps, NVGpickPath* pp)
 void nvg__pickBeginFrame(NVGcontext* ctx, int width, int height)
 {
 	NVGpickScene* ps = nvg__pickSceneGet(ctx);
+	float lowestSubDiv;
 
 	NVG_PICK_DEBUG_NEWFRAME();
 
 	// Return all paths & sub paths from last frame to the free list
-	while(ps->paths)
-	{
+	while(ps->paths) {
 		NVGpickPath* pp = ps->paths->next;
-		nvg__returnPickPath(ps, ps->paths);
+		nvg__freePickPath(ps, ps->paths);
 		ps->paths = pp;
 	}
 	
@@ -1610,17 +1626,17 @@ void nvg__pickBeginFrame(NVGcontext* ctx, int width, int height)
 	ps->width = width;
 	ps->height = height;	
 	
-	float lowestSubDiv = (float)(1 << (ps->nlevels - 1));
+	lowestSubDiv = (float)(1 << (ps->nlevels - 1));
 	ps->xdim = (float)width / lowestSubDiv;
 	ps->ydim = (float)height / lowestSubDiv;
 	
 	// Allocate the quadtree if required.
-	if (ps->levels == NULL) {
-		ps->levels = (NVGpickPath***)malloc(sizeof(NVGpickPath**) * ps->nlevels);
-		
+	if (ps->levels == NULL) {	
 		int ncells = 1;
 		int leveldim;
-		int l;
+		int l, cell;
+		
+		ps->levels = (NVGpickPath***)malloc(sizeof(NVGpickPath**) * ps->nlevels);
 		for (l = 0; l < ps->nlevels; ++l) {
 			leveldim = 1 << l;
 			
@@ -1629,7 +1645,7 @@ void nvg__pickBeginFrame(NVGcontext* ctx, int width, int height)
 			
 		ps->levels[0] = (NVGpickPath**)malloc(sizeof(NVGpickPath*) * ncells);
 		
-		int cell = 1;
+		cell = 1;
 		for (l = 1; l < ps->nlevels; l++) {
 			ps->levels[l] = &ps->levels[0][cell];
 			leveldim = 1 << l;

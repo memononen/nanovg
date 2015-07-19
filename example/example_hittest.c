@@ -166,6 +166,16 @@ void render(NVGcontext* vg, float mx, float my, int pickedID)
 	nvgStroke(vg);
 	if (doPick) nvgStrokeHitRegion(vg, id++);
 
+	// Filled rect with hole
+	nvgBeginPath(vg);
+	nvgRect(vg, 150, 20, 100, 100);
+	nvgRect(vg, 200, 50, 60, 60);
+	nvgPathWinding(vg, NVG_CW);
+	nvgLineJoin(vg, NVG_MITER);
+	nvgFillColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 128, 0) );
+	nvgFill(vg);
+	if (doPick) nvgFillHitRegion(vg, id++);
+
 	// Overlapping rects
 
 	nvgBeginPath(vg);
@@ -211,6 +221,16 @@ void render(NVGcontext* vg, float mx, float my, int pickedID)
 	nvgStroke(vg);
 	if (doPick) nvgStrokeHitRegion(vg, id++);
 
+	nvgBeginPath(vg);
+	nvgLineCap(vg, NVG_ROUND);
+	nvgStrokeWidth(vg, 25.0f);
+	nvgStrokeColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
+	nvgMoveTo(vg, 300, 200);
+	nvgLineTo(vg, 400, 200);
+	nvgStroke(vg);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
+
+
 	// Curves
 	nvgBeginPath(vg);
 	nvgLineCap(vg, NVG_ROUND);
@@ -239,6 +259,24 @@ void render(NVGcontext* vg, float mx, float my, int pickedID)
 	nvgStroke(vg);
 	if (doPick) nvgStrokeHitRegion(vg, id++);
 
+	nvgBeginPath(vg);
+	nvgLineCap(vg, NVG_ROUND);
+	nvgStrokeWidth(vg, 25.0f);
+	nvgStrokeColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
+	nvgMoveTo(vg, 300, 550);
+	nvgBezierTo(vg, 350, 550,  400, 550,  450, 550);
+	nvgStroke(vg);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
+
+	nvgBeginPath(vg);
+	nvgLineCap(vg, NVG_ROUND);
+	nvgStrokeWidth(vg, 25.0f);
+	nvgStrokeColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
+	nvgMoveTo(vg, 225, 300);
+	nvgBezierTo(vg, 225, 350,  225, 450,  225, 500);
+	nvgStroke(vg);
+	if (doPick) nvgStrokeHitRegion(vg, id++);
+
 	// Curve Fill
 	nvgBeginPath(vg);
 	nvgMoveTo(vg, 600, 100);
@@ -264,29 +302,40 @@ void render(NVGcontext* vg, float mx, float my, int pickedID)
 
 	// Rect Fill - Alternate pick api
 	nvgBeginPath(vg);
-	nvgRect(vg, 850, 100, 100, 100);
+	nvgRect(vg, 850, 25, 100, 100);
 	nvgFillColor(vg, (nvgInFill(vg, mx, my)) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
 	nvgFill(vg);
 
 	// Rect Stroke - Alternate pick api
 	nvgBeginPath(vg);
-	nvgRect(vg, 850, 250, 100, 100);
+	nvgRect(vg, 850, 175, 100, 100);
 	nvgStrokeWidth(vg, 25.0f);
 	nvgStrokeColor(vg, (nvgInStroke(vg, mx, my)) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
 	nvgStroke(vg);
 
 	// Rect Fill & Rotated Scissor
-	nvgTranslate(vg, 900, 450);	
+	nvgTranslate(vg, 900, 375);	
 	nvgRotate(vg, nvgDegToRad(22.5f));
 	nvgScissor(vg, -50, -50, 100, 100);
 	nvgResetTransform(vg);
 
 	nvgBeginPath(vg);
-	nvgRect(vg, 850, 400, 100, 100);
+	nvgRect(vg, 850, 325, 100, 100);
 	nvgFillColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
 	nvgFill(vg);
 	if (doPick) nvgFillHitRegion(vg, id++);
 	nvgResetTransform(vg);
 	nvgResetScissor(vg);
+	
+	// Filled rect made with curves
+	nvgBeginPath(vg);
+	nvgMoveTo(vg, 850, 450);
+	nvgBezierTo(vg, 875, 450,  925, 450,  950, 450);
+	nvgBezierTo(vg, 950, 475,  950, 525,  950, 550);
+	nvgBezierTo(vg, 925, 550,  875, 550,  850, 550);
+	nvgBezierTo(vg, 850, 525,  850, 475,  850, 450);
+	nvgFillColor(vg, (pickedID == id) ? nvgRGB(255, 0, 0) : nvgRGB(0, 255, 0) );
+	nvgFill(vg);
+	if (doPick) nvgFillHitRegion(vg, id++);
 }
 
