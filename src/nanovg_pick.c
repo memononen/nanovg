@@ -13,10 +13,9 @@ enum NVGsegmentFlags {
 
 // Path flags
 enum NVGpathFlags {
-	NVG_PICK_HASHOLES = 1,
-	NVG_PICK_SCISSOR = 2,
-	NVG_PICK_STROKE = 4,
-	NVG_PICK_FILL = 8,
+	NVG_PICK_SCISSOR = 1,
+	NVG_PICK_STROKE = 2,
+	NVG_PICK_FILL = 4,
 };
 
 //#define NVG_PICK_DEBUG
@@ -559,7 +558,7 @@ static NVGpickPath* nvg__pickPathCreate(NVGcontext* context, int id, int forStro
 		}
 	}
 	
-	pp->flags = (hasHoles ? NVG_PICK_HASHOLES : 0) | (forStroke ? NVG_PICK_STROKE : NVG_PICK_FILL);
+	pp->flags = forStroke ? NVG_PICK_STROKE : NVG_PICK_FILL;
 	pp->subPaths = psp;
 	pp->strokeWidth = state->strokeWidth * 0.5f;
 	pp->miterLimit = state->miterLimit;
@@ -639,17 +638,6 @@ static void nvg__freePickPath(NVGpickScene* ps, NVGpickPath* pp)
 	ps->freePaths = pp;	
 	if (pp->next == NULL)
 		ps->lastPath = pp;
-}
-
-static void nvg__deletePickPath(NVGpickPath* pp)
-{
-	NVGpickSubPath* psp = NULL;
-	while (pp->subPaths) {
-		psp = pp->subPaths;
-		pp->subPaths = psp->next;
-		free(psp);
-	}
-	free(pp);
 }
 
 static NVGpickSubPath* nvg__allocPickSubPath(NVGpickScene* ps)
