@@ -18,20 +18,27 @@ to build examples on osx with homebrew glfw3 library
 * install [homebrew](http://brew.sh/)
 
 * install homebrew glfw3 lib
+
 	$ brew tap homebrew/versions
+
 	$ brew install --build-bottle glfw3
 
 * install homebrew premake
+
 	$ brew install premake
 
 * clone nanovg and cd into it
+
 	$ cd <build>/nanovg
 
 * use premake to build osx version of gnu make scripts
+
 	$ premake4 gmake --os=macosx premake4.lua
 
 * cd to build dir and make examples
+
 	$ cd build
+	
 	$ make
 
 
