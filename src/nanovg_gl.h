@@ -387,7 +387,7 @@ static void glnvg__checkError(GLNVGcontext* gl, const char* str)
 	if ((gl->flags & NVG_DEBUG) == 0) return;
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
-		printf("Error %08x after %s\n", err, str);
+		printf("Error %08x after %s\n", (unsigned int) err, str);
 		return;
 	}
 }
@@ -412,14 +412,14 @@ static int glnvg__createShader(GLNVGshader* shader, const char* name, const char
 
 	glCompileShader(vert);
 	glGetShaderiv(vert, GL_COMPILE_STATUS, &status);
-	if (status != GL_TRUE) {
+	if ((GLboolean) status != GL_TRUE) {
 		glnvg__dumpShaderError(vert, name, "vert");
 		return 0;
 	}
 
 	glCompileShader(frag);
 	glGetShaderiv(frag, GL_COMPILE_STATUS, &status);
-	if (status != GL_TRUE) {
+	if ((GLboolean) status != GL_TRUE) {
 		glnvg__dumpShaderError(frag, name, "frag");
 		return 0;
 	}
@@ -432,7 +432,7 @@ static int glnvg__createShader(GLNVGshader* shader, const char* name, const char
 
 	glLinkProgram(prog);
 	glGetProgramiv(prog, GL_LINK_STATUS, &status);
-	if (status != GL_TRUE) {
+	if ((GLboolean) status != GL_TRUE) {
 		glnvg__dumpProgramError(prog, name);
 		return 0;
 	}
@@ -720,32 +720,32 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 #endif
 
 	if (type == NVG_TEXTURE_RGBA)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, (GLint) GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	else
 #if defined(NANOVG_GLES2)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, w, h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, (GLint) GL_LUMINANCE, w, h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
 #elif defined(NANOVG_GLES3)
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, (GLint) GL_R8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 #else
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, (GLint) GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 #endif
 
 	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLint) GL_LINEAR_MIPMAP_LINEAR);
 	} else {
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLint) GL_LINEAR);
 	}
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (GLint) GL_LINEAR);
 
 	if (imageFlags & NVG_IMAGE_REPEATX)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (GLint) GL_REPEAT);
 	else
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (GLint) GL_CLAMP_TO_EDGE);
 
 	if (imageFlags & NVG_IMAGE_REPEATY)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (GLint) GL_REPEAT);
 	else
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (GLint) GL_CLAMP_TO_EDGE);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 #ifndef NANOVG_GLES2
