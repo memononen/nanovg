@@ -17,9 +17,8 @@
 //
 
 #include <stdio.h>
-#ifdef NANOVG_GLEW
-#  include <GL/glew.h>
-#endif
+
+#include OGL_LOADER
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
 #define NANOVG_GL2_IMPLEMENTATION
@@ -84,12 +83,11 @@ int main()
 	glfwSetKeyCallback(window, key);
 
 	glfwMakeContextCurrent(window);
-#ifdef NANOVG_GLEW
-    if(glewInit() != GLEW_OK) {
-		printf("Could not init glew.\n");
+
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+		glfwTerminate();
 		return -1;
 	}
-#endif
 
 #ifdef DEMO_MSAA
 	vg = nvgCreateGL2(NVG_STENCIL_STROKES | NVG_DEBUG);
