@@ -70,6 +70,7 @@ typedef struct FONSquad FONSquad;
 
 struct FONStextIter {
 	float x, y, nextx, nexty, scale, spacing;
+	int oversampleH, oversampleV;
 	unsigned int codepoint;
 	short isize, iblur;
 	struct FONSfont* font;
@@ -189,11 +190,18 @@ int fons__tt_getGlyphIndex(FONSttFontImpl *font, int codepoint)
 }
 
 int fons__tt_buildGlyphBitmap(FONSttFontImpl *font, int glyph, float size, float scale,
-							  int *advance, int *lsb, int *x0, int *y0, int *x1, int *y1)
+							  int oversampleH, int oversampleV,
+							  int *advance, int *lsb, int *x0, int *y0, int *x1, int *y1,
+	                          float *subX, float *subY)
 {
 	FT_Error ftError;
 	FT_GlyphSlot ftGlyph;
 	FONS_NOTUSED(scale);
+
+	// @@ How should we handle FreeType?
+
+	FONS_NOTUSED(oversampleH);
+	FONS_NOTUSED(oversampleV);
 
 	ftError = FT_Set_Pixel_Sizes(font->font, 0, (FT_UInt)(size * (float)font->font->units_per_EM / (float)(font->font->ascender - font->font->descender)));
 	if (ftError) return 0;
@@ -207,11 +215,13 @@ int fons__tt_buildGlyphBitmap(FONSttFontImpl *font, int glyph, float size, float
 	*x1 = *x0 + ftGlyph->bitmap.width;
 	*y0 = -ftGlyph->bitmap_top;
 	*y1 = *y0 + ftGlyph->bitmap.rows;
+	*subX = 0;
+	*subY = 0;
 	return 1;
 }
 
 void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *output, int outWidth, int outHeight, int outStride,
-								float scaleX, float scaleY, int glyph)
+								float scaleX, float scaleY, int oversampleH, int oversampleV, int glyph)
 {
 	FT_GlyphSlot ftGlyph = font->font->glyph;
 	int ftGlyphOffset = 0;
@@ -220,6 +230,8 @@ void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *output, int
 	FONS_NOTUSED(outHeight);
 	FONS_NOTUSED(scaleX);
 	FONS_NOTUSED(scaleY);
+	FONS_NOTUSED(oversampleH);
+	FONS_NOTUSED(oversampleV);
 	FONS_NOTUSED(glyph);	// glyph has already been loaded by fons__tt_buildGlyphBitmap
 
 	for ( y = 0; y < ftGlyph->bitmap.rows; y++ ) {
@@ -282,18 +294,40 @@ int fons__tt_getGlyphIndex(FONSttFontImpl *font, int codepoint)
 }
 
 int fons__tt_buildGlyphBitmap(FONSttFontImpl *font, int glyph, float size, float scale,
-							  int *advance, int *lsb, int *x0, int *y0, int *x1, int *y1)
+							  int oversampleH, int oversampleV,
+							  int *advance, int *lsb, int *x0, int *y0, int *x1, int *y1,
+							  float *subX, float *subY)
 {
 	FONS_NOTUSED(size);
 	stbtt_GetGlyphHMetrics(&font->font, glyph, advance, lsb);
-	stbtt_GetGlyphBitmapBox(&font->font, glyph, scale, scale, x0, y0, x1, y1);
+	stbtt_GetGlyphBitmapBox(&font->font, glyph, scale * oversampleH, scale * oversampleV, x0, y0, x1, y1);
+	*subX = stbtt__oversample_shift(oversampleH);
+	*subY = stbtt__oversample_shift(oversampleV);
 	return 1;
 }
 
 void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *output, int outWidth, int outHeight, int outStride,
-								float scaleX, float scaleY, int glyph)
+								float scaleX, float scaleY, int oversampleH, int oversampleV, int glyph)
 {
-	stbtt_MakeGlyphBitmap(&font->font, output, outWidth, outHeight, outStride, scaleX, scaleY, glyph);
+	stbtt_MakeGlyphBitmapSubpixel(&font->font,
+		output, 
+		outWidth - oversampleH + 1,
+		outHeight - oversampleV + 1,
+		outStride, 
+		scaleX * oversampleH, 
+		scaleY * oversampleV,
+		0, 0, 
+		glyph);
+
+	if (oversampleH > 1)
+		stbtt__h_prefilter(output, 
+			outWidth, outHeight, outStride, 
+			oversampleH);
+
+	if (oversampleV > 1)
+		stbtt__v_prefilter(output, 
+			outWidth, outHeight, outStride, 
+			oversampleV);
 }
 
 int fons__tt_getGlyphKernAdvance(FONSttFontImpl *font, int glyph1, int glyph2)
@@ -353,7 +387,12 @@ struct FONSglyph
 	int next;
 	short size, blur;
 	short x0,y0,x1,y1;
-	short xadv,xoff,yoff;
+	int oversampleV, oversampleH;
+
+	// @@ Using shorts and mul/div by 10 is probably overkill at 
+	//    this point, unless we REALLY need to save that memory?
+
+	float xadv,xoff,yoff,xoff2,yoff2;
 };
 typedef struct FONSglyph FONSglyph;
 
@@ -382,6 +421,8 @@ struct FONSstate
 	unsigned int color;
 	float blur;
 	float spacing;
+	int oversampleH;
+	int oversampleV;
 };
 typedef struct FONSstate FONSstate;
 
@@ -781,6 +822,12 @@ void fonsSetFont(FONScontext* stash, int font)
 	fons__getState(stash)->font = font;
 }
 
+void fonsSetOversample(FONScontext* stash, int oversampleH, int oversampleV)
+{
+	fons__getState(stash)->oversampleH = oversampleH;
+	fons__getState(stash)->oversampleV = oversampleV;
+}
+
 void fonsPushState(FONScontext* stash)
 {
 	if (stash->nstates >= FONS_MAX_STATES) {
@@ -811,6 +858,8 @@ void fonsClearState(FONScontext* stash)
 	state->font = 0;
 	state->blur = 0;
 	state->spacing = 0;
+	state->oversampleH = 2;
+	state->oversampleV = 2;
 	state->align = FONS_ALIGN_LEFT | FONS_ALIGN_BASELINE;
 }
 
@@ -856,7 +905,30 @@ int fonsAddFont(FONScontext* stash, const char* name, const char* path)
 	unsigned char* data = NULL;
 
 	// Read in the font data.
+#ifdef _WIN32
+	unsigned int codepoint;
+	unsigned int utf8state = 0;
+	const char *end = path + strlen(path);
+	wchar_t path16[1024];
+	int pathSize = 0;
+	for (; path != end; ++path) {
+		if (fons__decutf8(&utf8state, &codepoint, *(const unsigned char*)path))
+			continue;
+
+		if (codepoint >= 0x10000) {
+			path16[pathSize++] = (wchar_t)(0xD7C0 + (codepoint >> 10));
+			if (pathSize > 1023) goto error;
+			codepoint = 0xDC00 | (codepoint & 0x3ff);
+		}
+		path16[pathSize++] = (wchar_t)codepoint;
+		if (pathSize > 1023) goto error;
+	}
+
+	path16[pathSize] = 0;
+	_wfopen_s(&fp, path16, L"rb");
+#else
 	fp = fopen(path, "rb");
+#endif
 	if (fp == NULL) goto error;
 	fseek(fp,0,SEEK_END);
 	dataSize = (int)ftell(fp);
@@ -1007,20 +1079,34 @@ static void fons__blur(FONScontext* stash, unsigned char* dst, int w, int h, int
 }
 
 static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned int codepoint,
-								 short isize, short iblur)
+								 short isize, short iblur, int oversampleH, int oversampleV)
 {
 	int i, g, advance, lsb, x0, y0, x1, y1, gw, gh, gx, gy, x, y;
 	float scale;
 	FONSglyph* glyph = NULL;
 	unsigned int h;
 	float size = isize/10.0f;
+	float subX, subY;
+	float recipH, recipV;
 	int pad, added;
 	unsigned char* bdst;
 	unsigned char* dst;
 
 	if (isize < 2) return NULL;
 	if (iblur > 20) iblur = 20;
-	pad = iblur+2;
+	if (oversampleH < 1) oversampleH = 1;
+	if (oversampleV < 1) oversampleV = 1;
+
+	// Only use extra 1px "leak" padding if blurring (otherwise it breaks oversampling)
+	// To compensate, we disable oversampling if blurred (doesn't make sense to combine anyway)
+	pad = 1;
+	if (iblur > 0) {
+		pad += iblur + 1;
+		oversampleH = 1;
+		oversampleV = 1;
+	}
+	recipH = 1.0f / oversampleH;
+	recipV = 1.0f / oversampleV;
 
 	// Reset allocator.
 	stash->nscratch = 0;
@@ -1029,17 +1115,21 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	h = fons__hashint(codepoint) & (FONS_HASH_LUT_SIZE-1);
 	i = font->lut[h];
 	while (i != -1) {
-		if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur)
+		if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur &&
+			font->glyphs[i].oversampleH == oversampleH && font->glyphs[i].oversampleV == oversampleV)
+		{
 			return &font->glyphs[i];
+		}
 		i = font->glyphs[i].next;
 	}
 
 	// Could not find glyph, create it.
 	scale = fons__tt_getPixelHeightScale(&font->font, size);
 	g = fons__tt_getGlyphIndex(&font->font, codepoint);
-	fons__tt_buildGlyphBitmap(&font->font, g, size, scale, &advance, &lsb, &x0, &y0, &x1, &y1);
-	gw = x1-x0 + pad*2;
-	gh = y1-y0 + pad*2;
+	fons__tt_buildGlyphBitmap(&font->font, g, size, scale, oversampleH, oversampleV, &advance, &lsb, &x0, &y0, &x1, &y1, &subX, &subY);
+    
+	gw = x1-x0 + pad*2 + oversampleH-1;
+	gh = y1-y0 + pad*2 + oversampleV-1;
 
 	// Find free spot for the rect in the atlas
 	added = fons__atlasAddRect(stash->atlas, gw, gh, &gx, &gy);
@@ -1055,14 +1145,18 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	glyph->codepoint = codepoint;
 	glyph->size = isize;
 	glyph->blur = iblur;
+	glyph->oversampleH = oversampleH;
+	glyph->oversampleV = oversampleV;
 	glyph->index = g;
 	glyph->x0 = (short)gx;
 	glyph->y0 = (short)gy;
 	glyph->x1 = (short)(glyph->x0+gw);
 	glyph->y1 = (short)(glyph->y0+gh);
-	glyph->xadv = (short)(scale * advance * 10.0f);
-	glyph->xoff = (short)(x0 - pad);
-	glyph->yoff = (short)(y0 - pad);
+	glyph->xadv = scale * advance;
+	glyph->xoff = x0 * recipH - pad + subX;
+	glyph->yoff = y0 * recipV - pad + subY;
+	glyph->xoff2 = (x0+gw-pad*2) * recipH + pad + subX;
+	glyph->yoff2 = (y0+gh-pad*2) * recipV + pad + subY;
 	glyph->next = 0;
 
 	// Insert char to hash lookup.
@@ -1071,7 +1165,7 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 
 	// Rasterize
 	dst = &stash->texData[(glyph->x0+pad) + (glyph->y0+pad) * stash->params.width];
-	fons__tt_renderGlyphBitmap(&font->font, dst, gw-pad*2,gh-pad*2, stash->params.width, scale,scale, g);
+	fons__tt_renderGlyphBitmap(&font->font, dst, gw-pad*2, gh-pad*2, stash->params.width, scale, scale, oversampleH, oversampleV, g);
 
 	// Make sure there is one pixel empty border.
 	dst = &stash->texData[glyph->x0 + glyph->y0 * stash->params.width];
@@ -1113,52 +1207,42 @@ static void fons__getQuad(FONScontext* stash, FONSfont* font,
 						   int prevGlyphIndex, FONSglyph* glyph,
 						   float scale, float spacing, float* x, float* y, FONSquad* q)
 {
-	float rx,ry,xoff,yoff,x0,y0,x1,y1;
-
+	float xoff, yoff, xoff2, yoff2;
+	short x0, y0, x1, y1;
 	if (prevGlyphIndex != -1) {
 		float adv = fons__tt_getGlyphKernAdvance(&font->font, prevGlyphIndex, glyph->index) * scale;
-		*x += (int)(adv + spacing + 0.5f);
+		*x += adv + spacing;
 	}
 
-	// Each glyph has 2px border to allow good interpolation,
+	// Each blurred glyph has 2px border to allow good interpolation,
 	// one pixel to prevent leaking, and one to allow good interpolation for rendering.
+	// Each non-blurred (probably oversampled) glyph has 1px border for interpolation.
 	// Inset the texture region by one pixel for correct interpolation.
-	xoff = (short)(glyph->xoff+1);
-	yoff = (short)(glyph->yoff+1);
-	x0 = (float)(glyph->x0+1);
-	y0 = (float)(glyph->y0+1);
-	x1 = (float)(glyph->x1-1);
-	y1 = (float)(glyph->y1-1);
+	xoff = glyph->xoff+1;
+	yoff = glyph->yoff+1;
+	xoff2 = glyph->xoff2-1;
+	yoff2 = glyph->yoff2-1;
+	x0 = glyph->x0+1;
+	y0 = glyph->y0+1;
+	x1 = glyph->x1-1;
+	y1 = glyph->y1-1;
 
-	if (stash->params.flags & FONS_ZERO_TOPLEFT) {
-		rx = (float)(int)(*x + xoff);
-		ry = (float)(int)(*y + yoff);
+	// @@ Do we want option to calculate pixel-snapped coords?
 
-		q->x0 = rx;
-		q->y0 = ry;
-		q->x1 = rx + x1 - x0;
-		q->y1 = ry + y1 - y0;
+	q->x0 = *x + xoff;
+	q->y0 = *y + yoff;
+	q->x1 = *x + xoff2;
+	if (stash->params.flags & FONS_ZERO_TOPLEFT)
+		q->y1 = *y + yoff2;
+	else
+		q->y1 = *y - yoff2;
 
-		q->s0 = x0 * stash->itw;
-		q->t0 = y0 * stash->ith;
-		q->s1 = x1 * stash->itw;
-		q->t1 = y1 * stash->ith;
-	} else {
-		rx = (float)(int)(*x + xoff);
-		ry = (float)(int)(*y - yoff);
+	q->s0 = x0 * stash->itw;
+	q->t0 = y0 * stash->ith;
+	q->s1 = x1 * stash->itw;
+	q->t1 = y1 * stash->ith;
 
-		q->x0 = rx;
-		q->y0 = ry;
-		q->x1 = rx + x1 - x0;
-		q->y1 = ry - y1 + y0;
-
-		q->s0 = x0 * stash->itw;
-		q->t0 = y0 * stash->ith;
-		q->s1 = x1 * stash->itw;
-		q->t1 = y1 * stash->ith;
-	}
-
-	*x += (int)(glyph->xadv / 10.0f + 0.5f);
+	*x += glyph->xadv;
 }
 
 static void fons__flush(FONScontext* stash)
@@ -1260,7 +1344,7 @@ float fonsDrawText(FONScontext* stash,
 	for (; str != end; ++str) {
 		if (fons__decutf8(&utf8state, &codepoint, *(const unsigned char*)str))
 			continue;
-		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur);
+		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur, state->oversampleH, state->oversampleV);
 		if (glyph != NULL) {
 			fons__getQuad(stash, font, prevGlyphIndex, glyph, scale, state->spacing, &x, &y, &q);
 
@@ -1323,6 +1407,8 @@ int fonsTextIterInit(FONScontext* stash, FONStextIter* iter,
 	iter->end = end;
 	iter->codepoint = 0;
 	iter->prevGlyphIndex = -1;
+	iter->oversampleH = state->oversampleH;
+	iter->oversampleV = state->oversampleV;
 
 	return 1;
 }
@@ -1343,7 +1429,7 @@ int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, FONSquad* quad)
 		// Get glyph and quad
 		iter->x = iter->nextx;
 		iter->y = iter->nexty;
-		glyph = fons__getGlyph(stash, iter->font, iter->codepoint, iter->isize, iter->iblur);
+		glyph = fons__getGlyph(stash, iter->font, iter->codepoint, iter->isize, iter->iblur, iter->oversampleH, iter->oversampleV);
 		if (glyph != NULL)
 			fons__getQuad(stash, iter->font, iter->prevGlyphIndex, glyph, iter->scale, iter->spacing, &iter->nextx, &iter->nexty, quad);
 		iter->prevGlyphIndex = glyph != NULL ? glyph->index : -1;
@@ -1440,7 +1526,7 @@ float fonsTextBounds(FONScontext* stash,
 	for (; str != end; ++str) {
 		if (fons__decutf8(&utf8state, &codepoint, *(const unsigned char*)str))
 			continue;
-		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur);
+		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur, state->oversampleH, state->oversampleV);
 		if (glyph != NULL) {
 			fons__getQuad(stash, font, prevGlyphIndex, glyph, scale, state->spacing, &x, &y, &q);
 			if (q.x0 < minx) minx = q.x0;

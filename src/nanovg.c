@@ -2545,11 +2545,13 @@ int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, floa
 					breakMaxX = 0.0;
 				}
 			} else {
-				float nextWidth = iter.nextx - rowStartX;
+				// Glyph bounds (q.x1) indicates end. Advance (iter.nextx) doesn't work because it could be inside glyph bounds.
+				float nextWidth = q.x1 - rowStartX;
 
 				// track last non-white space character
 				if (type == NVG_CHAR) {
 					rowEnd = iter.next;
+					// @@ Should this use glyph bounds instead of advance too? Why using advance here?
 					rowWidth = iter.nextx - rowStartX;
 					rowMaxX = q.x1 - rowStartX;
 				}
