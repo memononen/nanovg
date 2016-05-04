@@ -15,15 +15,15 @@
 //    misrepresented as being the original software.
 // 3. This notice may not be removed or altered from any source distribution.
 //
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
-#include "nanovg.h"
-
 #ifndef NANOVG_INTERNAL_H
 #define NANOVG_INTERNAL_H
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include <memory.h>
+
+#include "nanovg.h"
 
 #ifdef __cplusplus
 extern "C" {

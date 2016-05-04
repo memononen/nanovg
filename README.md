@@ -92,6 +92,7 @@ The data for the whole frame is buffered and flushed in `nvgEndFrame()`. The fol
 	glBindVertexArray(arr);
 	glBindBuffer(GL_ARRAY_BUFFER, buf);
 	glBindTexture(GL_TEXTURE_2D, tex);
+	glUniformBlockBinding(... , GLNVG_FRAG_BINDING);
 ```
 
 ## API Reference
