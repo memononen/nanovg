@@ -939,7 +939,7 @@ static int nvg__intersectLine(const float* points, float x, float y)
 	float d = y2 - y1;
 	float s, lineX;
 	
-	if (d > 0) {
+	if ( d > NVG_PICK_EPS || d < -NVG_PICK_EPS ) {
 		s = (x2 - x1) / d;	
 		lineX = x1 + (y - y1) * s;
 		return lineX > x;
