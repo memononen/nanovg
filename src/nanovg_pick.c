@@ -499,6 +499,7 @@ static NVGpickPath* nvg__pickPathCreate(NVGcontext* context, int id, int forStro
 			memcpy(&points[0], &ps->points[(ps->npoints - 1) * 2], sizeof(float) * 2);
 			memcpy(&points[2], &commands[i+1], sizeof(float) * 2 * 3);
 							
+			ninflections = 0;
 			nvg__bezierInflections(points, 1, &ninflections, inflections);
 			nvg__bezierInflections(points, 0, &ninflections, inflections);
 			
