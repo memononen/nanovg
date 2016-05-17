@@ -487,7 +487,7 @@ void nvgStroke(NVGcontext* ctx);
 // Returns handle to the font.
 int nvgCreateFont(NVGcontext* ctx, const char* name, const char* filename);
 
-// Creates image by loading it from the specified memory chunk.
+// Creates font by loading it from the specified memory chunk.
 // Returns handle to the font.
 int nvgCreateFontMem(NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int freeData);
 
