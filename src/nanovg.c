@@ -2475,7 +2475,7 @@ int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, floa
 
 	breakRowWidth *= scale;
 
-	fonsTextIterInit(ctx->fs, &iter, 0, 0, string, end);
+	fonsTextIterInit(ctx->fs, &iter, 0.0f, 0.0f, string, end);
 	prevIter = iter;
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
 		if (iter.prevGlyphIndex < 0 && nvg__allocTextAtlas(ctx)) { // can not retrieve glyph?
