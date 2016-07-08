@@ -20,9 +20,6 @@
 #define GLFW_INCLUDE_ES3
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
-#define NANOVG_GLES3_IMPLEMENTATION
-#include "nanovg_gl.h"
-#include "nanovg_gl_utils.h"
 #include "demo.h"
 #include "perf.h"
 
@@ -82,7 +79,12 @@ int main()
 
 	glfwMakeContextCurrent(window);
 
-	vg = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+	if(glewInit() != GLEW_OK) {
+		printf("Could not init glew.\n");
+		return -1;
+	}
+
+	vg = nvgCreateGL(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
 		return -1;
@@ -147,7 +149,7 @@ int main()
 
 	freeDemoData(vg, &data);
 
-	nvgDeleteGLES3(vg);
+	nvgDeleteGL(vg);
 
 	glfwTerminate();
 	return 0;

@@ -22,6 +22,9 @@
 #include <memory.h>
 
 #include "nanovg.h"
+#include "nanovg_gl.h"
+#include "nanovg_gl_utils.h"
+
 #define FONTSTASH_IMPLEMENTATION
 #include "fontstash.h"
 #define STB_IMAGE_IMPLEMENTATION
@@ -47,6 +50,24 @@
 #define NVG_KAPPA90 0.5522847493f	// Length proportional to radius of a cubic bezier handle for 90deg arcs.
 
 #define NVG_COUNTOF(arr) (sizeof(arr) / sizeof(0[arr]))
+
+struct NVGparams {
+	void* userPtr;
+	int edgeAntiAlias;
+	int (*renderCreate)(GLNVGcontext* gl);
+	int (*renderCreateTexture)(GLNVGcontext* gl, int type, int w, int h, int imageFlags, const unsigned char* data);
+	int (*renderDeleteTexture)(GLNVGcontext* gl, int image);
+	int (*renderUpdateTexture)(GLNVGcontext* gl, int image, int x, int y, int w, int h, const unsigned char* data);
+	int (*renderGetTextureSize)(GLNVGcontext* gl, int image, int* w, int* h);
+	void (*renderViewport)(GLNVGcontext* gl, int width, int height);
+	void (*renderCancel)(GLNVGcontext* gl);
+	void (*renderFlush)(GLNVGcontext* gl);
+	void (*renderFill)(GLNVGcontext* gl, NVGpaint* paint, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths);
+	void (*renderStroke)(GLNVGcontext* gl, NVGpaint* paint, NVGscissor* scissor, float fringe, float strokeWidth, const NVGpath* paths, int npaths);
+	void (*renderTriangles)(GLNVGcontext* gl, NVGpaint* paint, NVGscissor* scissor, const NVGvertex* verts, int nverts);
+	void (*renderDelete)(GLNVGcontext* gl);
+};
+typedef struct NVGparams NVGparams;
 
 
 enum NVGcommands {
@@ -203,6 +224,29 @@ static void nvg__setDevicePixelRatio(NVGcontext* ctx, float ratio)
 	ctx->devicePxRatio = ratio;
 }
 
+void nvgDeleteInternal(NVGcontext* ctx)
+{
+	int i;
+	if (ctx == NULL) return;
+	if (ctx->commands != NULL) free(ctx->commands);
+	if (ctx->cache != NULL) nvg__deletePathCache(ctx->cache);
+
+	if (ctx->fs)
+		fonsDeleteInternal(ctx->fs);
+
+	for (i = 0; i < NVG_MAX_FONTIMAGES; i++) {
+		if (ctx->fontImages[i] != 0) {
+			nvgDeleteImage(ctx, ctx->fontImages[i]);
+			ctx->fontImages[i] = 0;
+		}
+	}
+
+	if (ctx->params.renderDelete != NULL)
+		ctx->params.renderDelete(ctx->params.userPtr);
+
+	free(ctx);
+}
+
 NVGcontext* nvgCreateInternal(NVGparams* params)
 {
 	FONSparams fontParams;
@@ -259,30 +303,6 @@ NVGparams* nvgInternalParams(NVGcontext* ctx)
 {
     return &ctx->params;
 }
-
-void nvgDeleteInternal(NVGcontext* ctx)
-{
-	int i;
-	if (ctx == NULL) return;
-	if (ctx->commands != NULL) free(ctx->commands);
-	if (ctx->cache != NULL) nvg__deletePathCache(ctx->cache);
-
-	if (ctx->fs)
-		fonsDeleteInternal(ctx->fs);
-
-	for (i = 0; i < NVG_MAX_FONTIMAGES; i++) {
-		if (ctx->fontImages[i] != 0) {
-			nvgDeleteImage(ctx, ctx->fontImages[i]);
-			ctx->fontImages[i] = 0;
-		}
-	}
-
-	if (ctx->params.renderDelete != NULL)
-		ctx->params.renderDelete(ctx->params.userPtr);
-
-	free(ctx);
-}
-
 void nvgBeginFrame(NVGcontext* ctx, int windowWidth, int windowHeight, float devicePixelRatio)
 {
 /*	printf("Tris: draws:%d  fill:%d  stroke:%d  text:%d  TOT:%d\n",
@@ -2752,4 +2772,71 @@ void nvgTextMetrics(NVGcontext* ctx, float* ascender, float* descender, float* l
 	if (lineh != NULL)
 		*lineh *= invscale;
 }
+
+
+NVGcontext* nvgCreateGL(int flags)
+{
+	NVGparams params;
+	NVGcontext* ctx = NULL;
+	GLNVGcontext* gl = (GLNVGcontext*)malloc(sizeof(GLNVGcontext));
+	if (gl == NULL) goto error;
+	memset(gl, 0, sizeof(GLNVGcontext));
+
+	memset(&params, 0, sizeof(params));
+	params.renderCreate = glnvg__renderCreate;
+	params.renderCreateTexture = glnvg__renderCreateTexture;
+	params.renderDeleteTexture = glnvg__renderDeleteTexture;
+	params.renderUpdateTexture = glnvg__renderUpdateTexture;
+	params.renderGetTextureSize = glnvg__renderGetTextureSize;
+	params.renderViewport = glnvg__renderViewport;
+	params.renderCancel = glnvg__renderCancel;
+	params.renderFlush = glnvg__renderFlush;
+	params.renderFill = glnvg__renderFill;
+	params.renderStroke = glnvg__renderStroke;
+	params.renderTriangles = glnvg__renderTriangles;
+	params.renderDelete = glnvg__renderDelete;
+	params.userPtr = gl;
+	params.edgeAntiAlias = flags & NVG_ANTIALIAS ? 1 : 0;
+
+	gl->flags = flags;
+
+	ctx = nvgCreateInternal(&params);
+	if (ctx == NULL) goto error;
+
+	return ctx;
+
+error:
+	// 'gl' is freed by nvgDeleteInternal.
+	if (ctx != NULL) nvgDeleteInternal(ctx);
+	return NULL;
+}
+
+void nvgDeleteGL(NVGcontext* ctx)
+{
+	nvgDeleteInternal(ctx);
+}
+
+int nvglCreateImageFromHandleGL(NVGcontext* ctx, GLuint textureId, int w, int h, int imageFlags)
+{
+	GLNVGcontext* gl = (GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
+	GLNVGtexture* tex = glnvg__allocTexture(gl);
+
+	if (tex == NULL) return 0;
+
+	tex->type = NVG_TEXTURE_RGBA;
+	tex->tex = textureId;
+	tex->flags = imageFlags;
+	tex->width = w;
+	tex->height = h;
+
+	return tex->id;
+}
+
+GLuint nvglImageHandleGL(NVGcontext* ctx, int image)
+{
+	GLNVGcontext* gl = (GLNVGcontext*)nvgInternalParams(ctx)->userPtr;
+	GLNVGtexture* tex = glnvg__findTexture(gl, image);
+	return tex->tex;
+}
+
 // vim: ft=c nu noet ts=4
