@@ -18,6 +18,8 @@
 #ifndef NANOVG_GL_UTILS_H
 #define NANOVG_GL_UTILS_H
 
+#include "nanovg.h"
+
 struct NVGLUframebuffer {
 	NVGcontext* ctx;
 	GLuint fbo;
@@ -27,6 +29,7 @@ struct NVGLUframebuffer {
 };
 typedef struct NVGLUframebuffer NVGLUframebuffer;
 
+ 
 // Helper function to create GL frame buffer to render to.
 void nvgluBindFramebuffer(NVGLUframebuffer* fb);
 NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h, int imageFlags);
@@ -47,7 +50,9 @@ void nvgluDeleteFramebuffer(NVGLUframebuffer* fb);
 #	endif
 #endif
 
+#ifdef NANOVG_FBO_VALID
 static GLint defaultFBO = -1;
+#endif
 
 NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h, int imageFlags)
 {
@@ -65,15 +70,7 @@ NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* ctx, int w, int h, int imag
 
 	fb->image = nvgCreateImageRGBA(ctx, w, h, imageFlags | NVG_IMAGE_FLIPY | NVG_IMAGE_PREMULTIPLIED, NULL);
 
-#if defined NANOVG_GL2
-	fb->texture = nvglImageHandleGL2(ctx, fb->image);
-#elif defined NANOVG_GL3
-	fb->texture = nvglImageHandleGL3(ctx, fb->image);
-#elif defined NANOVG_GLES2
-	fb->texture = nvglImageHandleGLES2(ctx, fb->image);
-#elif defined NANOVG_GLES3
-	fb->texture = nvglImageHandleGLES3(ctx, fb->image);
-#endif
+	fb->texture = nvglImageHandleGL(ctx, fb->image);
 
 	fb->ctx = ctx;
 
@@ -118,6 +115,7 @@ void nvgluBindFramebuffer(NVGLUframebuffer* fb)
 	NVG_NOTUSED(fb);
 #endif
 }
+
 
 void nvgluDeleteFramebuffer(NVGLUframebuffer* fb)
 {

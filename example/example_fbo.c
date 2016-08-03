@@ -17,17 +17,10 @@
 //
 
 #include <stdio.h>
-#ifdef NANOVG_GLEW
-#	include <GL/glew.h>
-#endif
-#ifdef __APPLE__
-#	define GLFW_INCLUDE_GLCOREARB
-#endif
+#include <math.h>
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
-#define NANOVG_GL3_IMPLEMENTATION
-#include "nanovg_gl.h"
-#include "nanovg_gl_utils.h"
 #include "perf.h"
 
 void renderPattern(NVGcontext* vg, NVGLUframebuffer* fb, float t, float pxRatio)
@@ -142,7 +135,7 @@ int main()
 	glfwSetKeyCallback(window, key);
 
 	glfwMakeContextCurrent(window);
-#ifdef NANOVG_GLEW
+
 	glewExperimental = GL_TRUE;
 	if(glewInit() != GLEW_OK) {
 		printf("Could not init glew.\n");
@@ -150,12 +143,11 @@ int main()
 	}
 	// GLEW generates GL error because it calls glGetString(GL_EXTENSIONS), we'll consume it here.
 	glGetError();
-#endif
 
 #ifdef DEMO_MSAA
-	vg = nvgCreateGL3(NVG_STENCIL_STROKES | NVG_DEBUG);
+	vg = nvgCreateGL(NVG_STENCIL_STROKES | NVG_DEBUG);
 #else
-	vg = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+	vg = nvgCreateGL(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 #endif
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
@@ -261,7 +253,7 @@ int main()
 
 	nvgluDeleteFramebuffer(fb);
 
-	nvgDeleteGL3(vg);
+	nvgDeleteGL(vg);
 
 	printf("Average Frame Time: %.2f ms\n", getGraphAverage(&fps) * 1000.0f);
 	printf("          CPU Time: %.2f ms\n", getGraphAverage(&cpuGraph) * 1000.0f);

@@ -17,13 +17,9 @@
 //
 
 #include <stdio.h>
-#ifdef NANOVG_GLEW
-#  include <GL/glew.h>
-#endif
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
-#define NANOVG_GL2_IMPLEMENTATION
-#include "nanovg_gl.h"
 #include "demo.h"
 #include "perf.h"
 
@@ -84,17 +80,16 @@ int main()
 	glfwSetKeyCallback(window, key);
 
 	glfwMakeContextCurrent(window);
-#ifdef NANOVG_GLEW
-    if(glewInit() != GLEW_OK) {
+
+	if(glewInit() != GLEW_OK) {
 		printf("Could not init glew.\n");
 		return -1;
 	}
-#endif
 
 #ifdef DEMO_MSAA
-	vg = nvgCreateGL2(NVG_STENCIL_STROKES | NVG_DEBUG);
+	vg = nvgCreateGL(NVG_STENCIL_STROKES | NVG_DEBUG);
 #else
-	vg = nvgCreateGL2(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+	vg = nvgCreateGL(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 #endif
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
@@ -154,7 +149,7 @@ int main()
 
 	freeDemoData(vg, &data);
 
-	nvgDeleteGL2(vg);
+	nvgDeleteGL(vg);
 
 	glfwTerminate();
 	return 0;

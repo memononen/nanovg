@@ -30,6 +30,21 @@ extern "C" {
 #pragma warning(disable: 4201)  // nonstandard extension used : nameless struct/union
 #endif
 
+#include <GL/glew.h>
+
+// Create flags
+
+enum NVGcreateFlags {
+	// Flag indicating if geometry based anti-aliasing is used (may not be needed when using MSAA).
+	NVG_ANTIALIAS 		= 1<<0,
+	// Flag indicating if strokes should be drawn using stencil buffer. The rendering will be a little
+	// slower, but path overlaps (i.e. self-intersecting or sharp turns) will be drawn just once.
+	NVG_STENCIL_STROKES	= 1<<1,
+	// Flag indicating that additional debug checks are done.
+	NVG_DEBUG 			= 1<<2,
+};
+
+
 typedef struct NVGcontext NVGcontext;
 
 struct NVGcolor {
@@ -106,6 +121,16 @@ enum NVGimageFlags {
 	NVG_IMAGE_FLIPY				= 1<<3,		// Flips (inverses) image in Y direction when rendered.
 	NVG_IMAGE_PREMULTIPLIED		= 1<<4,		// Image data has premultiplied alpha.
 };
+
+// Creates NanoVG contexts for different OpenGL (ES) versions.
+// Flags should be combination of the create flags above.
+
+NVGcontext* nvgCreateGL(int flags);
+void nvgDeleteGL(NVGcontext* ctx);
+
+int nvglCreateImageFromHandleGL(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
+GLuint nvglImageFromHandleGL(NVGcontext* ctx, int image);
+GLuint nvglImageHandleGL(NVGcontext* ctx, int image);
 
 // Begin drawing a new frame
 // Calls to nanovg drawing API should be wrapped in nvgBeginFrame() & nvgEndFrame()
@@ -578,34 +603,14 @@ struct NVGpath {
 	int winding;
 	int convex;
 };
+
 typedef struct NVGpath NVGpath;
-
-struct NVGparams {
-	void* userPtr;
-	int edgeAntiAlias;
-	int (*renderCreate)(void* uptr);
-	int (*renderCreateTexture)(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data);
-	int (*renderDeleteTexture)(void* uptr, int image);
-	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
-	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
-	void (*renderViewport)(void* uptr, int width, int height);
-	void (*renderCancel)(void* uptr);
-	void (*renderFlush)(void* uptr);
-	void (*renderFill)(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths);
-	void (*renderStroke)(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe, float strokeWidth, const NVGpath* paths, int npaths);
-	void (*renderTriangles)(void* uptr, NVGpaint* paint, NVGscissor* scissor, const NVGvertex* verts, int nverts);
-	void (*renderDelete)(void* uptr);
-};
-typedef struct NVGparams NVGparams;
-
-// Constructor and destructor, called by the render back-end.
-NVGcontext* nvgCreateInternal(NVGparams* params);
-void nvgDeleteInternal(NVGcontext* ctx);
-
-NVGparams* nvgInternalParams(NVGcontext* ctx);
 
 // Debug function to dump cached path data.
 void nvgDebugDumpPathCache(NVGcontext* ctx);
+
+// Todo: move gl_utils.h to nanovg_gl.c/nanovg_gl.h
+#include "nanovg_gl_utils.h"
 
 #ifdef _MSC_VER
 #pragma warning(pop)

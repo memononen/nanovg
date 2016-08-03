@@ -24,5 +24,9 @@ Thumbs.db
 ## Build dir
 build/*
 
-## xcode specific
+## Editor
 *xcuserdata*
+*.vim
+*.swp
+
+src/tags
