@@ -219,6 +219,7 @@ struct GLNVGfragUniforms {
 typedef struct GLNVGfragUniforms GLNVGfragUniforms;
 
 struct GLNVGcontext {
+	NVGcompositeOperation compositeOperation;
 	GLNVGshader shader;
 	GLNVGtexture* textures;
 	float view[2];
@@ -944,6 +945,7 @@ static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 static void glnvg__renderViewport(void* uptr, int width, int height, float devicePixelRatio)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	gl->compositeOperation = NVG_SOURCE_OVER;  // resets composition
 	gl->view[0] = (float)width;
 	gl->view[1] = (float)height;
 }
@@ -1072,6 +1074,43 @@ static void glnvg__renderCancel(void* uptr) {
 	gl->nuniforms = 0;
 }
 
+static GLenum glnvg_convertBlendFuncFactor(int factor)
+{
+	if (factor == NVG_ZERO)
+		return GL_ZERO;
+	if (factor == NVG_ONE)
+		return GL_ONE;
+	if (factor == NVG_SRC_COLOR)
+		return GL_SRC_COLOR;
+	if (factor == NVG_ONE_MINUS_SRC_COLOR)
+		return GL_ONE_MINUS_SRC_COLOR;
+	if (factor == NVG_DST_COLOR)
+		return GL_DST_COLOR;
+	if (factor == NVG_ONE_MINUS_DST_COLOR)
+		return GL_ONE_MINUS_DST_COLOR;
+	if (factor == NVG_SRC_ALPHA)
+		return GL_SRC_ALPHA;
+	if (factor == NVG_ONE_MINUS_SRC_ALPHA)
+		return GL_ONE_MINUS_SRC_ALPHA;
+	if (factor == NVG_DST_ALPHA)
+		return GL_DST_ALPHA;
+	if (factor == NVG_ONE_MINUS_DST_ALPHA)
+		return GL_ONE_MINUS_DST_ALPHA;
+	if (factor == NVG_SRC_ALPHA_SATURATE)
+		return GL_SRC_ALPHA_SATURATE;
+}
+
+static void glnvg__blendCompositeOperation(NVGcompositeOperation operation)
+{
+	glBlendFuncSeparate(glnvg_convertBlendFuncFactor(operation.srcRGB), glnvg_convertBlendFuncFactor(operation.dstRGB), glnvg_convertBlendFuncFactor(operation.srcAlpha), glnvg_convertBlendFuncFactor(operation.dstAlpha));
+}
+
+static void glnvg__renderCompositeOperation(void* uptr, NVGcompositeOperation op)
+{
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	gl->compositeOperation = op;
+}
+
 static void glnvg__renderFlush(void* uptr)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
@@ -1082,7 +1121,7 @@ static void glnvg__renderFlush(void* uptr)
 		// Setup require GL state.
 		glUseProgram(gl->shader.prog);
 
-		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		glnvg__blendCompositeOperation(gl->compositeOperation);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
@@ -1473,6 +1512,7 @@ NVGcontext* nvgCreateGLES3(int flags)
 	params.renderGetTextureSize = glnvg__renderGetTextureSize;
 	params.renderViewport = glnvg__renderViewport;
 	params.renderCancel = glnvg__renderCancel;
+	params.renderCompositeOperation = glnvg__renderCompositeOperation;
 	params.renderFlush = glnvg__renderFlush;
 	params.renderFill = glnvg__renderFill;
 	params.renderStroke = glnvg__renderStroke;

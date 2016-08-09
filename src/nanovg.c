@@ -338,6 +338,25 @@ void nvgEndFrame(NVGcontext* ctx)
 	}
 }
 
+NVGcompositeOperation nvgBlendFunc(int sfactor, int dfactor)
+{
+	return nvgBlendFuncSeparate(sfactor, dfactor, sfactor, dfactor);
+}
+
+NVGcompositeOperation nvgBlendFuncSeparate(int srcRGB, int dstRGB, int srcAlpha, int dstAlpha)
+{
+	NVGcompositeOperation operation;
+	operation.srcRGB = srcRGB;
+	operation.dstRGB = dstRGB;
+	operation.srcAlpha = srcAlpha;
+	operation.dstAlpha = dstAlpha;
+	return operation;
+}
+
+void nvgGlobalCompositeOperation(NVGcontext* ctx, NVGcompositeOperation op) {
+	ctx->params.renderCompositeOperation(ctx->params.userPtr, op);
+}
+
 NVGcolor nvgRGB(unsigned char r, unsigned char g, unsigned char b)
 {
 	return nvgRGBA(r,g,b,255);
