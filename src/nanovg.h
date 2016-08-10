@@ -97,14 +97,6 @@ enum NVGblendFactor {
 	NVG_SRC_ALPHA_SATURATE = 1<<10,
 };
 
-struct NVGcompositeOperationState {
-	int srcRGB;
-	int dstRGB;
-	int srcAlpha;
-	int dstAlpha;
-};
-typedef struct NVGcompositeOperationState NVGcompositeOperationState;
-
 enum NVGcompositeOperation {
 	NVG_SOURCE_OVER,
 	NVG_SOURCE_IN,
@@ -118,6 +110,14 @@ enum NVGcompositeOperation {
 	NVG_COPY,
 	NVG_XOR,
 };
+
+struct NVGcompositeOperationState {
+	int srcRGB;
+	int dstRGB;
+	int srcAlpha;
+	int dstAlpha;
+};
+typedef struct NVGcompositeOperationState NVGcompositeOperationState;
 
 struct NVGglyphPosition {
 	const char* str;	// Position of the glyph in the input string.
