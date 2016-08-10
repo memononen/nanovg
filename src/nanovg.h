@@ -97,6 +97,14 @@ enum NVGblendFactor {
 	NVG_SRC_ALPHA_SATURATE = 1<<10,
 };
 
+struct NVGcompositeOperationState {
+	int srcRGB;
+	int dstRGB;
+	int srcAlpha;
+	int dstAlpha;
+};
+typedef struct NVGcompositeOperationState NVGcompositeOperationState;
+
 enum NVGcompositeOperation {
 	NVG_SOURCE_OVER,
 	NVG_SOURCE_IN,
@@ -110,14 +118,6 @@ enum NVGcompositeOperation {
 	NVG_COPY,
 	NVG_XOR,
 };
-
-struct NVGcompositeOperationState {
-	int srcRGB;
-	int dstRGB;
-	int srcAlpha;
-	int dstAlpha;
-};
-typedef struct NVGcompositeOperationState NVGcompositeOperationState;
 
 struct NVGglyphPosition {
 	const char* str;	// Position of the glyph in the input string.
@@ -166,6 +166,8 @@ void nvgEndFrame(NVGcontext* ctx);
 // The composite operations in NanoVG are modeled after HTML Canvas API, and
 // the blend func is based on OpenGL (see corresponding manuals for more info).
 // The colors in the blending state have premultiplied alpha.
+// Composite operation in NanoVG works between frames. The default composite
+// operation of NanoVG is NVG_SOURCE_OVER.
 
 // Sets the composite operation. The op parameter should be one of NVGcompositeOperation.
 void nvgGlobalCompositeOperation(NVGcontext* ctx, int op);
@@ -685,10 +687,10 @@ struct NVGparams {
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
 	void (*renderViewport)(void* uptr, int width, int height, float devicePixelRatio);
 	void (*renderCancel)(void* uptr);
-	void (*renderFlush)(void* uptr);
-	void (*renderFill)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths);
-	void (*renderStroke)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, float strokeWidth, const NVGpath* paths, int npaths);
-	void (*renderTriangles)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, const NVGvertex* verts, int nverts);
+	void (*renderFlush)(void* uptr, NVGcompositeOperationState compositeOperation);
+	void (*renderFill)(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths);
+	void (*renderStroke)(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe, float strokeWidth, const NVGpath* paths, int npaths);
+	void (*renderTriangles)(void* uptr, NVGpaint* paint, NVGscissor* scissor, const NVGvertex* verts, int nverts);
 	void (*renderDelete)(void* uptr);
 };
 typedef struct NVGparams NVGparams;
