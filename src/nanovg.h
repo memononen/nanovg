@@ -97,26 +97,27 @@ enum NVGblendFactor {
 	NVG_SRC_ALPHA_SATURATE = 1<<10,
 };
 
-struct NVGcompositeOperation {
+struct NVGcompositeOperationState {
 	int srcRGB;
 	int dstRGB;
 	int srcAlpha;
 	int dstAlpha;
 };
-typedef struct NVGcompositeOperation NVGcompositeOperation;
+typedef struct NVGcompositeOperationState NVGcompositeOperationState;
 
-// Predefined composite operations.
-#define NVG_SOURCE_OVER nvgBlendFunc(NVG_ONE, NVG_ONE_MINUS_SRC_ALPHA)
-#define NVG_SOURCE_IN nvgBlendFunc(NVG_DST_ALPHA, NVG_ZERO)
-#define NVG_SOURCE_OUT nvgBlendFunc(NVG_ONE_MINUS_DST_ALPHA, NVG_ZERO)
-#define NVG_ATOP nvgBlendFunc(NVG_DST_ALPHA, NVG_ONE_MINUS_SRC_ALPHA)
-#define NVG_DESTINATION_OVER nvgBlendFunc(NVG_ONE_MINUS_DST_ALPHA, NVG_ONE)
-#define NVG_DESTINATION_IN nvgBlendFunc(NVG_ZERO, NVG_SRC_ALPHA)
-#define NVG_DESTINATION_OUT nvgBlendFunc(NVG_ZERO, NVG_ONE_MINUS_SRC_ALPHA)
-#define NVG_DESTINATION_ATOP nvgBlendFunc(NVG_ONE_MINUS_DST_ALPHA, NVG_SRC_ALPHA)
-#define NVG_LIGHTER nvgBlendFunc(NVG_ONE, NVG_ONE)
-#define NVG_COPY nvgBlendFunc(NVG_ONE, NVG_ZERO)
-#define NVG_XOR nvgBlendFunc(NVG_ONE_MINUS_DST_ALPHA NVG_ONE_MINUS_SRC_ALPHA)
+enum NVGcompositeOperation {
+	NVG_SOURCE_OVER,
+	NVG_SOURCE_IN,
+	NVG_SOURCE_OUT,
+	NVG_ATOP,
+	NVG_DESTINATION_OVER,
+	NVG_DESTINATION_IN,
+	NVG_DESTINATION_OUT,
+	NVG_DESTINATION_ATOP,
+	NVG_LIGHTER,
+	NVG_COPY,
+	NVG_XOR,
+};
 
 struct NVGglyphPosition {
 	const char* str;	// Position of the glyph in the input string.
@@ -162,17 +163,16 @@ void nvgEndFrame(NVGcontext* ctx);
 // Composite operation
 //
 // Composite operation in NanoVG works between frames. The default composite
-// operation of NanoVG is NVG_SOURCE_OVER, and the value is reset whenever
-// calling nvgBeginFrame().
+// operation of NanoVG is NVG_SOURCE_OVER.
 
-// Creates a composite operation with custom pixel arithmetic. The parameters should be one of NVGblendFactor.
-NVGcompositeOperation nvgBlendFunc(int sfactor, int dfactor);
+// Sets the composite operation. The op parameter should be one of NVGcompositeOperation.
+void nvgGlobalCompositeOperation(NVGcontext* ctx, int op);
 
-// Creates a composite operation with custom pixel arithmetic for RGB and alpha components separately. The parameters should be one of NVGblendFactor.
-NVGcompositeOperation nvgBlendFuncSeparate(int srcRGB, int dstRGB, int srcAlpha, int dstAlpha);
+// Sets the composite operation with custom pixel arithmetic. The parameters should be one of NVGblendFactor.
+void nvgGlobalCompositeBlendFunc(NVGcontext* ctx, int sfactor, int dfactor);
 
-// Sets the composite operation for the current frame. This function should be called between nvgBeginFrame() and nvgEndFrame(). The default composite operation of NanoVG is NVG_SOURCE_OVER.
-void nvgGlobalCompositeOperation(NVGcontext* ctx, NVGcompositeOperation op);
+// Sets the composite operation with custom pixel arithmetic for RGB and alpha components separately. The parameters should be one of NVGblendFactor.
+void nvgGlobalCompositeBlendFuncSeparate(NVGcontext* ctx, int srcRGB, int dstRGB, int srcAlpha, int dstAlpha);
 
 //
 // Color utils
@@ -641,8 +641,7 @@ struct NVGparams {
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
 	void (*renderViewport)(void* uptr, int width, int height, float devicePixelRatio);
 	void (*renderCancel)(void* uptr);
-	void (*renderCompositeOperation)(void* uptr, NVGcompositeOperation op);
-	void (*renderFlush)(void* uptr);
+	void (*renderFlush)(void* uptr, NVGcompositeOperationState compositeOperation);
 	void (*renderFill)(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths);
 	void (*renderStroke)(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe, float strokeWidth, const NVGpath* paths, int npaths);
 	void (*renderTriangles)(void* uptr, NVGpaint* paint, NVGscissor* scissor, const NVGvertex* verts, int nverts);

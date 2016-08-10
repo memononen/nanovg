@@ -219,7 +219,6 @@ struct GLNVGfragUniforms {
 typedef struct GLNVGfragUniforms GLNVGfragUniforms;
 
 struct GLNVGcontext {
-	NVGcompositeOperation compositeOperation;
 	GLNVGshader shader;
 	GLNVGtexture* textures;
 	float view[2];
@@ -945,7 +944,6 @@ static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 static void glnvg__renderViewport(void* uptr, int width, int height, float devicePixelRatio)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
-	gl->compositeOperation = NVG_SOURCE_OVER;  // resets composition
 	gl->view[0] = (float)width;
 	gl->view[1] = (float)height;
 }
@@ -1100,18 +1098,12 @@ static GLenum glnvg_convertBlendFuncFactor(int factor)
 		return GL_SRC_ALPHA_SATURATE;
 }
 
-static void glnvg__blendCompositeOperation(NVGcompositeOperation operation)
+static void glnvg__blendCompositeOperation(NVGcompositeOperationState op)
 {
-	glBlendFuncSeparate(glnvg_convertBlendFuncFactor(operation.srcRGB), glnvg_convertBlendFuncFactor(operation.dstRGB), glnvg_convertBlendFuncFactor(operation.srcAlpha), glnvg_convertBlendFuncFactor(operation.dstAlpha));
+	glBlendFuncSeparate(glnvg_convertBlendFuncFactor(op.srcRGB), glnvg_convertBlendFuncFactor(op.dstRGB), glnvg_convertBlendFuncFactor(op.srcAlpha), glnvg_convertBlendFuncFactor(op.dstAlpha));
 }
 
-static void glnvg__renderCompositeOperation(void* uptr, NVGcompositeOperation op)
-{
-	GLNVGcontext* gl = (GLNVGcontext*)uptr;
-	gl->compositeOperation = op;
-}
-
-static void glnvg__renderFlush(void* uptr)
+static void glnvg__renderFlush(void* uptr, NVGcompositeOperationState compositeOperation)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	int i;
@@ -1121,7 +1113,7 @@ static void glnvg__renderFlush(void* uptr)
 		// Setup require GL state.
 		glUseProgram(gl->shader.prog);
 
-		glnvg__blendCompositeOperation(gl->compositeOperation);
+		glnvg__blendCompositeOperation(compositeOperation);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
@@ -1512,7 +1504,6 @@ NVGcontext* nvgCreateGLES3(int flags)
 	params.renderGetTextureSize = glnvg__renderGetTextureSize;
 	params.renderViewport = glnvg__renderViewport;
 	params.renderCancel = glnvg__renderCancel;
-	params.renderCompositeOperation = glnvg__renderCompositeOperation;
 	params.renderFlush = glnvg__renderFlush;
 	params.renderFill = glnvg__renderFill;
 	params.renderStroke = glnvg__renderStroke;
