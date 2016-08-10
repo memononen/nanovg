@@ -162,7 +162,9 @@ void nvgEndFrame(NVGcontext* ctx);
 //
 // Composite operation
 //
-// The default composite operation of NanoVG is NVG_SOURCE_OVER.
+// The composite operations in NanoVG are modeled after HTML Canvas API, and
+// the blend func is based on OpenGL (see corresponding manuals for more info).
+// The colors in the blending state have premultiplied alpha.
 
 // Sets the composite operation. The op parameter should be one of NVGcompositeOperation.
 void nvgGlobalCompositeOperation(NVGcontext* ctx, int op);
