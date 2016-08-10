@@ -162,9 +162,7 @@ void nvgEndFrame(NVGcontext* ctx);
 //
 // Composite operation
 //
-// Composite operation in NanoVG is applied only when calling nvgEndFrame()
-// instead of drawing API. The default composite operation of NanoVG is
-// NVG_SOURCE_OVER.
+// The default composite operation of NanoVG is NVG_SOURCE_OVER.
 
 // Sets the composite operation. The op parameter should be one of NVGcompositeOperation.
 void nvgGlobalCompositeOperation(NVGcontext* ctx, int op);
