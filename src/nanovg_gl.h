@@ -1072,7 +1072,38 @@ static void glnvg__renderCancel(void* uptr) {
 	gl->nuniforms = 0;
 }
 
-static void glnvg__renderFlush(void* uptr)
+static GLenum glnvg_convertBlendFuncFactor(int factor)
+{
+	if (factor == NVG_ZERO)
+		return GL_ZERO;
+	if (factor == NVG_ONE)
+		return GL_ONE;
+	if (factor == NVG_SRC_COLOR)
+		return GL_SRC_COLOR;
+	if (factor == NVG_ONE_MINUS_SRC_COLOR)
+		return GL_ONE_MINUS_SRC_COLOR;
+	if (factor == NVG_DST_COLOR)
+		return GL_DST_COLOR;
+	if (factor == NVG_ONE_MINUS_DST_COLOR)
+		return GL_ONE_MINUS_DST_COLOR;
+	if (factor == NVG_SRC_ALPHA)
+		return GL_SRC_ALPHA;
+	if (factor == NVG_ONE_MINUS_SRC_ALPHA)
+		return GL_ONE_MINUS_SRC_ALPHA;
+	if (factor == NVG_DST_ALPHA)
+		return GL_DST_ALPHA;
+	if (factor == NVG_ONE_MINUS_DST_ALPHA)
+		return GL_ONE_MINUS_DST_ALPHA;
+	if (factor == NVG_SRC_ALPHA_SATURATE)
+		return GL_SRC_ALPHA_SATURATE;
+}
+
+static void glnvg__blendCompositeOperation(NVGcompositeOperationState op)
+{
+	glBlendFuncSeparate(glnvg_convertBlendFuncFactor(op.srcRGB), glnvg_convertBlendFuncFactor(op.dstRGB), glnvg_convertBlendFuncFactor(op.srcAlpha), glnvg_convertBlendFuncFactor(op.dstAlpha));
+}
+
+static void glnvg__renderFlush(void* uptr, NVGcompositeOperationState compositeOperation)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	int i;
@@ -1082,7 +1113,7 @@ static void glnvg__renderFlush(void* uptr)
 		// Setup require GL state.
 		glUseProgram(gl->shader.prog);
 
-		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		glnvg__blendCompositeOperation(compositeOperation);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
