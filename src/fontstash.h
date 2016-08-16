@@ -324,6 +324,9 @@ int fons__tt_getGlyphKernAdvance(FONSttFontImpl *font, int glyph1, int glyph2)
 #ifndef FONS_MAX_STATES
 #	define FONS_MAX_STATES 20
 #endif
+#ifndef FONS_MAX_FALLBACKS
+#	define FONS_MAX_FALLBACKS 20
+#endif
 
 static unsigned int fons__hashint(unsigned int a)
 {
@@ -357,6 +360,7 @@ struct FONSglyph
 };
 typedef struct FONSglyph FONSglyph;
 
+
 struct FONSfont
 {
 	FONSttFontImpl font;
@@ -371,6 +375,8 @@ struct FONSfont
 	int cglyphs;
 	int nglyphs;
 	int lut[FONS_HASH_LUT_SIZE];
+	int fallbacks[FONS_MAX_FALLBACKS];
+	int nfallbacks;
 };
 typedef struct FONSfont FONSfont;
 
@@ -755,6 +761,17 @@ static FONSstate* fons__getState(FONScontext* stash)
 	return &stash->states[stash->nstates-1];
 }
 
+int fonsAddFallbackFont(FONScontext* stash,int base,int fallback)
+{
+	FONSfont* baseFont = stash->fonts[base];
+	if (baseFont->nfallbacks < FONS_MAX_FALLBACKS)
+	{
+		baseFont->fallbacks[baseFont->nfallbacks++] = fallback;
+		return 1;
+	}
+	return 0;
+}
+
 void fonsSetSize(FONScontext* stash, float size)
 {
 	fons__getState(stash)->size = size;
@@ -1041,6 +1058,18 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	// Could not find glyph, create it.
 	scale = fons__tt_getPixelHeightScale(&font->font, size);
 	g = fons__tt_getGlyphIndex(&font->font, codepoint);
+	//If tofu glyph fallback to other fonts
+	if(g == 0)
+	{
+		for (i=0; i<font->nfallbacks; ++i)
+		{
+			glyph = fons__getGlyph(stash,stash->fonts[font->fallbacks[i]],codepoint,isize,iblur);
+			if(glyph->index != 0)
+			{
+				return glyph;
+			}
+		}
+	}
 	fons__tt_buildGlyphBitmap(&font->font, g, size, scale, &advance, &lsb, &x0, &y0, &x1, &y1);
 	gw = x1-x0 + pad*2;
 	gh = y1-y0 + pad*2;

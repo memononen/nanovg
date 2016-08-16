@@ -546,6 +546,12 @@ int nvgCreateFontMem(NVGcontext* ctx, const char* name, unsigned char* data, int
 // Finds a loaded font of specified name, and returns handle to it, or -1 if the font is not found.
 int nvgFindFont(NVGcontext* ctx, const char* name);
 
+// add fallback font.
+int nvgAddFallbackFontId(NVGcontext* ctx,int baseFont,int fallbackFont);
+
+// add fallback font by name.
+int nvgAddFallbackFont(NVGcontext* ctx,const char* baseFont,const char* fallbackFont);
+
 // Sets the font size of current text style.
 void nvgFontSize(NVGcontext* ctx, float size);
 
