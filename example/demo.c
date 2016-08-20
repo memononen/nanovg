@@ -839,8 +839,8 @@ int loadDemoData(NVGcontext* vg, DemoData* data)
 		printf("Could not add font emoji.\n");
 		return -1;
 	}
-	nvgAddFallbackFontId(vg,data->fontNormal,data->fontEmoji);
-	nvgAddFallbackFontId(vg,data->fontBold,data->fontEmoji);
+	nvgAddFallbackFontId(vg, data->fontNormal, data->fontEmoji);
+	nvgAddFallbackFontId(vg, data->fontBold, data->fontEmoji);
 
 	return 0;
 }
