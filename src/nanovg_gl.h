@@ -640,7 +640,7 @@ static int glnvg__renderCreate(void* uptr)
 		"		result = color * innerCol;\n"
 		"	}\n"
 		"#ifdef EDGE_AA\n"
-		"	if (strokeAlpha < strokeThr) discard;\n"
+		"	if (strokeAlpha < strokeThr) result = vec4(0,0,0,0);\n"
 		"#endif\n"
 		"#ifdef NANOVG_GL3\n"
 		"	outColor = result;\n"
