@@ -640,7 +640,11 @@ static int glnvg__renderCreate(void* uptr)
 		"		result = color * innerCol;\n"
 		"	}\n"
 		"#ifdef EDGE_AA\n"
+		"#ifdef STENCIL_STROKES\n"
 		"	if (strokeAlpha < strokeThr) discard;\n"
+		"#else\n"
+		"	if (strokeAlpha < strokeThr) result = vec4(0,0,0,0);\n"
+		"#endif\n"
 		"#endif\n"
 		"#ifdef NANOVG_GL3\n"
 		"	outColor = result;\n"
@@ -652,7 +656,12 @@ static int glnvg__renderCreate(void* uptr)
 	glnvg__checkError(gl, "init");
 
 	if (gl->flags & NVG_ANTIALIAS) {
-		if (glnvg__createShader(&gl->shader, "shader", shaderHeader, "#define EDGE_AA 1\n", fillVertShader, fillFragShader) == 0)
+		char* opts;
+		if (gl->flags & NVG_STENCIL_STROKES)
+			opts = "#define EDGE_AA 1\n#define STENCIL_STROKES 1\n";
+		else
+			opts = "#define EDGE_AA 1\n";
+		if (glnvg__createShader(&gl->shader, "shader", shaderHeader, opts, fillVertShader, fillFragShader) == 0)
 			return 0;
 	} else {
 		if (glnvg__createShader(&gl->shader, "shader", shaderHeader, NULL, fillVertShader, fillFragShader) == 0)
