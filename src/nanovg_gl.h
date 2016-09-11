@@ -60,7 +60,7 @@ NVGcontext* nvgCreateGL2(int flags);
 void nvgDeleteGL2(NVGcontext* ctx);
 
 int nvglCreateImageFromHandleGL2(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
-GLuint nvglImageFromHandleGL2(NVGcontext* ctx, int image);
+GLuint nvglImageHandleGL2(NVGcontext* ctx, int image);
 
 #endif
 
