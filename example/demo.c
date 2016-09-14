@@ -1069,53 +1069,51 @@ void drawScissor(NVGcontext* vg, float x, float y, float t)
 
 void drawGlobalCompositeOperation(NVGcontext* vg, float x, float y, DemoData* data)
 {
-    int i;
-    NVGpaint imgPaint;
-    enum NVGcompositeOperation ops[] = {
-        NVG_SOURCE_OVER,
-        NVG_SOURCE_IN,
-        NVG_SOURCE_OUT,
-        NVG_ATOP,
-        NVG_DESTINATION_OVER,
-        NVG_DESTINATION_IN,
-        NVG_DESTINATION_OUT,
-        NVG_DESTINATION_ATOP,
-        NVG_LIGHTER,
-        NVG_COPY,
-        NVG_XOR};
-    
-    int count = sizeof(ops)/sizeof(ops[0]);
-
-    
-    for(i=0;i<count;++i)
-    {
-        nvgSave(vg);
-        
-        nvgTranslate(vg, x + i * 40, y);
-        
-        nvgGlobalCompositeOperation(vg, NVG_COPY);
-        imgPaint = nvgImagePattern(vg, 0, 0, 30,30, 0.0f/180.0f*NVG_PI, data->image_composite_a, 1.0);
-        nvgBeginPath(vg);
-        nvgRect(vg, 0, 0, 30, 30);
-        nvgFillPaint(vg, imgPaint);
-        nvgFill(vg);
-        
-        nvgGlobalCompositeOperation(vg, ops[i]);
-        imgPaint = nvgImagePattern(vg, 0, 0, 30,30, 0.0f/180.0f*NVG_PI, data->image_composite_b, 1.0);
-        nvgBeginPath(vg);
-        nvgRect(vg, 0, 0, 30, 30);
-        nvgFillPaint(vg, imgPaint);
-        nvgFill(vg);
-        
-        //fill background transparent color to white.
-        nvgGlobalCompositeOperation(vg, NVG_DESTINATION_OVER);
-        nvgBeginPath(vg);
-        nvgRect(vg, 0, 0, 30, 30);
-        nvgFillColor(vg, nvgRGBA(255,255,255,255));
-        nvgFill(vg);
-        
-        nvgRestore(vg);
-    }
+	int i;
+	NVGpaint imgPaint;
+	enum NVGcompositeOperation ops[] = {
+		NVG_SOURCE_OVER,
+		NVG_SOURCE_IN,
+		NVG_SOURCE_OUT,
+		NVG_ATOP,
+		NVG_DESTINATION_OVER,
+		NVG_DESTINATION_IN,
+		NVG_DESTINATION_OUT,
+		NVG_DESTINATION_ATOP,
+		NVG_LIGHTER,
+		NVG_COPY,
+		NVG_XOR
+	};
+	
+	for (i = 0; i < 11; i++)
+	{
+		nvgSave(vg);
+		
+		nvgTranslate(vg, x + i * 40, y);
+		
+		nvgGlobalCompositeOperation(vg, NVG_COPY);
+		imgPaint = nvgImagePattern(vg, 0, 0, 30,30, 0.0f/180.0f*NVG_PI, data->image_composite_a, 1.0);
+		nvgBeginPath(vg);
+		nvgRect(vg, 0, 0, 30, 30);
+		nvgFillPaint(vg, imgPaint);
+		nvgFill(vg);
+		
+		nvgGlobalCompositeOperation(vg, ops[i]);
+		imgPaint = nvgImagePattern(vg, 0, 0, 30,30, 0.0f/180.0f*NVG_PI, data->image_composite_b, 1.0);
+		nvgBeginPath(vg);
+		nvgRect(vg, 0, 0, 30, 30);
+		nvgFillPaint(vg, imgPaint);
+		nvgFill(vg);
+		
+		//fill background transparent color to white.
+		nvgGlobalCompositeOperation(vg, NVG_DESTINATION_OVER);
+		nvgBeginPath(vg);
+		nvgRect(vg, 0, 0, 30, 30);
+		nvgFillColor(vg, nvgRGBA(255,255,255,255));
+		nvgFill(vg);
+		
+		nvgRestore(vg);
+	}
 }
 
 void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
