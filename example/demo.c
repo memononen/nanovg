@@ -818,9 +818,6 @@ int loadDemoData(NVGcontext* vg, DemoData* data)
 			return -1;
 		}
 	}
-    
-	data->image_composite_a = nvgCreateImage(vg, "../example/images/composite_a.png", 0);
-	data->image_composite_b = nvgCreateImage(vg, "../example/images/composite_b.png", 0);
 
 	data->fontIcons = nvgCreateFont(vg, "icons", "../example/entypo.ttf");
 	if (data->fontIcons == -1) {
@@ -857,9 +854,6 @@ void freeDemoData(NVGcontext* vg, DemoData* data)
 
 	for (i = 0; i < 12; i++)
 		nvgDeleteImage(vg, data->images[i]);
-    
-	nvgDeleteImage(vg, data->image_composite_a);
-	nvgDeleteImage(vg, data->image_composite_b);
 }
 
 void drawParagraph(NVGcontext* vg, float x, float y, float width, float height, float mx, float my)
@@ -1066,56 +1060,6 @@ void drawScissor(NVGcontext* vg, float x, float y, float t)
 	nvgRestore(vg);
 }
 
-
-void drawGlobalCompositeOperation(NVGcontext* vg, float x, float y, DemoData* data)
-{
-	int i;
-	NVGpaint imgPaint;
-	enum NVGcompositeOperation ops[] = {
-		NVG_SOURCE_OVER,
-		NVG_SOURCE_IN,
-		NVG_SOURCE_OUT,
-		NVG_ATOP,
-		NVG_DESTINATION_OVER,
-		NVG_DESTINATION_IN,
-		NVG_DESTINATION_OUT,
-		NVG_DESTINATION_ATOP,
-		NVG_LIGHTER,
-		NVG_COPY,
-		NVG_XOR
-	};
-	
-	for (i = 0; i < 11; i++)
-	{
-		nvgSave(vg);
-		
-		nvgTranslate(vg, x + i * 40, y);
-		
-		nvgGlobalCompositeOperation(vg, NVG_COPY);
-		imgPaint = nvgImagePattern(vg, 0, 0, 30,30, 0.0f/180.0f*NVG_PI, data->image_composite_a, 1.0);
-		nvgBeginPath(vg);
-		nvgRect(vg, 0, 0, 30, 30);
-		nvgFillPaint(vg, imgPaint);
-		nvgFill(vg);
-		
-		nvgGlobalCompositeOperation(vg, ops[i]);
-		imgPaint = nvgImagePattern(vg, 0, 0, 30,30, 0.0f/180.0f*NVG_PI, data->image_composite_b, 1.0);
-		nvgBeginPath(vg);
-		nvgRect(vg, 0, 0, 30, 30);
-		nvgFillPaint(vg, imgPaint);
-		nvgFill(vg);
-		
-		//fill background transparent color to white.
-		nvgGlobalCompositeOperation(vg, NVG_DESTINATION_OVER);
-		nvgBeginPath(vg);
-		nvgRect(vg, 0, 0, 30, 30);
-		nvgFillColor(vg, nvgRGBA(255,255,255,255));
-		nvgFill(vg);
-		
-		nvgRestore(vg);
-	}
-}
-
 void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, DemoData* data)
 {
@@ -1136,8 +1080,6 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	drawCaps(vg, 10, 300, 30);
 
 	drawScissor(vg, 50, height-80, t);
-    
-	drawGlobalCompositeOperation(vg, 100, height-35, data);
 
 	nvgSave(vg);
 	if (blowup) {
