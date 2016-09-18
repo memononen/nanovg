@@ -2119,30 +2119,31 @@ void nvgRect(NVGcontext* ctx, float x, float y, float w, float h)
 
 void nvgRoundedRect(NVGcontext* ctx, float x, float y, float w, float h, float r)
 {
-	nvgRoundedRectEx(ctx, x, y, w, h, r, r, r, r);
+	nvgRoundedRectVarying(ctx, x, y, w, h, r, r, r, r);
 }
 
-void nvgRoundedRectEx(NVGcontext* ctx, float x, float y, float w, float h, float r1, float r2, float r3, float r4)
+void nvgRoundedRectVarying(NVGcontext* ctx, float x, float y, float w, float h, float radTopLeft, float radTopRight, float radBottomRight, float radBottomLeft)
 {
-	if(r1 < 0.1f && r2 < 0.1f && r3 < 0.1f && r4 < 0.1f) {
+	if(radTopLeft < 0.1f && radTopRight < 0.1f && radBottomRight < 0.1f && radBottomLeft < 0.1f) {
 		nvgRect(ctx, x, y, w, h);
 		return;
-	}
-	else {
-		float r1x = nvg__minf(r1, nvg__absf(w)*0.5f) * nvg__signf(w), r1y = nvg__minf(r1, nvg__absf(h)*0.5f) * nvg__signf(h);
-		float r2x = nvg__minf(r2, nvg__absf(w)*0.5f) * nvg__signf(w), r2y = nvg__minf(r2, nvg__absf(h)*0.5f) * nvg__signf(h);
-		float r3x = nvg__minf(r3, nvg__absf(w)*0.5f) * nvg__signf(w), r3y = nvg__minf(r3, nvg__absf(h)*0.5f) * nvg__signf(h);
-		float r4x = nvg__minf(r4, nvg__absf(w)*0.5f) * nvg__signf(w), r4y = nvg__minf(r4, nvg__absf(h)*0.5f) * nvg__signf(h);
+	} else {
+		float halfw = nvg__absf(w)*0.5f;
+		float halfh = nvg__absf(h)*0.5f;
+		float rxBL = nvg__minf(radBottomLeft, halfw) * nvg__signf(w), ryBL = nvg__minf(radBottomLeft, halfh) * nvg__signf(h);
+		float rxBR = nvg__minf(radBottomRight, halfw) * nvg__signf(w), ryBR = nvg__minf(radBottomRight, halfh) * nvg__signf(h);
+		float rxTR = nvg__minf(radTopRight, halfw) * nvg__signf(w), ryTR = nvg__minf(radTopRight, halfh) * nvg__signf(h);
+		float rxTL = nvg__minf(radTopLeft, halfw) * nvg__signf(w), ryTL = nvg__minf(radTopLeft, halfh) * nvg__signf(h);
 		float vals[] = {
-			NVG_MOVETO, x, y + r4y,
-			NVG_LINETO, x, y + h - r1y,
-			NVG_BEZIERTO, x, y + h - r1y*(1 - NVG_KAPPA90), x + r1x*(1 - NVG_KAPPA90), y + h, x + r1x, y + h,
-			NVG_LINETO, x + w - r2x, y + h,
-			NVG_BEZIERTO, x + w - r2x*(1 - NVG_KAPPA90), y + h, x + w, y + h - r2y*(1 - NVG_KAPPA90), x + w, y + h - r2y,
-			NVG_LINETO, x + w, y + r3y,
-			NVG_BEZIERTO, x + w, y + r3y*(1 - NVG_KAPPA90), x + w - r3x*(1 - NVG_KAPPA90), y, x + w - r3x, y,
-			NVG_LINETO, x + r4x, y,
-			NVG_BEZIERTO, x + r4x*(1 - NVG_KAPPA90), y, x, y + r4y*(1 - NVG_KAPPA90), x, y + r4y,
+			NVG_MOVETO, x, y + ryTL,
+			NVG_LINETO, x, y + h - ryBL,
+			NVG_BEZIERTO, x, y + h - ryBL*(1 - NVG_KAPPA90), x + rxBL*(1 - NVG_KAPPA90), y + h, x + rxBL, y + h,
+			NVG_LINETO, x + w - rxBR, y + h,
+			NVG_BEZIERTO, x + w - rxBR*(1 - NVG_KAPPA90), y + h, x + w, y + h - ryBR*(1 - NVG_KAPPA90), x + w, y + h - ryBR,
+			NVG_LINETO, x + w, y + ryTR,
+			NVG_BEZIERTO, x + w, y + ryTR*(1 - NVG_KAPPA90), x + w - rxTR*(1 - NVG_KAPPA90), y, x + w - rxTR, y,
+			NVG_LINETO, x + rxTL, y,
+			NVG_BEZIERTO, x + rxTL*(1 - NVG_KAPPA90), y, x, y + ryTL*(1 - NVG_KAPPA90), x, y + ryTL,
 			NVG_CLOSE
 		};
 		nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
