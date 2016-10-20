@@ -2673,13 +2673,13 @@ int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, floa
 					rowMaxX = q.x1 - rowStartX;
 				}
 				// track last end of a word
-				if ((ptype == NVG_CHAR && type == NVG_SPACE) || type == NVG_CJK_CHAR) {
+				if (((ptype == NVG_CHAR || ptype == NVG_CJK_CHAR) && type == NVG_SPACE)  || type == NVG_CJK_CHAR) {
 					breakEnd = iter.str;
 					breakWidth = rowWidth;
 					breakMaxX = rowMaxX;
 				}
 				// track last beginning of a word
-				if ((ptype == NVG_SPACE && type == NVG_CHAR) || type == NVG_CJK_CHAR) {
+				if ((ptype == NVG_SPACE && (type == NVG_CHAR || type == NVG_CJK_CHAR)) || type == NVG_CJK_CHAR) {
 					wordStart = iter.str;
 					wordStartX = iter.x;
 					wordMinX = q.x0 - rowStartX;
