@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 struct DemoData {
-	int fontNormal, fontBold, fontIcons; 
+	int fontNormal, fontBold, fontIcons, fontEmoji;
 	int images[12];
 };
 typedef struct DemoData DemoData;
