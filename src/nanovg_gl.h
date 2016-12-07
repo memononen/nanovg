@@ -60,7 +60,7 @@ NVGcontext* nvgCreateGL2(int flags);
 void nvgDeleteGL2(NVGcontext* ctx);
 
 int nvglCreateImageFromHandleGL2(NVGcontext* ctx, GLuint textureId, int w, int h, int flags);
-GLuint nvglImageFromHandleGL2(NVGcontext* ctx, int image);
+GLuint nvglImageHandleGL2(NVGcontext* ctx, int image);
 
 #endif
 
@@ -306,7 +306,7 @@ static void glnvg__stencilFunc(GLNVGcontext* gl, GLenum func, GLint ref, GLuint 
 	if ((gl->stencilFunc != func) ||
 		(gl->stencilFuncRef != ref) ||
 		(gl->stencilFuncMask != mask)) {
-		
+
 		gl->stencilFunc = func;
 		gl->stencilFuncRef = ref;
 		gl->stencilFuncMask = mask;
@@ -339,10 +339,10 @@ static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 		}
 		tex = &gl->textures[gl->ntextures++];
 	}
-	
+
 	memset(tex, 0, sizeof(*tex));
 	tex->id = ++gl->textureId;
-	
+
 	return tex;
 }
 
@@ -522,7 +522,7 @@ static int glnvg__renderCreate(void* uptr)
 		"	gl_Position = vec4(2.0*vertex.x/viewSize.x - 1.0, 1.0 - 2.0*vertex.y/viewSize.y, 0, 1);\n"
 		"}\n";
 
-	static const char* fillFragShader = 
+	static const char* fillFragShader =
 		"#ifdef GL_ES\n"
 		"#if defined(GL_FRAGMENT_PRECISION_HIGH) || defined(NANOVG_GL3)\n"
 		" precision highp float;\n"
@@ -671,7 +671,7 @@ static int glnvg__renderCreate(void* uptr)
 #if NANOVG_GL_USE_UNIFORMBUFFER
 	// Create UBOs
 	glUniformBlockBinding(gl->shader.prog, gl->shader.loc[GLNVG_LOC_FRAG], GLNVG_FRAG_BINDING);
-	glGenBuffers(1, &gl->fragBuf); 
+	glGenBuffers(1, &gl->fragBuf);
 	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
 #endif
 	gl->fragSize = sizeof(GLNVGfragUniforms) + align - sizeof(GLNVGfragUniforms) % align;
@@ -698,7 +698,7 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 			printf("Repeat X/Y is not supported for non power-of-two textures (%d x %d)\n", w, h);
 			imageFlags &= ~(NVG_IMAGE_REPEATX | NVG_IMAGE_REPEATY);
 		}
-		// No mips. 
+		// No mips.
 		if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
 			printf("Mip-maps is not support for non power-of-two textures (%d x %d)\n", w, h);
 			imageFlags &= ~NVG_IMAGE_GENERATE_MIPMAPS;
@@ -908,10 +908,14 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 		tex = glnvg__findTexture(gl, paint->image);
 		if (tex == NULL) return 0;
 		if ((tex->flags & NVG_IMAGE_FLIPY) != 0) {
-			float flipped[6];
-			nvgTransformScale(flipped, 1.0f, -1.0f);
-			nvgTransformMultiply(flipped, paint->xform);
-			nvgTransformInverse(invxform, flipped);
+			float m1[6], m2[6];
+			nvgTransformTranslate(m1, 0.0f, frag->extent[1] * 0.5f);
+			nvgTransformMultiply(m1, paint->xform);
+			nvgTransformScale(m2, 1.0f, -1.0f);
+			nvgTransformMultiply(m2, m1);
+			nvgTransformTranslate(m1, 0.0f, -frag->extent[1] * 0.5f);
+			nvgTransformMultiply(m1, m2);
+			nvgTransformInverse(invxform, m1);
 		} else {
 			nvgTransformInverse(invxform, paint->xform);
 		}
@@ -954,7 +958,7 @@ static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 	}
 }
 
-static void glnvg__renderViewport(void* uptr, int width, int height)
+static void glnvg__renderViewport(void* uptr, int width, int height, float devicePixelRatio)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	gl->view[0] = (float)width;
@@ -1047,7 +1051,7 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 		for (i = 0; i < npaths; i++)
 			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 
-		// Clear stencil buffer.		
+		// Clear stencil buffer.
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glnvg__stencilFunc(gl, GL_ALWAYS, 0x0, 0xff);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
@@ -1085,7 +1089,46 @@ static void glnvg__renderCancel(void* uptr) {
 	gl->nuniforms = 0;
 }
 
-static void glnvg__renderFlush(void* uptr)
+static GLenum glnvg_convertBlendFuncFactor(int factor)
+{
+	if (factor == NVG_ZERO)
+		return GL_ZERO;
+	if (factor == NVG_ONE)
+		return GL_ONE;
+	if (factor == NVG_SRC_COLOR)
+		return GL_SRC_COLOR;
+	if (factor == NVG_ONE_MINUS_SRC_COLOR)
+		return GL_ONE_MINUS_SRC_COLOR;
+	if (factor == NVG_DST_COLOR)
+		return GL_DST_COLOR;
+	if (factor == NVG_ONE_MINUS_DST_COLOR)
+		return GL_ONE_MINUS_DST_COLOR;
+	if (factor == NVG_SRC_ALPHA)
+		return GL_SRC_ALPHA;
+	if (factor == NVG_ONE_MINUS_SRC_ALPHA)
+		return GL_ONE_MINUS_SRC_ALPHA;
+	if (factor == NVG_DST_ALPHA)
+		return GL_DST_ALPHA;
+	if (factor == NVG_ONE_MINUS_DST_ALPHA)
+		return GL_ONE_MINUS_DST_ALPHA;
+	if (factor == NVG_SRC_ALPHA_SATURATE)
+		return GL_SRC_ALPHA_SATURATE;
+	return GL_INVALID_ENUM;
+}
+
+static void glnvg__blendCompositeOperation(NVGcompositeOperationState op)
+{
+	GLenum srcRGB = glnvg_convertBlendFuncFactor(op.srcRGB);
+	GLenum dstRGB = glnvg_convertBlendFuncFactor(op.dstRGB);
+	GLenum srcAlpha = glnvg_convertBlendFuncFactor(op.srcAlpha);
+	GLenum dstAlpha = glnvg_convertBlendFuncFactor(op.dstAlpha);
+	if (srcRGB == GL_INVALID_ENUM || dstRGB == GL_INVALID_ENUM || srcAlpha == GL_INVALID_ENUM || dstAlpha == GL_INVALID_ENUM)
+		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	else
+		glBlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha);
+}
+
+static void glnvg__renderFlush(void* uptr, NVGcompositeOperationState compositeOperation)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	int i;
@@ -1095,7 +1138,7 @@ static void glnvg__renderFlush(void* uptr)
 		// Setup require GL state.
 		glUseProgram(gl->shader.prog);
 
-		glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		glnvg__blendCompositeOperation(compositeOperation);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
@@ -1157,7 +1200,7 @@ static void glnvg__renderFlush(void* uptr)
 		glDisableVertexAttribArray(1);
 #if defined NANOVG_GL3
 		glBindVertexArray(0);
-#endif	
+#endif
 		glDisable(GL_CULL_FACE);
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glUseProgram(0);
