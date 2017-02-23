@@ -12,7 +12,7 @@ solution "nanovg"
 		includedirs { "src" }
 		files { "src/*.c" }
 		targetdir("build")
-		defines { "_CRT_SECURE_NO_WARNINGS" } --,"FONS_USE_FREETYPE" } Uncomment to compile with FreeType support
+		defines { "_CRT_SECURE_NO_WARNINGS", "NVG_STB_IMAGE_IMPLEMENTATION" } --,"FONS_USE_FREETYPE" } Uncomment to compile with FreeType support
 		
 		configuration "Debug"
 			defines { "DEBUG" }
