@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#ifdef NANOVG_GLEW
-#  include <GL/glew.h>
-#endif
+
+#include OGL_LOADER
+
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
 
@@ -14,36 +15,29 @@
 #include <iconv.h>
 #endif
 
-// timer query support
-#ifndef GL_ARB_timer_query
-#define GL_TIME_ELAPSED                   0x88BF
-//typedef void (APIENTRY *pfnGLGETQUERYOBJECTUI64V)(GLuint id, GLenum pname, GLuint64* params);
-//pfnGLGETQUERYOBJECTUI64V glGetQueryObjectui64v = 0;
-#endif
-
 void initGPUTimer(GPUtimer* timer)
 {
 	memset(timer, 0, sizeof(*timer));
 
-/*	timer->supported = glfwExtensionSupported("GL_ARB_timer_query");
-	if (timer->supported) {
-#ifndef GL_ARB_timer_query
-		glGetQueryObjectui64v = (pfnGLGETQUERYOBJECTUI64V)glfwGetProcAddress("glGetQueryObjectui64v");
-		printf("glGetQueryObjectui64v=%p\n", glGetQueryObjectui64v);
-		if (!glGetQueryObjectui64v) {
-			timer->supported = GL_FALSE;
-			return;
-		}
+#ifdef GL_ARB_timer_query
+	timer->supported = !!GLAD_GL_ARB_timer_query;
+#else
+	timer->supported = 0;
 #endif
+	if (timer->supported) {
+#ifdef GL_ARB_timer_query
 		glGenQueries(GPU_QUERY_COUNT, timer->queries);
-	}*/
+#endif
+	}
 }
 
 void startGPUTimer(GPUtimer* timer)
 {
 	if (!timer->supported)
 		return;
+#ifdef GL_ARB_timer_query
 	glBeginQuery(GL_TIME_ELAPSED, timer->queries[timer->cur % GPU_QUERY_COUNT] );
+#endif
 	timer->cur++;
 }
 
@@ -56,20 +50,22 @@ int stopGPUTimer(GPUtimer* timer, float* times, int maxTimes)
 	if (!timer->supported)
 		return 0;
 
+#ifdef GL_ARB_timer_query
 	glEndQuery(GL_TIME_ELAPSED);
 	while (available && timer->ret <= timer->cur) {
 		// check for results if there are any
 		glGetQueryObjectiv(timer->queries[timer->ret % GPU_QUERY_COUNT], GL_QUERY_RESULT_AVAILABLE, &available);
 		if (available) {
-/*			GLuint64 timeElapsed = 0;
+			GLuint64 timeElapsed = 0;
 			glGetQueryObjectui64v(timer->queries[timer->ret % GPU_QUERY_COUNT], GL_QUERY_RESULT, &timeElapsed);
 			timer->ret++;
 			if (n < maxTimes) {
 				times[n] = (float)((double)timeElapsed * 1e-9);
 				n++;
-			}*/
+			}
 		}
 	}
+#endif
 	return n;
 }
 

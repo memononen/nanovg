@@ -17,8 +17,12 @@
 //
 
 #include <stdio.h>
-#define GLFW_INCLUDE_ES3
+
+#include OGL_LOADER
+
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+
 #include "nanovg.h"
 #define NANOVG_GLES3_IMPLEMENTATION
 #include "nanovg_gl.h"
@@ -81,6 +85,9 @@ int main()
 	glfwSetKeyCallback(window, key);
 
 	glfwMakeContextCurrent(window);
+
+	if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress))
+		return -1;
 
 	vg = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 	if (vg == NULL) {

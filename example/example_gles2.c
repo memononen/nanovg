@@ -17,9 +17,19 @@
 //
 
 #include <stdio.h>
-#define GLFW_INCLUDE_ES2
+
+#include OGL_LOADER
+
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+
 #include "nanovg.h"
+
+// For some reason this isn't included in the glad headers
+#ifndef GL_LUMINANCE
+#define GL_LUMINANCE                      0x1909
+#endif
+
 #define NANOVG_GLES2_IMPLEMENTATION
 #include "nanovg_gl.h"
 #include "nanovg_gl_utils.h"
@@ -81,6 +91,9 @@ int main()
 	glfwSetKeyCallback(window, key);
 
 	glfwMakeContextCurrent(window);
+
+	if (!gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress))
+		return -1;
 
 	vg = nvgCreateGLES2(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 	if (vg == NULL) {

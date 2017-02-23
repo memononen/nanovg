@@ -17,12 +17,12 @@
 //
 
 #include <stdio.h>
-#ifdef NANOVG_GLEW
-#	include <GL/glew.h>
-#endif
+
 #ifdef __APPLE__
 #	define GLFW_INCLUDE_GLCOREARB
 #endif
+
+#include OGL_LOADER
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
@@ -94,15 +94,11 @@ int main()
 	glfwSetKeyCallback(window, key);
 
 	glfwMakeContextCurrent(window);
-#ifdef NANOVG_GLEW
-	glewExperimental = GL_TRUE;
-	if(glewInit() != GLEW_OK) {
-		printf("Could not init glew.\n");
+
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+		glfwTerminate();
 		return -1;
 	}
-	// GLEW generates GL error because it calls glGetString(GL_EXTENSIONS), we'll consume it here.
-	glGetError();
-#endif
 
 #ifdef DEMO_MSAA
 	vg = nvgCreateGL3(NVG_STENCIL_STROKES | NVG_DEBUG);
