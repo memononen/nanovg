@@ -41,8 +41,8 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
-			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo" }
+			buildoptions { "`pkg-config --cflags glfw3`" }
+			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "`pkg-config --libs glfw3`" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
@@ -70,8 +70,8 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
-			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo" }
+			buildoptions { "`pkg-config --cflags glfw3`" }
+			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "`pkg-config --libs glfw3`" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
@@ -100,8 +100,8 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
-			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo" }
+			buildoptions { "`pkg-config --cflags glfw3`" }
+			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "`pkg-config --libs glfw3`" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
@@ -130,8 +130,8 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
-			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo" }
+			buildoptions { "`pkg-config --cflags glfw3`" }
+			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "`pkg-config --libs glfw3`" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
@@ -158,8 +158,8 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
-			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo" }
+			buildoptions { "`pkg-config --cflags glfw3`" }
+			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "`pkg-config --libs glfw3`" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
@@ -186,8 +186,8 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
-			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo" }
+			buildoptions { "`pkg-config --cflags glfw3`" }
+			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "`pkg-config --libs glfw3`" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
@@ -214,8 +214,8 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
-			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo" }
+			buildoptions { "`pkg-config --cflags glfw3`" }
+			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "`pkg-config --libs glfw3`" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
