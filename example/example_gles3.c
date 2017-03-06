@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #define GLFW_INCLUDE_ES3
+#define GLFW_INCLUDE_GLEXT
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
 #define NANOVG_GLES3_IMPLEMENTATION
