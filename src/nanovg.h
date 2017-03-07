@@ -27,132 +27,161 @@ extern "C" {
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable: 4201)  // nonstandard extension used : nameless struct/union
+#pragma warning(                                                             \
+    disable : 4201) // nonstandard extension used : nameless struct/union
 #endif
 
 typedef struct NVGcontext NVGcontext;
 
-struct NVGcolor {
-	union {
-		float rgba[4];
-		struct {
-			float r,g,b,a;
-		};
-	};
+struct NVGcolor
+{
+    union {
+        float rgba[4];
+        struct
+        {
+            float r, g, b, a;
+        };
+    };
 };
 typedef struct NVGcolor NVGcolor;
 
-struct NVGpaint {
-	float xform[6];
-	float extent[2];
-	float radius;
-	float feather;
-	NVGcolor innerColor;
-	NVGcolor outerColor;
-	int image;
+struct NVGpaint
+{
+    float xform[6];
+    float extent[2];
+    float radius;
+    float feather;
+    NVGcolor innerColor;
+    NVGcolor outerColor;
+    int image;
 };
 typedef struct NVGpaint NVGpaint;
 
-enum NVGwinding {
-	NVG_CCW = 1,			// Winding for solid shapes
-	NVG_CW = 2,				// Winding for holes
+enum NVGwinding
+{
+    NVG_CCW = 1, // Winding for solid shapes
+    NVG_CW = 2,  // Winding for holes
 };
 
-enum NVGsolidity {
-	NVG_SOLID = 1,			// CCW
-	NVG_HOLE = 2,			// CW
+enum NVGsolidity
+{
+    NVG_SOLID = 1, // CCW
+    NVG_HOLE = 2,  // CW
 };
 
-enum NVGlineCap {
-	NVG_BUTT,
-	NVG_ROUND,
-	NVG_SQUARE,
-	NVG_BEVEL,
-	NVG_MITER,
+enum NVGlineCap
+{
+    NVG_BUTT,
+    NVG_ROUND,
+    NVG_SQUARE,
+    NVG_BEVEL,
+    NVG_MITER,
 };
 
-enum NVGalign {
-	// Horizontal align
-	NVG_ALIGN_LEFT 		= 1<<0,	// Default, align text horizontally to left.
-	NVG_ALIGN_CENTER 	= 1<<1,	// Align text horizontally to center.
-	NVG_ALIGN_RIGHT 	= 1<<2,	// Align text horizontally to right.
-	// Vertical align
-	NVG_ALIGN_TOP 		= 1<<3,	// Align text vertically to top.
-	NVG_ALIGN_MIDDLE	= 1<<4,	// Align text vertically to middle.
-	NVG_ALIGN_BOTTOM	= 1<<5,	// Align text vertically to bottom.
-	NVG_ALIGN_BASELINE	= 1<<6, // Default, align text vertically to baseline.
+enum NVGalign
+{
+    // Horizontal align
+    NVG_ALIGN_LEFT = 1 << 0,   // Default, align text horizontally to left.
+    NVG_ALIGN_CENTER = 1 << 1, // Align text horizontally to center.
+    NVG_ALIGN_RIGHT = 1 << 2,  // Align text horizontally to right.
+    // Vertical align
+    NVG_ALIGN_TOP = 1 << 3,    // Align text vertically to top.
+    NVG_ALIGN_MIDDLE = 1 << 4, // Align text vertically to middle.
+    NVG_ALIGN_BOTTOM = 1 << 5, // Align text vertically to bottom.
+    NVG_ALIGN_BASELINE =
+        1 << 6, // Default, align text vertically to baseline.
 };
 
-enum NVGblendFactor {
-	NVG_ZERO = 1<<0,
-	NVG_ONE = 1<<1,
-	NVG_SRC_COLOR = 1<<2,
-	NVG_ONE_MINUS_SRC_COLOR = 1<<3,
-	NVG_DST_COLOR = 1<<4,
-	NVG_ONE_MINUS_DST_COLOR = 1<<5,
-	NVG_SRC_ALPHA = 1<<6,
-	NVG_ONE_MINUS_SRC_ALPHA = 1<<7,
-	NVG_DST_ALPHA = 1<<8,
-	NVG_ONE_MINUS_DST_ALPHA = 1<<9,
-	NVG_SRC_ALPHA_SATURATE = 1<<10,
+enum NVGblendFactor
+{
+    NVG_ZERO = 1 << 0,
+    NVG_ONE = 1 << 1,
+    NVG_SRC_COLOR = 1 << 2,
+    NVG_ONE_MINUS_SRC_COLOR = 1 << 3,
+    NVG_DST_COLOR = 1 << 4,
+    NVG_ONE_MINUS_DST_COLOR = 1 << 5,
+    NVG_SRC_ALPHA = 1 << 6,
+    NVG_ONE_MINUS_SRC_ALPHA = 1 << 7,
+    NVG_DST_ALPHA = 1 << 8,
+    NVG_ONE_MINUS_DST_ALPHA = 1 << 9,
+    NVG_SRC_ALPHA_SATURATE = 1 << 10,
 };
 
-enum NVGcompositeOperation {
-	NVG_SOURCE_OVER,
-	NVG_SOURCE_IN,
-	NVG_SOURCE_OUT,
-	NVG_ATOP,
-	NVG_DESTINATION_OVER,
-	NVG_DESTINATION_IN,
-	NVG_DESTINATION_OUT,
-	NVG_DESTINATION_ATOP,
-	NVG_LIGHTER,
-	NVG_COPY,
-	NVG_XOR,
+enum NVGcompositeOperation
+{
+    NVG_SOURCE_OVER,
+    NVG_SOURCE_IN,
+    NVG_SOURCE_OUT,
+    NVG_ATOP,
+    NVG_DESTINATION_OVER,
+    NVG_DESTINATION_IN,
+    NVG_DESTINATION_OUT,
+    NVG_DESTINATION_ATOP,
+    NVG_LIGHTER,
+    NVG_COPY,
+    NVG_XOR,
 };
 
-struct NVGcompositeOperationState {
-	int srcRGB;
-	int dstRGB;
-	int srcAlpha;
-	int dstAlpha;
+struct NVGcompositeOperationState
+{
+    int srcRGB;
+    int dstRGB;
+    int srcAlpha;
+    int dstAlpha;
 };
 typedef struct NVGcompositeOperationState NVGcompositeOperationState;
 
-struct NVGglyphPosition {
-	const char* str;	// Position of the glyph in the input string.
-	float x;			// The x-coordinate of the logical glyph position.
-	float minx, maxx;	// The bounds of the glyph shape.
+struct NVGglyphPosition
+{
+    const char* str;  // Position of the glyph in the input string.
+    float x;          // The x-coordinate of the logical glyph position.
+    float minx, maxx; // The bounds of the glyph shape.
 };
 typedef struct NVGglyphPosition NVGglyphPosition;
 
-struct NVGtextRow {
-	const char* start;	// Pointer to the input text where the row starts.
-	const char* end;	// Pointer to the input text where the row ends (one past the last character).
-	const char* next;	// Pointer to the beginning of the next row.
-	float width;		// Logical width of the row.
-	float minx, maxx;	// Actual bounds of the row. Logical with and bounds can differ because of kerning and some parts over extending.
+struct NVGtextRow
+{
+    const char* start; // Pointer to the input text where the row starts.
+    const char* end; // Pointer to the input text where the row ends (one past
+                     // the last character).
+    const char* next; // Pointer to the beginning of the next row.
+    float width;      // Logical width of the row.
+    float minx, maxx; // Actual bounds of the row. Logical with and bounds can
+                      // differ because of kerning and some parts over
+                      // extending.
 };
 typedef struct NVGtextRow NVGtextRow;
 
-enum NVGimageFlags {
-    NVG_IMAGE_GENERATE_MIPMAPS	= 1<<0,     // Generate mipmaps during creation of the image.
-	NVG_IMAGE_REPEATX			= 1<<1,		// Repeat image in X direction.
-	NVG_IMAGE_REPEATY			= 1<<2,		// Repeat image in Y direction.
-	NVG_IMAGE_FLIPY				= 1<<3,		// Flips (inverses) image in Y direction when rendered.
-	NVG_IMAGE_PREMULTIPLIED		= 1<<4,		// Image data has premultiplied alpha.
-	NVG_IMAGE_NEAREST			= 1<<5,		// Image interpolation is Nearest instead Linear
+enum NVGimageFlags
+{
+    NVG_IMAGE_GENERATE_MIPMAPS =
+        1 << 0, // Generate mipmaps during creation of the image.
+    NVG_IMAGE_REPEATX = 1 << 1, // Repeat image in X direction.
+    NVG_IMAGE_REPEATY = 1 << 2, // Repeat image in Y direction.
+    NVG_IMAGE_FLIPY =
+        1 << 3, // Flips (inverses) image in Y direction when rendered.
+    NVG_IMAGE_PREMULTIPLIED = 1 << 4, // Image data has premultiplied alpha.
+    NVG_IMAGE_NEAREST =
+        1 << 5, // Image interpolation is Nearest instead Linear
 };
 
 // Begin drawing a new frame
-// Calls to nanovg drawing API should be wrapped in nvgBeginFrame() & nvgEndFrame()
-// nvgBeginFrame() defines the size of the window to render to in relation currently
-// set viewport (i.e. glViewport on GL backends). Device pixel ration allows to
+// Calls to nanovg drawing API should be wrapped in nvgBeginFrame() &
+// nvgEndFrame()
+// nvgBeginFrame() defines the size of the window to render to in relation
+// currently
+// set viewport (i.e. glViewport on GL backends). Device pixel ration allows
+// to
 // control the rendering on Hi-DPI devices.
-// For example, GLFW returns two dimension for an opened window: window size and
-// frame buffer size. In that case you would set windowWidth/Height to the window size
+// For example, GLFW returns two dimension for an opened window: window size
+// and
+// frame buffer size. In that case you would set windowWidth/Height to the
+// window size
 // devicePixelRatio to: frameBufferWidth / windowWidth.
-void nvgBeginFrame(NVGcontext* ctx, int windowWidth, int windowHeight, float devicePixelRatio);
+void nvgBeginFrame(NVGcontext* ctx,
+                   int windowWidth,
+                   int windowHeight,
+                   float devicePixelRatio);
 
 // Cancels drawing the current frame.
 void nvgCancelFrame(NVGcontext* ctx);
@@ -164,38 +193,45 @@ void nvgEndFrame(NVGcontext* ctx);
 // Composite operation
 //
 // The composite operations in NanoVG are modeled after HTML Canvas API, and
-// the blend func is based on OpenGL (see corresponding manuals for more info).
+// the blend func is based on OpenGL (see corresponding manuals for more
+// info).
 // The colors in the blending state have premultiplied alpha.
 
-// Sets the composite operation. The op parameter should be one of NVGcompositeOperation.
+// Sets the composite operation. The op parameter should be one of
+// NVGcompositeOperation.
 void nvgGlobalCompositeOperation(NVGcontext* ctx, int op);
 
-// Sets the composite operation with custom pixel arithmetic. The parameters should be one of NVGblendFactor.
+// Sets the composite operation with custom pixel arithmetic. The parameters
+// should be one of NVGblendFactor.
 void nvgGlobalCompositeBlendFunc(NVGcontext* ctx, int sfactor, int dfactor);
 
-// Sets the composite operation with custom pixel arithmetic for RGB and alpha components separately. The parameters should be one of NVGblendFactor.
-void nvgGlobalCompositeBlendFuncSeparate(NVGcontext* ctx, int srcRGB, int dstRGB, int srcAlpha, int dstAlpha);
+// Sets the composite operation with custom pixel arithmetic for RGB and alpha
+// components separately. The parameters should be one of NVGblendFactor.
+void nvgGlobalCompositeBlendFuncSeparate(
+    NVGcontext* ctx, int srcRGB, int dstRGB, int srcAlpha, int dstAlpha);
 
 //
 // Color utils
 //
 // Colors in NanoVG are stored as unsigned ints in ABGR format.
 
-// Returns a color value from red, green, blue values. Alpha will be set to 255 (1.0f).
+// Returns a color value from red, green, blue values. Alpha will be set to
+// 255 (1.0f).
 NVGcolor nvgRGB(unsigned char r, unsigned char g, unsigned char b);
 
-// Returns a color value from red, green, blue values. Alpha will be set to 1.0f.
+// Returns a color value from red, green, blue values. Alpha will be set to
+// 1.0f.
 NVGcolor nvgRGBf(float r, float g, float b);
 
-
 // Returns a color value from red, green, blue and alpha values.
-NVGcolor nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+NVGcolor
+nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 
 // Returns a color value from red, green, blue and alpha values.
 NVGcolor nvgRGBAf(float r, float g, float b, float a);
 
-
-// Linearly interpolates from color c0 to c1, and returns resulting color value.
+// Linearly interpolates from color c0 to c1, and returns resulting color
+// value.
 NVGcolor nvgLerpRGBA(NVGcolor c0, NVGcolor c1, float u);
 
 // Sets transparency of a color value.
@@ -226,28 +262,35 @@ void nvgSave(NVGcontext* ctx);
 // Pops and restores current render state.
 void nvgRestore(NVGcontext* ctx);
 
-// Resets current render state to default values. Does not affect the render state stack.
+// Resets current render state to default values. Does not affect the render
+// state stack.
 void nvgReset(NVGcontext* ctx);
 
 //
 // Render styles
 //
-// Fill and stroke render style can be either a solid color or a paint which is a gradient or a pattern.
-// Solid color is simply defined as a color value, different kinds of paints can be created
-// using nvgLinearGradient(), nvgBoxGradient(), nvgRadialGradient() and nvgImagePattern().
+// Fill and stroke render style can be either a solid color or a paint which
+// is a gradient or a pattern.
+// Solid color is simply defined as a color value, different kinds of paints
+// can be created
+// using nvgLinearGradient(), nvgBoxGradient(), nvgRadialGradient() and
+// nvgImagePattern().
 //
-// Current render style can be saved and restored using nvgSave() and nvgRestore().
+// Current render style can be saved and restored using nvgSave() and
+// nvgRestore().
 
 // Sets current stroke style to a solid color.
 void nvgStrokeColor(NVGcontext* ctx, NVGcolor color);
 
-// Sets current stroke style to a paint, which can be a one of the gradients or a pattern.
+// Sets current stroke style to a paint, which can be a one of the gradients
+// or a pattern.
 void nvgStrokePaint(NVGcontext* ctx, NVGpaint paint);
 
 // Sets current fill style to a solid color.
 void nvgFillColor(NVGcontext* ctx, NVGcolor color);
 
-// Sets current fill style to a paint, which can be a one of the gradients or a pattern.
+// Sets current fill style to a paint, which can be a one of the gradients or
+// a pattern.
 void nvgFillPaint(NVGcontext* ctx, NVGpaint paint);
 
 // Sets the miter limit of the stroke style.
@@ -272,7 +315,8 @@ void nvgGlobalAlpha(NVGcontext* ctx, float alpha);
 //
 // Transforms
 //
-// The paths, gradients, patterns and scissor region are transformed by an transformation
+// The paths, gradients, patterns and scissor region are transformed by an
+// transformation
 // matrix at the time when they are passed to the API.
 // The current transformation matrix is a affine matrix:
 //   [sx kx tx]
@@ -282,9 +326,11 @@ void nvgGlobalAlpha(NVGcontext* ctx, float alpha);
 // The last row is assumed to be 0,0,1 and is not stored.
 //
 // Apart from nvgResetTransform(), each transformation function first creates
-// specific transformation matrix and pre-multiplies the current transformation by it.
+// specific transformation matrix and pre-multiplies the current
+// transformation by it.
 //
-// Current coordinate system (transformation) can be saved and restored using nvgSave() and nvgRestore().
+// Current coordinate system (transformation) can be saved and restored using
+// nvgSave() and nvgRestore().
 
 // Resets current transform to a identity matrix.
 void nvgResetTransform(NVGcontext* ctx);
@@ -294,7 +340,8 @@ void nvgResetTransform(NVGcontext* ctx);
 //   [a c e]
 //   [b d f]
 //   [0 0 1]
-void nvgTransform(NVGcontext* ctx, float a, float b, float c, float d, float e, float f);
+void nvgTransform(
+    NVGcontext* ctx, float a, float b, float c, float d, float e, float f);
 
 // Translates current coordinate system.
 void nvgTranslate(NVGcontext* ctx, float x, float y);
@@ -302,24 +349,27 @@ void nvgTranslate(NVGcontext* ctx, float x, float y);
 // Rotates current coordinate system. Angle is specified in radians.
 void nvgRotate(NVGcontext* ctx, float angle);
 
-// Skews the current coordinate system along X axis. Angle is specified in radians.
+// Skews the current coordinate system along X axis. Angle is specified in
+// radians.
 void nvgSkewX(NVGcontext* ctx, float angle);
 
-// Skews the current coordinate system along Y axis. Angle is specified in radians.
+// Skews the current coordinate system along Y axis. Angle is specified in
+// radians.
 void nvgSkewY(NVGcontext* ctx, float angle);
 
 // Scales the current coordinate system.
 void nvgScale(NVGcontext* ctx, float x, float y);
 
-// Stores the top part (a-f) of the current transformation matrix in to the specified buffer.
+// Stores the top part (a-f) of the current transformation matrix in to the
+// specified buffer.
 //   [a c e]
 //   [b d f]
 //   [0 0 1]
 // There should be space for 6 floats in the return buffer for the values a-f.
 void nvgCurrentTransform(NVGcontext* ctx, float* xform);
 
-
-// The following functions can be used to make calculations on 2x3 transformation matrices.
+// The following functions can be used to make calculations on 2x3
+// transformation matrices.
 // A 2x3 matrix is represented as float[6].
 
 // Sets the transform to identity matrix.
@@ -340,10 +390,12 @@ void nvgTransformSkewX(float* dst, float a);
 // Sets the transform to skew-y matrix. Angle is specified in radians.
 void nvgTransformSkewY(float* dst, float a);
 
-// Sets the transform to the result of multiplication of two transforms, of A = A*B.
+// Sets the transform to the result of multiplication of two transforms, of A
+// = A*B.
 void nvgTransformMultiply(float* dst, const float* src);
 
-// Sets the transform to the result of multiplication of two transforms, of A = B*A.
+// Sets the transform to the result of multiplication of two transforms, of A
+// = B*A.
 void nvgTransformPremultiply(float* dst, const float* src);
 
 // Sets the destination to inverse of specified transform.
@@ -351,7 +403,8 @@ void nvgTransformPremultiply(float* dst, const float* src);
 int nvgTransformInverse(float* dst, const float* src);
 
 // Transform a point by given transform.
-void nvgTransformPoint(float* dstx, float* dsty, const float* xform, float srcx, float srcy);
+void nvgTransformPoint(
+    float* dstx, float* dsty, const float* xform, float srcx, float srcy);
 
 // Converts degrees to radians and vice versa.
 float nvgDegToRad(float deg);
@@ -360,8 +413,10 @@ float nvgRadToDeg(float rad);
 //
 // Images
 //
-// NanoVG allows you to load jpg, png, psd, tga, pic and gif files to be used for rendering.
-// In addition you can upload your own image. The image loading is provided by stb_image.
+// NanoVG allows you to load jpg, png, psd, tga, pic and gif files to be used
+// for rendering.
+// In addition you can upload your own image. The image loading is provided by
+// stb_image.
 // The parameter imageFlags is combination of flags defined in NVGimageFlags.
 
 // Creates image by loading it from the disk from specified file name.
@@ -370,11 +425,15 @@ int nvgCreateImage(NVGcontext* ctx, const char* filename, int imageFlags);
 
 // Creates image by loading it from the specified chunk of memory.
 // Returns handle to the image.
-int nvgCreateImageMem(NVGcontext* ctx, int imageFlags, unsigned char* data, int ndata);
+int nvgCreateImageMem(NVGcontext* ctx,
+                      int imageFlags,
+                      unsigned char* data,
+                      int ndata);
 
 // Creates image from specified image data.
 // Returns handle to the image.
-int nvgCreateImageRGBA(NVGcontext* ctx, int w, int h, int imageFlags, const unsigned char* data);
+int nvgCreateImageRGBA(
+    NVGcontext* ctx, int w, int h, int imageFlags, const unsigned char* data);
 
 // Updates image data specified by image handle.
 void nvgUpdateImage(NVGcontext* ctx, int image, const unsigned char* data);
@@ -388,39 +447,78 @@ void nvgDeleteImage(NVGcontext* ctx, int image);
 //
 // Paints
 //
-// NanoVG supports four types of paints: linear gradient, box gradient, radial gradient and image pattern.
+// NanoVG supports four types of paints: linear gradient, box gradient, radial
+// gradient and image pattern.
 // These can be used as paints for strokes and fills.
 
-// Creates and returns a linear gradient. Parameters (sx,sy)-(ex,ey) specify the start and end coordinates
-// of the linear gradient, icol specifies the start color and ocol the end color.
-// The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
-NVGpaint nvgLinearGradient(NVGcontext* ctx, float sx, float sy, float ex, float ey,
-						   NVGcolor icol, NVGcolor ocol);
+// Creates and returns a linear gradient. Parameters (sx,sy)-(ex,ey) specify
+// the start and end coordinates
+// of the linear gradient, icol specifies the start color and ocol the end
+// color.
+// The gradient is transformed by the current transform when it is passed to
+// nvgFillPaint() or nvgStrokePaint().
+NVGpaint nvgLinearGradient(NVGcontext* ctx,
+                           float sx,
+                           float sy,
+                           float ex,
+                           float ey,
+                           NVGcolor icol,
+                           NVGcolor ocol);
 
-// Creates and returns a box gradient. Box gradient is a feathered rounded rectangle, it is useful for rendering
-// drop shadows or highlights for boxes. Parameters (x,y) define the top-left corner of the rectangle,
-// (w,h) define the size of the rectangle, r defines the corner radius, and f feather. Feather defines how blurry
-// the border of the rectangle is. Parameter icol specifies the inner color and ocol the outer color of the gradient.
-// The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
-NVGpaint nvgBoxGradient(NVGcontext* ctx, float x, float y, float w, float h,
-						float r, float f, NVGcolor icol, NVGcolor ocol);
+// Creates and returns a box gradient. Box gradient is a feathered rounded
+// rectangle, it is useful for rendering
+// drop shadows or highlights for boxes. Parameters (x,y) define the top-left
+// corner of the rectangle,
+// (w,h) define the size of the rectangle, r defines the corner radius, and f
+// feather. Feather defines how blurry
+// the border of the rectangle is. Parameter icol specifies the inner color
+// and ocol the outer color of the gradient.
+// The gradient is transformed by the current transform when it is passed to
+// nvgFillPaint() or nvgStrokePaint().
+NVGpaint nvgBoxGradient(NVGcontext* ctx,
+                        float x,
+                        float y,
+                        float w,
+                        float h,
+                        float r,
+                        float f,
+                        NVGcolor icol,
+                        NVGcolor ocol);
 
-// Creates and returns a radial gradient. Parameters (cx,cy) specify the center, inr and outr specify
-// the inner and outer radius of the gradient, icol specifies the start color and ocol the end color.
-// The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
-NVGpaint nvgRadialGradient(NVGcontext* ctx, float cx, float cy, float inr, float outr,
-						   NVGcolor icol, NVGcolor ocol);
+// Creates and returns a radial gradient. Parameters (cx,cy) specify the
+// center, inr and outr specify
+// the inner and outer radius of the gradient, icol specifies the start color
+// and ocol the end color.
+// The gradient is transformed by the current transform when it is passed to
+// nvgFillPaint() or nvgStrokePaint().
+NVGpaint nvgRadialGradient(NVGcontext* ctx,
+                           float cx,
+                           float cy,
+                           float inr,
+                           float outr,
+                           NVGcolor icol,
+                           NVGcolor ocol);
 
-// Creates and returns an image patter. Parameters (ox,oy) specify the left-top location of the image pattern,
-// (ex,ey) the size of one image, angle rotation around the top-left corner, image is handle to the image to render.
-// The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
-NVGpaint nvgImagePattern(NVGcontext* ctx, float ox, float oy, float ex, float ey,
-						 float angle, int image, float alpha);
+// Creates and returns an image patter. Parameters (ox,oy) specify the
+// left-top location of the image pattern,
+// (ex,ey) the size of one image, angle rotation around the top-left corner,
+// image is handle to the image to render.
+// The gradient is transformed by the current transform when it is passed to
+// nvgFillPaint() or nvgStrokePaint().
+NVGpaint nvgImagePattern(NVGcontext* ctx,
+                         float ox,
+                         float oy,
+                         float ex,
+                         float ey,
+                         float angle,
+                         int image,
+                         float alpha);
 
 //
 // Scissoring
 //
-// Scissoring allows you to clip the rendering into a rectangle. This is useful for various
+// Scissoring allows you to clip the rendering into a rectangle. This is
+// useful for various
 // user interface cases like rendering a text edit or a timeline.
 
 // Sets the current scissor rectangle.
@@ -441,16 +539,23 @@ void nvgResetScissor(NVGcontext* ctx);
 //
 // Paths
 //
-// Drawing a new shape starts with nvgBeginPath(), it clears all the currently defined paths.
-// Then you define one or more paths and sub-paths which describe the shape. The are functions
-// to draw common shapes like rectangles and circles, and lower level step-by-step functions,
+// Drawing a new shape starts with nvgBeginPath(), it clears all the currently
+// defined paths.
+// Then you define one or more paths and sub-paths which describe the shape.
+// The are functions
+// to draw common shapes like rectangles and circles, and lower level
+// step-by-step functions,
 // which allow to define a path curve by curve.
 //
-// NanoVG uses even-odd fill rule to draw the shapes. Solid shapes should have counter clockwise
-// winding and holes should have counter clockwise order. To specify winding of a path you can
-// call nvgPathWinding(). This is useful especially for the common shapes, which are drawn CCW.
+// NanoVG uses even-odd fill rule to draw the shapes. Solid shapes should have
+// counter clockwise
+// winding and holes should have counter clockwise order. To specify winding
+// of a path you can
+// call nvgPathWinding(). This is useful especially for the common shapes,
+// which are drawn CCW.
 //
-// Finally you can fill the path using current fill style by calling nvgFill(), and stroke it
+// Finally you can fill the path using current fill style by calling
+// nvgFill(), and stroke it
 // with current stroke style by calling nvgStroke().
 //
 // The curve segments and sub-paths are transformed by the current transform.
@@ -464,14 +569,24 @@ void nvgMoveTo(NVGcontext* ctx, float x, float y);
 // Adds line segment from the last point in the path to the specified point.
 void nvgLineTo(NVGcontext* ctx, float x, float y);
 
-// Adds cubic bezier segment from last point in the path via two control points to the specified point.
-void nvgBezierTo(NVGcontext* ctx, float c1x, float c1y, float c2x, float c2y, float x, float y);
+// Adds cubic bezier segment from last point in the path via two control
+// points to the specified point.
+void nvgBezierTo(NVGcontext* ctx,
+                 float c1x,
+                 float c1y,
+                 float c2x,
+                 float c2y,
+                 float x,
+                 float y);
 
-// Adds quadratic bezier segment from last point in the path via a control point to the specified point.
+// Adds quadratic bezier segment from last point in the path via a control
+// point to the specified point.
 void nvgQuadTo(NVGcontext* ctx, float cx, float cy, float x, float y);
 
-// Adds an arc segment at the corner defined by the last path point, and two specified points.
-void nvgArcTo(NVGcontext* ctx, float x1, float y1, float x2, float y2, float radius);
+// Adds an arc segment at the corner defined by the last path point, and two
+// specified points.
+void nvgArcTo(
+    NVGcontext* ctx, float x1, float y1, float x2, float y2, float radius);
 
 // Closes current sub-path with a line segment.
 void nvgClosePath(NVGcontext* ctx);
@@ -479,19 +594,37 @@ void nvgClosePath(NVGcontext* ctx);
 // Sets the current sub-path winding, see NVGwinding and NVGsolidity.
 void nvgPathWinding(NVGcontext* ctx, int dir);
 
-// Creates new circle arc shaped sub-path. The arc center is at cx,cy, the arc radius is r,
-// and the arc is drawn from angle a0 to a1, and swept in direction dir (NVG_CCW, or NVG_CW).
+// Creates new circle arc shaped sub-path. The arc center is at cx,cy, the arc
+// radius is r,
+// and the arc is drawn from angle a0 to a1, and swept in direction dir
+// (NVG_CCW, or NVG_CW).
 // Angles are specified in radians.
-void nvgArc(NVGcontext* ctx, float cx, float cy, float r, float a0, float a1, int dir);
+void nvgArc(NVGcontext* ctx,
+            float cx,
+            float cy,
+            float r,
+            float a0,
+            float a1,
+            int dir);
 
 // Creates new rectangle shaped sub-path.
 void nvgRect(NVGcontext* ctx, float x, float y, float w, float h);
 
 // Creates new rounded rectangle shaped sub-path.
-void nvgRoundedRect(NVGcontext* ctx, float x, float y, float w, float h, float r);
+void nvgRoundedRect(
+    NVGcontext* ctx, float x, float y, float w, float h, float r);
 
-// Creates new rounded rectangle shaped sub-path with varying radii for each corner.
-void nvgRoundedRectVarying(NVGcontext* ctx, float x, float y, float w, float h, float radTopLeft, float radTopRight, float radBottomRight, float radBottomLeft);
+// Creates new rounded rectangle shaped sub-path with varying radii for each
+// corner.
+void nvgRoundedRectVarying(NVGcontext* ctx,
+                           float x,
+                           float y,
+                           float w,
+                           float h,
+                           float radTopLeft,
+                           float radTopRight,
+                           float radBottomRight,
+                           float radBottomLeft);
 
 // Creates new ellipse shaped sub-path.
 void nvgEllipse(NVGcontext* ctx, float cx, float cy, float rx, float ry);
@@ -505,7 +638,6 @@ void nvgFill(NVGcontext* ctx);
 // Fills the current path with current stroke style.
 void nvgStroke(NVGcontext* ctx);
 
-
 //
 // Text
 //
@@ -513,7 +645,8 @@ void nvgStroke(NVGcontext* ctx);
 //
 // The appearance of the text can be defined by setting the current text style
 // and by specifying the fill color. Common text and font settings such as
-// font size, letter spacing and text align are supported. Font blur allows you
+// font size, letter spacing and text align are supported. Font blur allows
+// you
 // to create simple text effects such as drop shadows.
 //
 // At render time the font face can be set based on the font handles or name.
@@ -522,19 +655,24 @@ void nvgStroke(NVGcontext* ctx);
 // carried in the same resolution as the final rendering. This is done because
 // the text glyph positions are snapped to the nearest pixels sharp rendering.
 //
-// The local space means that values are not rotated or scale as per the current
-// transformation. For example if you set font size to 12, which would mean that
+// The local space means that values are not rotated or scale as per the
+// current
+// transformation. For example if you set font size to 12, which would mean
+// that
 // line height is 16, then regardless of the current scaling and rotation, the
-// returned line height is always 16. Some measures may vary because of the scaling
+// returned line height is always 16. Some measures may vary because of the
+// scaling
 // since aforementioned pixel snapping.
 //
-// While this may sound a little odd, the setup allows you to always render the
+// While this may sound a little odd, the setup allows you to always render
+// the
 // same way regardless of scaling. I.e. following works regardless of scaling:
 //
 //		const char* txt = "Text me up.";
 //		nvgTextBounds(vg, x,y, txt, NULL, bounds);
 //		nvgBeginPath(vg);
-//		nvgRoundedRect(vg, bounds[0],bounds[1], bounds[2]-bounds[0], bounds[3]-bounds[1]);
+//		nvgRoundedRect(vg, bounds[0],bounds[1], bounds[2]-bounds[0],
+//bounds[3]-bounds[1]);
 //		nvgFill(vg);
 //
 // Note: currently only solid color fill is supported for text.
@@ -545,16 +683,23 @@ int nvgCreateFont(NVGcontext* ctx, const char* name, const char* filename);
 
 // Creates font by loading it from the specified memory chunk.
 // Returns handle to the font.
-int nvgCreateFontMem(NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int freeData);
+int nvgCreateFontMem(NVGcontext* ctx,
+                     const char* name,
+                     unsigned char* data,
+                     int ndata,
+                     int freeData);
 
-// Finds a loaded font of specified name, and returns handle to it, or -1 if the font is not found.
+// Finds a loaded font of specified name, and returns handle to it, or -1 if
+// the font is not found.
 int nvgFindFont(NVGcontext* ctx, const char* name);
 
 // Adds a fallback font by handle.
 int nvgAddFallbackFontId(NVGcontext* ctx, int baseFont, int fallbackFont);
 
 // Adds a fallback font by name.
-int nvgAddFallbackFont(NVGcontext* ctx, const char* baseFont, const char* fallbackFont);
+int nvgAddFallbackFont(NVGcontext* ctx,
+                       const char* baseFont,
+                       const char* fallbackFont);
 
 // Sets the font size of current text style.
 void nvgFontSize(NVGcontext* ctx, float size);
@@ -565,7 +710,8 @@ void nvgFontBlur(NVGcontext* ctx, float blur);
 // Sets the letter spacing of current text style.
 void nvgTextLetterSpacing(NVGcontext* ctx, float spacing);
 
-// Sets the proportional line height of current text style. The line height is specified as multiple of font size.
+// Sets the proportional line height of current text style. The line height is
+// specified as multiple of font size.
 void nvgTextLineHeight(NVGcontext* ctx, float lineHeight);
 
 // Sets the text align of current text style, see NVGalign for options.
@@ -577,86 +723,168 @@ void nvgFontFaceId(NVGcontext* ctx, int font);
 // Sets the font face based on specified name of current text style.
 void nvgFontFace(NVGcontext* ctx, const char* font);
 
-// Draws text string at specified location. If end is specified only the sub-string up to the end is drawn.
-float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char* end);
+// Draws text string at specified location. If end is specified only the
+// sub-string up to the end is drawn.
+float nvgText(
+    NVGcontext* ctx, float x, float y, const char* string, const char* end);
 
-// Draws multi-line text string at specified location wrapped at the specified width. If end is specified only the sub-string up to the end is drawn.
-// White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
-// Words longer than the max width are slit at nearest character (i.e. no hyphenation).
-void nvgTextBox(NVGcontext* ctx, float x, float y, float breakRowWidth, const char* string, const char* end);
+// Draws multi-line text string at specified location wrapped at the specified
+// width. If end is specified only the sub-string up to the end is drawn.
+// White space is stripped at the beginning of the rows, the text is split at
+// word boundaries or when new-line characters are encountered.
+// Words longer than the max width are slit at nearest character (i.e. no
+// hyphenation).
+void nvgTextBox(NVGcontext* ctx,
+                float x,
+                float y,
+                float breakRowWidth,
+                const char* string,
+                const char* end);
 
-// Measures the specified text string. Parameter bounds should be a pointer to float[4],
-// if the bounding box of the text should be returned. The bounds value are [xmin,ymin, xmax,ymax]
-// Returns the horizontal advance of the measured text (i.e. where the next character should drawn).
+// Measures the specified text string. Parameter bounds should be a pointer to
+// float[4],
+// if the bounding box of the text should be returned. The bounds value are
+// [xmin,ymin, xmax,ymax]
+// Returns the horizontal advance of the measured text (i.e. where the next
+// character should drawn).
 // Measured values are returned in local coordinate space.
-float nvgTextBounds(NVGcontext* ctx, float x, float y, const char* string, const char* end, float* bounds);
+float nvgTextBounds(NVGcontext* ctx,
+                    float x,
+                    float y,
+                    const char* string,
+                    const char* end,
+                    float* bounds);
 
-// Measures the specified multi-text string. Parameter bounds should be a pointer to float[4],
-// if the bounding box of the text should be returned. The bounds value are [xmin,ymin, xmax,ymax]
+// Measures the specified multi-text string. Parameter bounds should be a
+// pointer to float[4],
+// if the bounding box of the text should be returned. The bounds value are
+// [xmin,ymin, xmax,ymax]
 // Measured values are returned in local coordinate space.
-void nvgTextBoxBounds(NVGcontext* ctx, float x, float y, float breakRowWidth, const char* string, const char* end, float* bounds);
+void nvgTextBoxBounds(NVGcontext* ctx,
+                      float x,
+                      float y,
+                      float breakRowWidth,
+                      const char* string,
+                      const char* end,
+                      float* bounds);
 
-// Calculates the glyph x positions of the specified text. If end is specified only the sub-string will be used.
+// Calculates the glyph x positions of the specified text. If end is specified
+// only the sub-string will be used.
 // Measured values are returned in local coordinate space.
-int nvgTextGlyphPositions(NVGcontext* ctx, float x, float y, const char* string, const char* end, NVGglyphPosition* positions, int maxPositions);
+int nvgTextGlyphPositions(NVGcontext* ctx,
+                          float x,
+                          float y,
+                          const char* string,
+                          const char* end,
+                          NVGglyphPosition* positions,
+                          int maxPositions);
 
 // Returns the vertical metrics based on the current text style.
 // Measured values are returned in local coordinate space.
-void nvgTextMetrics(NVGcontext* ctx, float* ascender, float* descender, float* lineh);
+void nvgTextMetrics(NVGcontext* ctx,
+                    float* ascender,
+                    float* descender,
+                    float* lineh);
 
-// Breaks the specified text into lines. If end is specified only the sub-string will be used.
-// White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
-// Words longer than the max width are slit at nearest character (i.e. no hyphenation).
-int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, float breakRowWidth, NVGtextRow* rows, int maxRows);
+// Breaks the specified text into lines. If end is specified only the
+// sub-string will be used.
+// White space is stripped at the beginning of the rows, the text is split at
+// word boundaries or when new-line characters are encountered.
+// Words longer than the max width are slit at nearest character (i.e. no
+// hyphenation).
+int nvgTextBreakLines(NVGcontext* ctx,
+                      const char* string,
+                      const char* end,
+                      float breakRowWidth,
+                      NVGtextRow* rows,
+                      int maxRows);
 
 //
 // Internal Render API
 //
-enum NVGtexture {
-	NVG_TEXTURE_ALPHA = 0x01,
-	NVG_TEXTURE_RGBA = 0x02,
+enum NVGtexture
+{
+    NVG_TEXTURE_ALPHA = 0x01,
+    NVG_TEXTURE_RGBA = 0x02,
 };
 
-struct NVGscissor {
-	float xform[6];
-	float extent[2];
+struct NVGscissor
+{
+    float xform[6];
+    float extent[2];
 };
 typedef struct NVGscissor NVGscissor;
 
-struct NVGvertex {
-	float x,y,u,v;
+struct NVGvertex
+{
+    float x, y, u, v;
 };
 typedef struct NVGvertex NVGvertex;
 
-struct NVGpath {
-	int first;
-	int count;
-	unsigned char closed;
-	int nbevel;
-	NVGvertex* fill;
-	int nfill;
-	NVGvertex* stroke;
-	int nstroke;
-	int winding;
-	int convex;
+struct NVGpath
+{
+    int first;
+    int count;
+    unsigned char closed;
+    int nbevel;
+    NVGvertex* fill;
+    int nfill;
+    NVGvertex* stroke;
+    int nstroke;
+    int winding;
+    int convex;
 };
 typedef struct NVGpath NVGpath;
 
-struct NVGparams {
-	void* userPtr;
-	int edgeAntiAlias;
-	int (*renderCreate)(void* uptr);
-	int (*renderCreateTexture)(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data);
-	int (*renderDeleteTexture)(void* uptr, int image);
-	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
-	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
-	void (*renderViewport)(void* uptr, int width, int height, float devicePixelRatio);
-	void (*renderCancel)(void* uptr);
-	void (*renderFlush)(void* uptr);
-	void (*renderFill)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths);
-	void (*renderStroke)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, float strokeWidth, const NVGpath* paths, int npaths);
-	void (*renderTriangles)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, const NVGvertex* verts, int nverts);
-	void (*renderDelete)(void* uptr);
+struct NVGparams
+{
+    void* userPtr;
+    int edgeAntiAlias;
+    int (*renderCreate)(void* uptr);
+    int (*renderCreateTexture)(void* uptr,
+                               int type,
+                               int w,
+                               int h,
+                               int imageFlags,
+                               const unsigned char* data);
+    int (*renderDeleteTexture)(void* uptr, int image);
+    int (*renderUpdateTexture)(void* uptr,
+                               int image,
+                               int x,
+                               int y,
+                               int w,
+                               int h,
+                               const unsigned char* data);
+    int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
+    void (*renderViewport)(void* uptr,
+                           int width,
+                           int height,
+                           float devicePixelRatio);
+    void (*renderCancel)(void* uptr);
+    void (*renderFlush)(void* uptr);
+    void (*renderFill)(void* uptr,
+                       NVGpaint* paint,
+                       NVGcompositeOperationState compositeOperation,
+                       NVGscissor* scissor,
+                       float fringe,
+                       const float* bounds,
+                       const NVGpath* paths,
+                       int npaths);
+    void (*renderStroke)(void* uptr,
+                         NVGpaint* paint,
+                         NVGcompositeOperationState compositeOperation,
+                         NVGscissor* scissor,
+                         float fringe,
+                         float strokeWidth,
+                         const NVGpath* paths,
+                         int npaths);
+    void (*renderTriangles)(void* uptr,
+                            NVGpaint* paint,
+                            NVGcompositeOperationState compositeOperation,
+                            NVGscissor* scissor,
+                            const NVGvertex* verts,
+                            int nverts);
+    void (*renderDelete)(void* uptr);
 };
 typedef struct NVGparams NVGparams;
 
@@ -673,7 +901,12 @@ void nvgDebugDumpPathCache(NVGcontext* ctx);
 #pragma warning(pop)
 #endif
 
-#define NVG_NOTUSED(v) for (;;) { (void)(1 ? (void)0 : ( (void)(v) ) ); break; }
+#define NVG_NOTUSED(v)                                                       \
+    for (;;)                                                                 \
+    {                                                                        \
+        (void) (1 ? (void) 0 : ((void) (v)));                                \
+        break;                                                               \
+    }
 
 #ifdef __cplusplus
 }
