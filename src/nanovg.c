@@ -67,6 +67,7 @@ enum NVGpointFlags
 
 struct NVGstate {
 	NVGcompositeOperationState compositeOperation;
+	int shapeAntiAlias;
 	NVGpaint fill;
 	NVGpaint stroke;
 	float strokeWidth;
@@ -646,6 +647,7 @@ void nvgReset(NVGcontext* ctx)
 	nvg__setPaintColor(&state->fill, nvgRGBA(255,255,255,255));
 	nvg__setPaintColor(&state->stroke, nvgRGBA(0,0,0,255));
 	state->compositeOperation = nvg__compositeOperationState(NVG_SOURCE_OVER);
+	state->shapeAntiAlias = 1;
 	state->strokeWidth = 1.0f;
 	state->miterLimit = 10.0f;
 	state->lineCap = NVG_BUTT;
@@ -665,6 +667,12 @@ void nvgReset(NVGcontext* ctx)
 }
 
 // State setting
+void nvgShapeAntiAlias(NVGcontext* ctx, int enabled)
+{
+	NVGstate* state = nvg__getState(ctx);
+	state->shapeAntiAlias = enabled;
+}
+
 void nvgStrokeWidth(NVGcontext* ctx, float width)
 {
 	NVGstate* state = nvg__getState(ctx);
@@ -2203,7 +2211,7 @@ void nvgFill(NVGcontext* ctx)
 	int i;
 
 	nvg__flattenPaths(ctx);
-	if (ctx->params.edgeAntiAlias)
+	if (ctx->params.edgeAntiAlias && state->shapeAntiAlias)
 		nvg__expandFill(ctx, ctx->fringeWidth, NVG_MITER, 2.4f);
 	else
 		nvg__expandFill(ctx, 0.0f, NVG_MITER, 2.4f);
@@ -2248,7 +2256,7 @@ void nvgStroke(NVGcontext* ctx)
 
 	nvg__flattenPaths(ctx);
 
-	if (ctx->params.edgeAntiAlias)
+	if (ctx->params.edgeAntiAlias && state->shapeAntiAlias)
 		nvg__expandStroke(ctx, strokeWidth*0.5f + ctx->fringeWidth*0.5f, state->lineCap, state->lineJoin, state->miterLimit);
 	else
 		nvg__expandStroke(ctx, strokeWidth*0.5f, state->lineCap, state->lineJoin, state->miterLimit);
