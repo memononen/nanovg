@@ -12,6 +12,8 @@
 #include "test_registory.h"
 #include "image_compare.h"
 
+#include "../example/save_screenshot_implementation.h"
+
 static const EGLint configAttribs[] = {
     EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
     EGL_BLUE_SIZE, 8,
