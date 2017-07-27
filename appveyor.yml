@@ -1,0 +1,13 @@
+version: '{branch}/{build}'
+clone_depth: 1
+build_script:
+- ps: >-
+    mkdir build
+
+    cd build
+
+    cmake ../ -DCMAKE_BUILD_TYPE=Debug
+
+    cmake --build . --config Debug
+
+    ctest -C Debug --output-on-failure
