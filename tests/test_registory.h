@@ -1,12 +1,12 @@
 #pragma once
 
 #include <stdbool.h>
-typedef void (*draw_test_function_type)(NVGcontext *, int, int);
+typedef void (*draw_test_function_type)(NVGcontext*, int, int);
 
 typedef struct
 {
-    const char *name;
-    draw_test_function_type function;
+	const char* name;
+	draw_test_function_type function;
 } draw_test_info;
 
 #include "testcase/demo.h"
