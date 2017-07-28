@@ -1,7 +1,7 @@
 
-static void test_compositeOperation(NVGcontext *vg, int width, int height, float pxRatio, enum NVGcompositeOperation op)
+static void test_compositeOperation(NVGcontext *vg, int width, int height, enum NVGcompositeOperation op)
 {
-    nvgBeginFrame(vg, width, height, pxRatio);
+    nvgBeginFrame(vg, width, height, 1);
 
     nvgBeginPath(vg);
     nvgRect(vg, 0, 0, width * 0.6, height * 0.6);
@@ -26,47 +26,47 @@ static void test_compositeOperation(NVGcontext *vg, int width, int height, float
     nvgEndFrame(vg);
 }
 
-static void test_compositeOperationSourceOver(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositeOperationSourceOver(NVGcontext *vg, int width, int height)
 {
-    test_compositeOperation(vg, width, height, pxRatio, NVG_SOURCE_OVER);
+    test_compositeOperation(vg, width, height, NVG_SOURCE_OVER);
 }
-static void test_compositeOperationSourceIn(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositeOperationSourceIn(NVGcontext *vg, int width, int height)
 {
-    test_compositeOperation(vg, width, height, pxRatio, NVG_SOURCE_IN);
+    test_compositeOperation(vg, width, height, NVG_SOURCE_IN);
 }
-static void test_compositeOperationSourceOut(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositeOperationSourceOut(NVGcontext *vg, int width, int height)
 {
-    test_compositeOperation(vg, width, height, pxRatio, NVG_SOURCE_OUT);
+    test_compositeOperation(vg, width, height, NVG_SOURCE_OUT);
 }
-static void test_compositeOperationSourceAtop(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositeOperationSourceAtop(NVGcontext *vg, int width, int height)
 {
-    test_compositeOperation(vg, width, height, pxRatio, NVG_ATOP);
+    test_compositeOperation(vg, width, height, NVG_ATOP);
 }
-static void test_compositeOperationDestinationOver(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositeOperationDestinationOver(NVGcontext *vg, int width, int height)
 {
-    test_compositeOperation(vg, width, height, pxRatio, NVG_DESTINATION_OVER);
+    test_compositeOperation(vg, width, height, NVG_DESTINATION_OVER);
 }
-static void test_compositeOperationDestinationIn(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositeOperationDestinationIn(NVGcontext *vg, int width, int height)
 {
-    test_compositeOperation(vg, width, height, pxRatio, NVG_DESTINATION_IN);
+    test_compositeOperation(vg, width, height, NVG_DESTINATION_IN);
 }
-static void test_compositeOperationDestinationOut(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositeOperationDestinationOut(NVGcontext *vg, int width, int height)
 {
-    test_compositeOperation(vg, width, height, pxRatio, NVG_DESTINATION_OUT);
+    test_compositeOperation(vg, width, height, NVG_DESTINATION_OUT);
 }
-static void test_compositeOperationDestinationAtop(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositeOperationDestinationAtop(NVGcontext *vg, int width, int height)
 {
-    test_compositeOperation(vg, width, height, pxRatio, NVG_DESTINATION_ATOP);
+    test_compositeOperation(vg, width, height, NVG_DESTINATION_ATOP);
 }
-static void test_compositeOperationLighter(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositeOperationLighter(NVGcontext *vg, int width, int height)
 {
-    test_compositeOperation(vg, width, height, pxRatio, NVG_LIGHTER);
+    test_compositeOperation(vg, width, height, NVG_LIGHTER);
 }
-static void test_compositeOperationCopy(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositeOperationCopy(NVGcontext *vg, int width, int height)
 {
-    test_compositeOperation(vg, width, height, pxRatio, NVG_COPY);
+    test_compositeOperation(vg, width, height, NVG_COPY);
 }
-static void test_compositeOperationXOR(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositeOperationXOR(NVGcontext *vg, int width, int height)
 {
-    test_compositeOperation(vg, width, height, pxRatio, NVG_XOR);
+    test_compositeOperation(vg, width, height, NVG_XOR);
 }

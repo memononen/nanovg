@@ -1,7 +1,7 @@
 
-static void test_compositePaths1(NVGcontext *vg, int width, int height, float pxRatio)
+static void test_compositePaths1(NVGcontext *vg, int width, int height)
 {
-    nvgBeginFrame(vg, width, height, pxRatio);
+    nvgBeginFrame(vg, width, height, 1);
     nvgBeginPath(vg);
     nvgRect(vg, 100, 100, 120, 30);
     nvgCircle(vg, 120, 120, 5);

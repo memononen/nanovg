@@ -25,8 +25,8 @@ static const EGLint configAttribs[] = {
     EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
     EGL_NONE};
 
-#define BUFFER_WIDTH 1000
-#define BUFFER_HEIGHT 600
+#define BUFFER_WIDTH 250
+#define BUFFER_HEIGHT 250
 static const EGLint pbufferAttribs[] = {
     EGL_WIDTH, BUFFER_WIDTH,
     EGL_HEIGHT, BUFFER_HEIGHT,
@@ -85,12 +85,6 @@ int main(int argc, char *argv[])
 
         NVGcontext *vg = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 
-        int winWidth = 1000;
-        int winHeight = 600;
-
-        // Calculate pixel ration for hi-dpi devices.
-        float pxRatio = (float)BUFFER_WIDTH / (float)winWidth;
-
         // Update and render
         glViewport(0, 0, BUFFER_WIDTH, BUFFER_HEIGHT);
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -101,24 +95,26 @@ int main(int argc, char *argv[])
         glEnable(GL_CULL_FACE);
         glDisable(GL_DEPTH_TEST);
 
-        test_function(vg, winWidth, winHeight, pxRatio);
+        test_function(vg, BUFFER_WIDTH, BUFFER_HEIGHT);
 
         char outputpath[512];
-        snprintf(outputpath, 512, "results/%s-%s.png", RENDERER_NAME, test_name);
+        snprintf(outputpath, 512, "results/%s/%s.png", RENDERER_NAME, test_name);
         saveScreenShot(BUFFER_WIDTH, BUFFER_HEIGHT, false, outputpath);
 
         char expectedpath[512];
-        snprintf(expectedpath, 512, "expected/%s-%s.png", RENDERER_NAME, test_name);
+        snprintf(expectedpath, 512, "expected/%s/%s.png", RENDERER_NAME, test_name);
         if (!imageCompare(outputpath, expectedpath, 5))
         {
             test_result = false;
-            printf("%s-%s is failure\n", RENDERER_NAME, test_name);
+            printf("%s/%s is failure\n", RENDERER_NAME, test_name);
         }
         glEnable(GL_DEPTH_TEST);
 
         nvgDeleteGLES3(vg);
     }
 
+    eglDestroyContext(eglDpy, eglCtx);
+    eglDestroySurface(eglDpy, eglSurf);
     eglTerminate(eglDpy);
     return test_result ? 0 : -1;
 }

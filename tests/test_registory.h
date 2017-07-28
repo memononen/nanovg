@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
-typedef void (*draw_test_function_type)(NVGcontext *, int, int, float);
+typedef void (*draw_test_function_type)(NVGcontext *, int, int);
 
 typedef struct
 {
@@ -15,7 +15,18 @@ typedef struct
 #include "testcase/compositeOperation.h"
 
 draw_test_info DRAW_TEST_CASES[] = {
-    {"demo", test_demo},
+    {"demo01", test_demo01},
+    {"demo02", test_demo02},
+    {"demo03", test_demo03},
+    {"demo04", test_demo04},
+    {"demo05", test_demo05},
+    {"demo06", test_demo06},
+    {"demo07", test_demo07},
+    {"demo08", test_demo08},
+    {"demo09", test_demo09},
+    {"demo10", test_demo10},
+    {"demo11", test_demo11},
+    {"demo12", test_demo12},
     {"fillRect1", test_fillRect1},
     {"compositePaths1", test_compositePaths1},
     {"compositeOperationSourceOver", test_compositeOperationSourceOver},
