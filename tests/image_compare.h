@@ -1,4 +1,5 @@
 #pragma once
+#include <stdlib.h>
 #include "stb_image.h"
 
 static bool imageCompare(const char* path1, const char* path2, int pixel_threshold)
@@ -28,7 +29,7 @@ static bool imageCompare(const char* path1, const char* path2, int pixel_thresho
 				const unsigned char* c2 = data2 + pos;
 				diff += (int)(*c1) - (*c2);
 			}
-			if (diff > pixel_threshold) {
+			if (abs(diff) > pixel_threshold) {
 				result = false;
 				goto end;
 			}
