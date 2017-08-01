@@ -2,7 +2,9 @@ language: c
 os:
   - linux
   - osx
-
+cache:
+  directories:
+    - build/tests/swiftshader
 compiler:
   - gcc
 addons:
@@ -19,4 +21,6 @@ addons:
 #  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cmake; fi
 
 script:
-  - mkdir build && cd build && cmake ../ && cmake --build . && ctest --output-on-failure
+  - mkdir -p build
+  - cd build 
+  - cmake ../ && cmake --build . && ctest --output-on-failure
