@@ -49,7 +49,137 @@ extern "C" {
 #define NVG_KAPPA90 0.5522847493f	// Length proportional to radius of a cubic bezier handle for 90deg arcs.
 
 #define NVG_COUNTOF(arr) (sizeof(arr) / sizeof(0[arr]))
+#define NVG_PICK_EPS	0.0001f
 
+// Segment flags
+enum NVGsegmentFlags {
+	NVG_PICK_CORNER	= 1,
+	NVG_PICK_BEVEL = 2,
+	NVG_PICK_INNERBEVEL	= 4,
+	NVG_PICK_CAP = 8,
+	NVG_PICK_ENDCAP = 16,
+};
+
+// Path flags
+enum NVGpathFlags {
+	NVG_PICK_SCISSOR = 1,
+	NVG_PICK_STROKE = 2,
+	NVG_PICK_FILL = 4,
+};
+
+//#define NVG_PICK_DEBUG
+#ifdef NVG_PICK_DEBUG
+	int g_ndebugBounds = 0;
+	float g_debugBounds[256][4];
+	int g_ndebugLines = 0;
+	float g_debugLines[256][4];
+
+	#define NVG_PICK_DEBUG_NEWFRAME() \
+		{ \
+			g_ndebugBounds = 0; \
+			g_ndebugLines = 0; \
+		}
+
+	#define NVG_PICK_DEBUG_BOUNDS(bounds) memcpy(&g_debugBounds[g_ndebugBounds++][0], bounds, sizeof(float) * 4)
+	#define NVG_PICK_DEBUG_LINE(A, B) \
+		{	memcpy(&g_debugLines[g_ndebugLines][0], (A), sizeof(float) * 2); \
+			memcpy(&g_debugLines[g_ndebugLines++][2], (B), sizeof(float) * 2); }
+	#define NVG_PICK_DEBUG_VECTOR(A, D) \
+		{	memcpy(&g_debugLines[g_ndebugLines][0], (A), sizeof(float) * 2); \
+			g_debugLines[g_ndebugLines][2] = (A)[0] + (D)[0]; \
+			g_debugLines[g_ndebugLines][3] = (A)[1] + (D)[1]; \
+			++g_ndebugLines; \
+		}
+	#define NVG_PICK_DEBUG_VECTOR_SCALE(A, D, S) \
+		{	memcpy(&g_debugLines[g_ndebugLines][0], (A), sizeof(float) * 2); \
+			g_debugLines[g_ndebugLines][2] = (A)[0] + (D)[0] * (S); \
+			g_debugLines[g_ndebugLines][3] = (A)[1] + (D)[1] * (S); \
+			++g_ndebugLines; \
+		}
+#else
+	#define NVG_PICK_DEBUG_NEWFRAME()
+	#define NVG_PICK_DEBUG_BOUNDS(bounds)
+	#define NVG_PICK_DEBUG_LINE(A, B)
+	#define NVG_PICK_DEBUG_VECTOR(A, D)
+	#define NVG_PICK_DEBUG_VECTOR_SCALE(A, D, S)
+#endif
+
+struct NVGsegment {
+	int firstPoint;				// Index into NVGpickScene::points
+	short type;					// NVG_LINETO or NVG_BEZIERTO
+	short flags;				// Flags relate to the corner between the prev segment and this one.
+	float bounds[4];
+	float startDir[2];			// Direction at t == 0
+	float endDir[2];			// Direction at t == 1
+	float miterDir[2];			// Direction of miter of corner between the prev segment and this one.
+};
+typedef struct NVGsegment NVGsegment;
+
+struct NVGpickSubPath {
+	short winding;				// TODO: Merge to flag field
+	short closed;				// TODO: Merge to flag field
+
+	int firstSegment;			// Index into NVGpickScene::segments
+	int nsegments;
+
+	float bounds[4];
+
+	struct NVGpickSubPath* next;
+};
+typedef struct NVGpickSubPath NVGpickSubPath;
+
+struct NVGpickPath {
+	int id;
+	short flags;
+	short order;
+	float strokeWidth;
+	float miterLimit;
+	short lineCap;
+	short lineJoin;
+
+	float bounds[4];
+	int scissor; // Indexes into ps->points and defines scissor rect as XVec, YVec and Center
+
+	struct NVGpickSubPath*	subPaths;
+	struct NVGpickPath* next;
+	struct NVGpickPath* cellnext;
+};
+typedef struct NVGpickPath NVGpickPath;
+
+struct NVGpickScene {
+	int npaths;
+
+	NVGpickPath* paths;	// Linked list of paths
+	NVGpickPath* lastPath; // The last path in the paths linked list (the first path added)
+	NVGpickPath* freePaths; // Linked list of free paths
+
+	NVGpickSubPath* freeSubPaths; // Linked list of free sub paths
+
+	int width;
+	int height;
+
+	// Points for all path sub paths.
+	float* points;
+	int npoints;
+	int cpoints;
+
+	// Segments for all path sub paths
+	NVGsegment* segments;
+	int nsegments;
+	int csegments;
+
+	// Implicit quadtree
+	float xdim;		// Width / (1 << nlevels)
+	float ydim;		// Height / (1 << nlevels)
+	int ncells;		// Total number of cells in all levels
+	int nlevels;
+	NVGpickPath*** levels;	// Index: [Level][LevelY * LevelW + LevelX] Value: Linked list of paths
+
+	// Temp storage for picking
+	int cpicked;
+	NVGpickPath** picked;
+};
+typedef struct NVGpickScene NVGpickScene;
 
 enum NVGcommands {
 	NVG_MOVETO = 0,
@@ -131,6 +261,7 @@ struct NVGcontext {
 	int fillTriCount;
 	int strokeTriCount;
 	int textTriCount;
+	NVGpickScene* pickScene;
 };
 
 static float nvg__sqrtf(float a) { return sqrtf(a); }
