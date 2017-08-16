@@ -147,11 +147,6 @@ static NVGcompositeOperationState nvg__compositeOperationState(int op)
 	return state;
 }
 
-static NVGstate* nvg__getState(NVGcontext* ctx)
-{
-	return &ctx->states[ctx->nstates-1];
-}
-
 NVGcontext* nvgCreateInternal(NVGparams* params)
 {
 	FONSparams fontParams;

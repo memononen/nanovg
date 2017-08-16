@@ -67,6 +67,8 @@ enum NVGpointFlags
 };
 
 struct NVGstate {
+	NVGcompositeOperationState compositeOperation;
+	int shapeAntiAlias;
 	NVGpaint fill;
 	NVGpaint stroke;
 	float strokeWidth;
