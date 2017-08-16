@@ -33,7 +33,7 @@ solution "nanovg"
 
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
-			 links { "GL", "GLU", "m", "GLEW" }
+			 links { "GL", "GLU", "m", "GLEW", "X11", "Xi", "Xrandr", "Xxf86vm", "Xinerama", "Xcursor", "rt", "m", "pthread", "dl" }
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
@@ -62,7 +62,7 @@ solution "nanovg"
 
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
-			 links { "GL", "GLU", "m", "GLEW" }
+			 links { "GL", "GLU", "m", "GLEW", "X11", "Xi", "Xrandr", "Xxf86vm", "Xinerama", "Xcursor", "rt", "m", "pthread", "dl" }
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
@@ -92,7 +92,7 @@ solution "nanovg"
 
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
-			 links { "GL", "GLU", "m", "GLEW" }
+			 links { "GL", "GLU", "m", "GLEW", "X11", "Xi", "Xrandr", "Xxf86vm", "Xinerama", "Xcursor", "rt", "m", "pthread", "dl" }
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
@@ -122,7 +122,7 @@ solution "nanovg"
 
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
-			 links { "GL", "GLU", "m", "GLEW" }
+			 links { "GL", "GLU", "m", "GLEW", "X11", "Xi", "Xrandr", "Xxf86vm", "Xinerama", "Xcursor", "rt", "m", "pthread", "dl" }
 			 defines { "NANOVG_GLEW" }
 
 		configuration { "windows" }
@@ -151,7 +151,7 @@ solution "nanovg"
 
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
-			 links { "GL", "GLU", "m", "GLEW" }
+			 links { "GL", "GLU", "m", "GLEW", "X11", "Xi", "Xrandr", "Xxf86vm", "Xinerama", "Xcursor", "rt", "m", "pthread", "dl" }
 
 		configuration { "windows" }
 			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32", "kernel32" }
@@ -179,7 +179,7 @@ solution "nanovg"
 
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
-			 links { "GL", "GLU", "m", "GLEW" }
+			 links { "GL", "GLU", "m", "GLEW", "X11", "Xi", "Xrandr", "Xxf86vm", "Xinerama", "Xcursor", "rt", "m", "pthread", "dl" }
 
 		configuration { "windows" }
 			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32", "kernel32" }
@@ -207,7 +207,7 @@ solution "nanovg"
 
 		configuration { "linux" }
 			 linkoptions { "`pkg-config --libs glfw3`" }
-			 links { "GL", "GLU", "m", "GLEW" }
+			 links { "GL", "GLU", "m", "GLEW", "X11", "Xi", "Xrandr", "Xxf86vm", "Xinerama", "Xcursor", "rt", "m", "pthread", "dl" }
 
 		configuration { "windows" }
 			 links { "glfw3", "gdi32", "winmm", "user32", "GLEW", "glu32","opengl32", "kernel32" }
