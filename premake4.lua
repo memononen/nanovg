@@ -9,7 +9,7 @@ solution "nanovg"
    	project "nanovg"
 		language "C"
 		kind "StaticLib"
-		includedirs { "src" }
+		includedirs { "src", "external/fontstash/src", "external/stb" }
 		files { "src/*.c" }
 		targetdir("build")
 		defines { "_CRT_SECURE_NO_WARNINGS" } --,"FONS_USE_FREETYPE" } Uncomment to compile with FreeType support
