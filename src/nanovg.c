@@ -74,6 +74,7 @@ struct NVGstate {
 	float miterLimit;
 	int lineJoin;
 	int lineCap;
+	int tess;
 	float alpha;
 	float xform[6];
 	NVGscissor scissor;
@@ -651,6 +652,7 @@ void nvgReset(NVGcontext* ctx)
 	state->miterLimit = 10.0f;
 	state->lineCap = NVG_BUTT;
 	state->lineJoin = NVG_MITER;
+	state->tess = NVG_TESS_SUBDIVISION;
 	state->alpha = 1.0f;
 	nvgTransformIdentity(state->xform);
 
@@ -700,6 +702,12 @@ void nvgGlobalAlpha(NVGcontext* ctx, float alpha)
 {
 	NVGstate* state = nvg__getState(ctx);
 	state->alpha = alpha;
+}
+
+void nvgBezierTessellation(NVGcontext* ctx, int tess)
+{
+	NVGstate* state = nvg__getState(ctx);
+	state->tess = tess;
 }
 
 void nvgTransform(NVGcontext* ctx, float a, float b, float c, float d, float e, float f)
@@ -1318,6 +1326,114 @@ static void nvg__tesselateBezier(NVGcontext* ctx,
 	nvg__tesselateBezier(ctx, x1234,y1234, x234,y234, x34,y34, x4,y4, level+1, type);
 }
 
+// Adaptive forward differencing for bezier tesselation.
+// See Lien, Sheue-Ling, Michael Shantz, and Vaughan Pratt. "Adaptive forward differencing for rendering curves and surfaces." ACM SIGGRAPH Computer Graphics. Vol. 21. No. 4. ACM, 1987.
+void nvg__tesselateBezierAFD(NVGcontext* ctx, float x1, float y1, float x2, float y2,
+                               float x3, float y3, float x4, float y4, int type)
+{
+  
+	// Power basis.
+	float ax = -x1 + 3*x2 - 3*x3 + x4;
+	float ay = -y1 + 3*y2 - 3*y3 + y4;
+	float bx = 3*x1 - 6*x2 + 3*x3;
+	float by = 3*y1 - 6*y2 + 3*y3;
+	float cx = -3*x1 + 3*x2;
+	float cy = -3*y1 + 3*y2;
+	
+	// Transform to forward difference basis (stepsize 1)
+	float px = x1;
+	float py = y1;
+	float dx = ax + bx + cx;
+	float dy = ay + by + cy;
+	float ddx = 6*ax + 2*bx;
+	float ddy = 6*ay + 2*by;
+	float dddx = 6*ax;
+	float dddy = 6*ay;
+	
+	//printf("dx: %f, dy: %f\n", dx, dy);
+	//printf("ddx: %f, ddy: %f\n", ddx, ddy);
+	//printf("dddx: %f, dddy: %f\n", dddx, dddy);
+	
+	#define AFD_ONE (1<<10)
+	
+	int t = 0;
+	int dt = AFD_ONE;
+	
+	float tol = ctx->tessTol * 4.0;
+	
+	while(t < AFD_ONE) {
+		
+		// Flatness measure.
+		float d = ddx*ddx + ddy*ddy + dddx*dddx + dddy*dddy;
+		
+		// printf("d: %f, th: %f\n", d, th);
+		
+		// Go to higher resolution if we're moving a lot
+		// or overshooting the end.
+		while( (d > tol && dt > 1) || (t+dt > AFD_ONE) ) {
+			
+			// printf("up\n");
+			
+			// Apply L to the curve. Increase curve resolution.
+			dx = .5 * dx - (1.0/8.0)*ddx + (1.0/16.0)*dddx;
+			dy = .5 * dy - (1.0/8.0)*ddy + (1.0/16.0)*dddy;
+			ddx = (1.0/4.0) * ddx - (1.0/8.0) * dddx;
+			ddy = (1.0/4.0) * ddy - (1.0/8.0) * dddy;
+			dddx = (1.0/8.0) * dddx;
+			dddy = (1.0/8.0) * dddy;
+			
+			// Half the stepsize.
+			dt >>= 1;
+			
+			// Recompute d
+			d = ddx*ddx + ddy*ddy + dddx*dddx + dddy*dddy;
+			
+		}
+		
+		// Go to lower resolution if we're really flat
+		// and we aren't going to overshoot the end.
+		// XXX: tol/32 is just a guess for when we are too flat.
+		while ( (d > 0 && d < tol/32.0f && dt < AFD_ONE) && (t+2*dt <= AFD_ONE) ) {
+			
+			// printf("down\n");
+			
+			// Apply L^(-1) to the curve. Decrease curve resolution.
+			dx = 2 * dx + ddx;
+			dy = 2 * dy + ddy;
+			ddx = 4 * ddx + 4 * dddx;
+			ddy = 4 * ddy + 4 * dddy;
+			dddx = 8 * dddx;
+			dddy = 8 * dddy;
+			
+			// Double the stepsize.
+			dt <<= 1;
+			
+			// Recompute d
+			d = ddx*ddx + ddy*ddy + dddx*dddx + dddy*dddy;
+			
+		}
+		
+		// Forward differencing.
+		px += dx;
+		py += dy;
+		dx += ddx;
+		dy += ddy;
+		ddx += dddx;
+		ddy += dddy;
+		
+		// Output a point.
+		nvg__addPoint(ctx, px, py, t > 0 ? type : 0);
+		
+		// Advance along the curve.
+		t += dt;
+		
+		// Ensure we don't overshoot.
+		assert(t <= AFD_ONE);
+		
+	}
+  
+}
+
 static void nvg__flattenPaths(NVGcontext* ctx)
 {
 	NVGpathCache* cache = ctx->cache;
@@ -1358,7 +1474,11 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 				cp1 = &ctx->commands[i+1];
 				cp2 = &ctx->commands[i+3];
 				p = &ctx->commands[i+5];
-				nvg__tesselateBezier(ctx, last->x,last->y, cp1[0],cp1[1], cp2[0],cp2[1], p[0],p[1], 0, NVG_PT_CORNER);
+				if(nvg__getState(ctx)->tess == NVG_TESS_AFD) {
+					nvg__tesselateBezierAFD(ctx, last->x,last->y, cp1[0],cp1[1], cp2[0],cp2[1], p[0],p[1], NVG_PT_CORNER);
+				} else {
+					nvg__tesselateBezier(ctx, last->x,last->y, cp1[0],cp1[1], cp2[0],cp2[1], p[0],p[1], 0, NVG_PT_CORNER);
+				}
 			}
 			i += 7;
 			break;
