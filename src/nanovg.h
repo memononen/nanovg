@@ -195,6 +195,13 @@ NVGcolor nvgRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned cha
 NVGcolor nvgRGBAf(float r, float g, float b, float a);
 
 
+// Returns a shade of gray. Alpha will be set to 255 (1.0f).
+NVGcolor nvgGray(unsigned char l);
+
+// Returns a shade of gray. Alpha will be set to 1.0f.
+NVGcolor nvgGrayf(float l);
+
+
 // Linearly interpolates from color c0 to c1, and returns resulting color value.
 NVGcolor nvgLerpRGBA(NVGcolor c0, NVGcolor c1, float u);
 
