@@ -450,6 +450,21 @@ NVGcolor nvgRGBAf(float r, float g, float b, float a)
 	return color;
 }
 
+NVGcolor nvgGray(unsigned char l)
+{
+	return nvgGrayf(l / 255.0f);
+}
+
+NVGcolor nvgGrayf(float l)
+{
+	NVGcolor color;
+	color.r = l;
+	color.g = l;
+	color.b = l;
+	color.a = 1.0f;
+	return color;
+}
+
 NVGcolor nvgTransRGBA(NVGcolor c, unsigned char a)
 {
 	c.a = a / 255.0f;
