@@ -334,7 +334,7 @@ static void glnvg__blendFuncSeparate(GLNVGcontext* gl, const GLNVGblend* blend)
 		(gl->blendFunc.dstRGB != blend->dstRGB) ||
 		(gl->blendFunc.srcAlpha != blend->srcAlpha) ||
 		(gl->blendFunc.dstAlpha != blend->dstAlpha)) {
-		
+
 		gl->blendFunc = *blend;
 		glBlendFuncSeparate(blend->srcRGB, blend->dstRGB, blend->srcAlpha,blend->dstAlpha);
 	}
@@ -626,6 +626,7 @@ static int glnvg__renderCreate(void* uptr)
 		"	float scissor = scissorMask(fpos);\n"
 		"#ifdef EDGE_AA\n"
 		"	float strokeAlpha = strokeMask();\n"
+		"	if (strokeAlpha < strokeThr) discard;\n"
 		"#else\n"
 		"	float strokeAlpha = 1.0;\n"
 		"#endif\n"
@@ -665,9 +666,6 @@ static int glnvg__renderCreate(void* uptr)
 		"		color *= scissor;\n"
 		"		result = color * innerCol;\n"
 		"	}\n"
-		"#ifdef EDGE_AA\n"
-		"	if (strokeAlpha < strokeThr) discard;\n"
-		"#endif\n"
 		"#ifdef NANOVG_GL3\n"
 		"	outColor = result;\n"
 		"#else\n"
@@ -947,10 +945,17 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 		}
 		frag->type = NSVG_SHADER_FILLIMG;
 
+		#if NANOVG_GL_USE_UNIFORMBUFFER
 		if (tex->type == NVG_TEXTURE_RGBA)
 			frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0 : 1;
 		else
 			frag->texType = 2;
+		#else
+		if (tex->type == NVG_TEXTURE_RGBA)
+			frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0.0f : 1.0f;
+		else
+			frag->texType = 2.0f;
+		#endif
 //		printf("frag->texType = %d\n", frag->texType);
 	} else {
 		frag->type = NSVG_SHADER_FILLGRAD;
@@ -1030,7 +1035,7 @@ static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 	// Draw fill
 	glnvg__stencilFunc(gl, GL_NOTEQUAL, 0x0, 0xff);
 	glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
-	glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
+	glDrawArrays(GL_TRIANGLE_STRIP, call->triangleOffset, call->triangleCount);
 
 	glDisable(GL_STENCIL_TEST);
 }
@@ -1348,6 +1353,7 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperation
 	if (call == NULL) return;
 
 	call->type = GLNVG_FILL;
+	call->triangleCount = 4;
 	call->pathOffset = glnvg__allocPaths(gl, npaths);
 	if (call->pathOffset == -1) goto error;
 	call->pathCount = npaths;
@@ -1355,10 +1361,13 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperation
 	call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
 
 	if (npaths == 1 && paths[0].convex)
+	{
 		call->type = GLNVG_CONVEXFILL;
+		call->triangleCount = 0;	// Bounding box fill quad not needed for convex fill
+	}
 
 	// Allocate vertices for all the paths.
-	maxverts = glnvg__maxVertCount(paths, npaths) + 6;
+	maxverts = glnvg__maxVertCount(paths, npaths) + call->triangleCount;
 	offset = glnvg__allocVerts(gl, maxverts);
 	if (offset == -1) goto error;
 
@@ -1380,20 +1389,16 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperation
 		}
 	}
 
-	// Quad
-	call->triangleOffset = offset;
-	call->triangleCount = 6;
-	quad = &gl->verts[call->triangleOffset];
-	glnvg__vset(&quad[0], bounds[0], bounds[3], 0.5f, 1.0f);
-	glnvg__vset(&quad[1], bounds[2], bounds[3], 0.5f, 1.0f);
-	glnvg__vset(&quad[2], bounds[2], bounds[1], 0.5f, 1.0f);
-
-	glnvg__vset(&quad[3], bounds[0], bounds[3], 0.5f, 1.0f);
-	glnvg__vset(&quad[4], bounds[2], bounds[1], 0.5f, 1.0f);
-	glnvg__vset(&quad[5], bounds[0], bounds[1], 0.5f, 1.0f);
-
 	// Setup uniforms for draw calls
 	if (call->type == GLNVG_FILL) {
+		// Quad
+		call->triangleOffset = offset;
+		quad = &gl->verts[call->triangleOffset];
+		glnvg__vset(&quad[0], bounds[2], bounds[3], 0.5f, 1.0f);
+		glnvg__vset(&quad[1], bounds[2], bounds[1], 0.5f, 1.0f);
+		glnvg__vset(&quad[2], bounds[0], bounds[3], 0.5f, 1.0f);
+		glnvg__vset(&quad[3], bounds[0], bounds[1], 0.5f, 1.0f);
+
 		call->uniformOffset = glnvg__allocFragUniforms(gl, 2);
 		if (call->uniformOffset == -1) goto error;
 		// Simple shader for stencil

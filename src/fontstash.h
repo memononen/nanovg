@@ -873,7 +873,8 @@ error:
 int fonsAddFont(FONScontext* stash, const char* name, const char* path)
 {
 	FILE* fp = 0;
-	int dataSize = 0, readed;
+	int dataSize = 0;
+	size_t readed;
 	unsigned char* data = NULL;
 
 	// Read in the font data.
