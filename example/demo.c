@@ -60,6 +60,129 @@ static char* cpToUTF8(int cp, char* str)
 	return str;
 }
 
+//Function can be used to draw glyphs over image as feature points.
+void DrawPlus(NVGcontext* nanoVGctx,float radius, float color[4], float x, float y)
+{
+    
+    GLint viewport[4];
+
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    float ratio = (float)(viewport[2] / viewport[3]);
+    nvgBeginFrame(nanoVGctx, viewport[2], viewport[3], ratio);
+
+    nvgSave(nanoVGctx);
+    nvgBeginPath(nanoVGctx);
+
+    nvgMoveTo(nanoVGctx, x, y);
+    nvgLineTo(nanoVGctx, x - radius, y);
+    nvgMoveTo(nanoVGctx, x, y);
+    nvgLineTo(nanoVGctx, x + radius, y);
+    nvgMoveTo(nanoVGctx, x, y);
+    nvgLineTo(nanoVGctx, x, y - radius);
+    nvgMoveTo(nanoVGctx, x, y);
+    nvgLineTo(nanoVGctx, x, y + radius);
+
+    nvgPathWinding(nanoVGctx, NVG_HOLE);
+    nvgStrokeColor(nanoVGctx, nvgRGBA(color[0] * 255, color[1] * 255, color[2] * 255 , color[3] * 255));
+    nvgStroke(nanoVGctx);
+
+    nvgRestore(nanoVGctx);
+    nvgEndFrame(nanoVGctx);
+}
+
+void DrawBracket(NVGcontext* nanoVGctx,float radius, float color[4], float x, float y)
+{
+    GLint viewport[4];
+
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    float ratio = (float)(viewport[2] / viewport[3]);
+    nvgBeginFrame(nanoVGctx, viewport[2], viewport[3], ratio);
+
+    nvgSave(nanoVGctx);
+    nvgBeginPath(nanoVGctx);
+
+    nvgMoveTo(nanoVGctx, x + radius, y + radius);
+    nvgLineTo(nanoVGctx, x + radius, y - radius);
+    nvgMoveTo(nanoVGctx, x + radius, y + radius);
+    nvgLineTo(nanoVGctx, (x + radius) - (radius / 2.0), y + radius);
+    nvgMoveTo(nanoVGctx, x + radius, y - radius);
+    nvgLineTo(nanoVGctx, (x + radius) - (radius / 2.0), y - radius);
+
+
+    nvgMoveTo(nanoVGctx, x - radius, y + radius);
+    nvgLineTo(nanoVGctx, x - radius, y - radius);
+    nvgMoveTo(nanoVGctx, x - radius, y + radius);
+    nvgLineTo(nanoVGctx, (x - radius) + (radius / 2.0), y + radius);
+    nvgMoveTo(nanoVGctx, x - radius, y - radius);
+    nvgLineTo(nanoVGctx, (x - radius) + (radius / 2.0), y - radius);
+
+    nvgPathWinding(nanoVGctx, NVG_HOLE);
+    nvgStrokeColor(nanoVGctx, nvgRGBA(color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255));
+    nvgStroke(nanoVGctx);
+
+    nvgRestore(nanoVGctx);
+    nvgEndFrame(nanoVGctx);
+}
+
+void DrawAngles(NVGcontext* nanoVGctx,float radius, float color[4], float x, float y)
+{
+   
+    GLint viewport[4];
+
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    float ratio = (float)(viewport[2] / viewport[3]);
+    nvgBeginFrame(nanoVGctx, viewport[2], viewport[3], ratio);
+
+    nvgSave(nanoVGctx);
+    nvgBeginPath(nanoVGctx);
+
+    nvgMoveTo(nanoVGctx, x + radius, y + radius);
+    nvgLineTo(nanoVGctx, (x + radius) - (radius / 2.0), y + radius);
+    nvgMoveTo(nanoVGctx, x + radius, y + radius);
+    nvgLineTo(nanoVGctx, x + radius, (y + radius) - (radius / 2.0));
+
+    nvgMoveTo(nanoVGctx, x + radius, y - radius);
+    nvgLineTo(nanoVGctx, (x + radius) - (radius / 2.0), y - radius);
+    nvgMoveTo(nanoVGctx, x + radius, y - radius);
+    nvgLineTo(nanoVGctx, x + radius, (y - radius) + (radius / 2.0));
+
+    nvgMoveTo(nanoVGctx, x - radius, y - radius);
+    nvgLineTo(nanoVGctx, (x - radius) + (radius / 2.0), y - radius);
+    nvgMoveTo(nanoVGctx, x - radius, y - radius);
+    nvgLineTo(nanoVGctx, x - radius, (y - radius) + (radius / 2.0));
+
+    nvgMoveTo(nanoVGctx, x - radius, y + radius);
+    nvgLineTo(nanoVGctx, (x - radius) + (radius / 2.0), y + radius);
+    nvgMoveTo(nanoVGctx, x - radius, y + radius);
+    nvgLineTo(nanoVGctx, x - radius, (y + radius) - (radius / 2.0));
+
+
+    nvgPathWinding(nanoVGctx, NVG_HOLE);
+    nvgStrokeColor(nanoVGctx, nvgRGBA(color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255));
+    nvgStroke(nanoVGctx);
+
+    nvgRestore(nanoVGctx);
+    nvgEndFrame(nanoVGctx);
+}
+
+void DrawCircles(NVGcontext* nanoVGctx,float radius, float color[4], float x, float y)
+{
+    GLint viewport[4];
+
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    float ratio = (float)(viewport[2] / viewport[3]);
+    nvgBeginFrame(nanoVGctx, viewport[2], viewport[3], ratio);
+
+    nvgSave(nanoVGctx);
+    nvgBeginPath(nanoVGctx);
+    nvgCircle(nanoVGctx, x, y, radius);
+    nvgPathWinding(nanoVGctx, NVG_HOLE);
+    nvgStrokeColor(nanoVGctx, nvgRGBA(color[0] * 255, color[1] * 255, color[2] * 255, color[3] * 255));
+    nvgStroke(nanoVGctx);
+    
+    nvgRestore(nanoVGctx);
+    nvgEndFrame(nanoVGctx);
+}
 
 void drawWindow(NVGcontext* vg, const char* title, float x, float y, float w, float h)
 {
