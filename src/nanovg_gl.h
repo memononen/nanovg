@@ -122,6 +122,7 @@ enum GLNVGuniformLoc {
 
 enum GLNVGshaderType {
 	NSVG_SHADER_FILLGRAD,
+	NSVG_SHADER_FILLIMGGRAD,
 	NSVG_SHADER_FILLIMG,
 	NSVG_SHADER_SIMPLE,
 	NSVG_SHADER_IMG
@@ -638,7 +639,24 @@ static int glnvg__renderCreate(void* uptr)
 		"		// Combine alpha\n"
 		"		color *= strokeAlpha * scissor;\n"
 		"		result = color;\n"
-		"	} else if (type == 1) {		// Image\n"
+		" } else if (type == 1) { // Gradient via. Texture\n"
+		"		// Calculate gradient color using box gradient\n"
+		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
+		"		float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
+		"#ifdef NANOVG_GL3\n"
+		"   ivec2 textureSize2d = textureSize(tex,0);\n"
+		"   float startPosition = d * (float(textureSize2d.x) - 1.0);\n"
+		"		float endPosition = startPosition + 1.0;\n"
+		"		vec4 color = mix(texelFetch(tex, ivec2(floor(startPosition), 0), 0), texelFetch(tex, ivec2(endPosition, 0), 0), fract(startPosition));\n"
+		"#else\n"
+		"		// It's not possible to get the texture size in GL2 / GLES2 without passing it in.\n"
+		"		// So here's a faster but less accurate method that doesn't require the texture size.\n"
+		"		vec4 color = texture2D(tex, vec2(d, 0));\n"
+		"#endif\n"
+		"		// Combine alpha\n"
+		"		color *= strokeAlpha * scissor;\n"
+		"		result = color;\n"
+		"	} else if (type == 2) {		// Image\n"
 		"		// Calculate color fron texture\n"
 		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy / extent;\n"
 		"#ifdef NANOVG_GL3\n"
@@ -646,16 +664,16 @@ static int glnvg__renderCreate(void* uptr)
 		"#else\n"
 		"		vec4 color = texture2D(tex, pt);\n"
 		"#endif\n"
-		"		if (texType == 1) color = vec4(color.xyz*color.w,color.w);"
-		"		if (texType == 2) color = vec4(color.x);"
+		"		if (texType == 2) color = vec4(color.xyz*color.w,color.w);"
+		"		if (texType == 3) color = vec4(color.x);"
 		"		// Apply color tint and alpha.\n"
 		"		color *= innerCol;\n"
 		"		// Combine alpha\n"
 		"		color *= strokeAlpha * scissor;\n"
 		"		result = color;\n"
-		"	} else if (type == 2) {		// Stencil fill\n"
+		"	} else if (type == 3) {		// Stencil fill\n"
 		"		result = vec4(1,1,1,1);\n"
-		"	} else if (type == 3) {		// Textured tris\n"
+		"	} else if (type == 4) {		// Textured tris\n"
 		"#ifdef NANOVG_GL3\n"
 		"		vec4 color = texture(tex, ftcoord);\n"
 		"#else\n"
@@ -928,7 +946,7 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 	frag->strokeMult = (width*0.5f + fringe*0.5f) / fringe;
 	frag->strokeThr = strokeThr;
 
-	if (paint->image != 0) {
+	if (paint->image != 0 && paint->paintType == NVG_PAINT_IMAGE) {
 		tex = glnvg__findTexture(gl, paint->image);
 		if (tex == NULL) return 0;
 		if ((tex->flags & NVG_IMAGE_FLIPY) != 0) {
@@ -957,6 +975,27 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 			frag->texType = 2.0f;
 		#endif
 //		printf("frag->texType = %d\n", frag->texType);
+	} else if (paint->image != 0 && paint->paintType == NVG_PAINT_GRADIENT) {
+		tex = glnvg__findTexture(gl, paint->image);
+
+		if (tex == NULL) return 0;
+		frag->type = NSVG_SHADER_FILLIMGGRAD;
+		frag->radius = paint->radius;
+		frag->feather = paint->feather;
+		nvgTransformInverse(invxform, paint->xform);
+
+		#if NANOVG_GL_USE_UNIFORMBUFFER
+		if (tex->type == NVG_TEXTURE_RGBA)
+			frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0 : 1;
+		else
+			frag->texType = 2;
+		#else
+		if (tex->type == NVG_TEXTURE_RGBA)
+			frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0.0f : 1.0f;
+		else
+			frag->texType = 2.0f;
+
+		#endif
 	} else {
 		frag->type = NSVG_SHADER_FILLGRAD;
 		frag->radius = paint->radius;

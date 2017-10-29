@@ -50,6 +50,7 @@ struct NVGpaint {
 	NVGcolor innerColor;
 	NVGcolor outerColor;
 	int image;
+	int paintType;
 };
 typedef struct NVGpaint NVGpaint;
 
@@ -136,12 +137,17 @@ struct NVGtextRow {
 typedef struct NVGtextRow NVGtextRow;
 
 enum NVGimageFlags {
-    NVG_IMAGE_GENERATE_MIPMAPS	= 1<<0,     // Generate mipmaps during creation of the image.
+  NVG_IMAGE_GENERATE_MIPMAPS	= 1<<0,     // Generate mipmaps during creation of the image.
 	NVG_IMAGE_REPEATX			= 1<<1,		// Repeat image in X direction.
 	NVG_IMAGE_REPEATY			= 1<<2,		// Repeat image in Y direction.
 	NVG_IMAGE_FLIPY				= 1<<3,		// Flips (inverses) image in Y direction when rendered.
 	NVG_IMAGE_PREMULTIPLIED		= 1<<4,		// Image data has premultiplied alpha.
 	NVG_IMAGE_NEAREST			= 1<<5,		// Image interpolation is Nearest instead Linear
+};
+
+enum NVGpaintType {
+	NVG_PAINT_IMAGE,
+	NVG_PAINT_GRADIENT,
 };
 
 // Begin drawing a new frame
@@ -389,6 +395,22 @@ void nvgImageSize(NVGcontext* ctx, int image, int* w, int* h);
 void nvgDeleteImage(NVGcontext* ctx, int image);
 
 //
+// Gradient
+//
+// NanoVG allows you to create cached gradient images for rendering.
+// The parameter imageFlags is combination of flags defined in NVGimageFlags.
+
+// Creates gradient by assembling a texture from an array of nvgColors.
+// Returns handle to the gradient texture.
+int nvgCreateGradient(NVGcontext* ctx, NVGcolor colors[], unsigned int numColors);
+
+// Updates gradient texture specified by the handle.
+void nvgUpdateGradient(NVGcontext* ctx, int gradient, NVGcolor colors[], unsigned int numColors);
+
+// Deletes created gradient.
+void nvgDeleteGradient(NVGcontext* ctx, int gradient);
+
+//
 // Paints
 //
 // NanoVG supports four types of paints: linear gradient, box gradient, radial gradient and image pattern.
@@ -398,7 +420,7 @@ void nvgDeleteImage(NVGcontext* ctx, int image);
 // of the linear gradient, icol specifies the start color and ocol the end color.
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgLinearGradient(NVGcontext* ctx, float sx, float sy, float ex, float ey,
-						   NVGcolor icol, NVGcolor ocol);
+						   NVGcolor icol, NVGcolor ocol, int gradient);
 
 // Creates and returns a box gradient. Box gradient is a feathered rounded rectangle, it is useful for rendering
 // drop shadows or highlights for boxes. Parameters (x,y) define the top-left corner of the rectangle,
@@ -412,7 +434,7 @@ NVGpaint nvgBoxGradient(NVGcontext* ctx, float x, float y, float w, float h,
 // the inner and outer radius of the gradient, icol specifies the start color and ocol the end color.
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgRadialGradient(NVGcontext* ctx, float cx, float cy, float inr, float outr,
-						   NVGcolor icol, NVGcolor ocol);
+						   NVGcolor icol, NVGcolor ocol, int gradient);
 
 // Creates and returns an image patter. Parameters (ox,oy) specify the left-top location of the image pattern,
 // (ex,ey) the size of one image, angle rotation around the top-left corner, image is handle to the image to render.

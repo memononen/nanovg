@@ -7,9 +7,24 @@
 extern "C" {
 #endif
 
+struct Gradients {
+  union {
+    int gradients[2];
+    struct {
+      int
+        buttonColored,
+        buttonBlack
+      ;
+    };
+  };
+};
+
+typedef struct Gradients Gradients;
+
 struct DemoData {
 	int fontNormal, fontBold, fontIcons, fontEmoji;
 	int images[12];
+  Gradients gradients;
 };
 typedef struct DemoData DemoData;
 
