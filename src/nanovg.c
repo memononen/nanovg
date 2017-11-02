@@ -47,7 +47,6 @@
 #define NVG_KAPPA90 0.5522847493f	// Length proportional to radius of a cubic bezier handle for 90deg arcs.
 
 #define NVG_COUNTOF(arr) (sizeof(arr) / sizeof(0[arr]))
-#define NVG_FLOAT_TO_CHAR(f) ((unsigned char) floor(f * 255.0f))
 
 
 enum NVGcommands {
@@ -840,51 +839,9 @@ void nvgDeleteImage(NVGcontext* ctx, int image)
 	ctx->params.renderDeleteTexture(ctx->params.userPtr, image);
 }
 
-// Gradient Lifecycle Functions
-int nvgCreateGradient(NVGcontext* ctx, NVGcolor colors[], unsigned int numColors)
-{
-	unsigned char data[numColors * 4];
-
-	int i;
-	int offset;
-	for(i = 0; i < numColors; i++) {
-		offset = i * 4;
-		data[offset] = NVG_FLOAT_TO_CHAR(colors[i].r);
-		data[offset + 1] = NVG_FLOAT_TO_CHAR(colors[i].g);
-		data[offset + 2] = NVG_FLOAT_TO_CHAR(colors[i].b);
-		data[offset + 3] = NVG_FLOAT_TO_CHAR(colors[i].a);
-	}
-
-	return nvgCreateImageRGBA(ctx, numColors, 1, 0, data);
-}
-
-void nvgUpdateGradient(NVGcontext* ctx, int gradient, NVGcolor colors[], unsigned int numColors)
-{
-	unsigned char data[numColors * 4];
-
-	int i;
-	int offset;
-	for(i = 0; i < numColors; i++) {
-		offset = i * 4;
-		data[offset] = NVG_FLOAT_TO_CHAR(colors[i].r);
-		data[offset + 1] = NVG_FLOAT_TO_CHAR(colors[i].g);
-		data[offset + 2] = NVG_FLOAT_TO_CHAR(colors[i].b);
-		data[offset + 3] = NVG_FLOAT_TO_CHAR(colors[i].a);
-	}
-
-	int w, h;
-	ctx->params.renderGetTextureSize(ctx->params.userPtr, gradient, &w, &h);
-	ctx->params.renderUpdateTexture(ctx->params.userPtr, gradient, 0,0, w,h, data);
-}
-
-void nvgDeleteGradient(NVGcontext* ctx, int gradient)
-{
-	ctx->params.renderDeleteTexture(ctx->params.userPtr, gradient);
-}
-
 NVGpaint nvgLinearGradient(NVGcontext* ctx,
 								  float sx, float sy, float ex, float ey,
-								  NVGcolor icol, NVGcolor ocol, int gradient)
+								  NVGcolor icol, NVGcolor ocol)
 {
 	NVGpaint p;
 	float dx, dy, d;
@@ -918,18 +875,12 @@ NVGpaint nvgLinearGradient(NVGcontext* ctx,
 	p.innerColor = icol;
 	p.outerColor = ocol;
 
-
-	if(gradient >= 0) {
-		p.image = gradient;
-		p.paintType = NVG_PAINT_GRADIENT;
-	}
-
 	return p;
 }
 
 NVGpaint nvgRadialGradient(NVGcontext* ctx,
 								  float cx, float cy, float inr, float outr,
-								  NVGcolor icol, NVGcolor ocol, int gradient)
+								  NVGcolor icol, NVGcolor ocol)
 {
 	NVGpaint p;
 	float r = (inr+outr)*0.5f;
@@ -950,11 +901,6 @@ NVGpaint nvgRadialGradient(NVGcontext* ctx,
 
 	p.innerColor = icol;
 	p.outerColor = ocol;
-
-	if(gradient >= 0) {
-		p.image = gradient;
-		p.paintType = NVG_PAINT_GRADIENT;
-	}
 
 	return p;
 }

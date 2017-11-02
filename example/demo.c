@@ -87,7 +87,7 @@ void drawWindow(NVGcontext* vg, const char* title, float x, float y, float w, fl
 	nvgFill(vg);
 
 	// Header
-	headerPaint = nvgLinearGradient(vg, x,y,x,y+15, nvgRGBA(255,255,255,8), nvgRGBA(0,0,0,16), 0);
+	headerPaint = nvgLinearGradient(vg, x,y,x,y+15, nvgRGBA(255,255,255,8), nvgRGBA(0,0,0,16));
 	nvgBeginPath(vg);
 	nvgRoundedRect(vg, x+1,y+1, w-2,30, cornerRadius-1);
 	nvgFillPaint(vg, headerPaint);
@@ -157,7 +157,7 @@ void drawDropDown(NVGcontext* vg, const char* text, float x, float y, float w, f
 	char icon[8];
 	float cornerRadius = 4.0f;
 
-	bg = nvgLinearGradient(vg, x,y,x,y+h, nvgRGBA(255,255,255,16), nvgRGBA(0,0,0,16), 0);
+	bg = nvgLinearGradient(vg, x,y,x,y+h, nvgRGBA(255,255,255,16), nvgRGBA(0,0,0,16));
 	nvgBeginPath(vg);
 	nvgRoundedRect(vg, x+1,y+1, w-2,h-2, cornerRadius-1);
 	nvgFillPaint(vg, bg);
@@ -269,14 +269,14 @@ void drawCheckBox(NVGcontext* vg, const char* text, float x, float y, float w, f
 	nvgText(vg, x+9+2, y+h*0.5f, cpToUTF8(ICON_CHECK,icon), NULL);
 }
 
-void drawButton(NVGcontext* vg, DemoData* data, int preicon, const char* text, float x, float y, float w, float h, NVGcolor col)
+void drawButton(NVGcontext* vg, int preicon, const char* text, float x, float y, float w, float h, NVGcolor col)
 {
 	NVGpaint bg;
 	char icon[8];
 	float cornerRadius = 4.0f;
 	float tw = 0, iw = 0;
 
-	bg = nvgLinearGradient(vg, x,y,x,y+h, col, col, isBlack(col) ? data->gradients.buttonBlack : data->gradients.buttonColored);
+	bg = nvgLinearGradient(vg, x,y,x,y+h, nvgRGBA(255,255,255,isBlack(col)?16:32), nvgRGBA(0,0,0,isBlack(col)?16:32));
 	nvgBeginPath(vg);
 	nvgRoundedRect(vg, x+1,y+1, w-2,h-2, cornerRadius-1);
 	if (!isBlack(col)) {
@@ -335,7 +335,7 @@ void drawSlider(NVGcontext* vg, float pos, float x, float y, float w, float h)
 	nvgFill(vg);
 
 	// Knob Shadow
-	bg = nvgRadialGradient(vg, x+(int)(pos*w),cy+1, kr-3,kr+3, nvgRGBA(0,0,0,64), nvgRGBA(0,0,0,0), 0);
+	bg = nvgRadialGradient(vg, x+(int)(pos*w),cy+1, kr-3,kr+3, nvgRGBA(0,0,0,64), nvgRGBA(0,0,0,0));
 	nvgBeginPath(vg);
 	nvgRect(vg, x+(int)(pos*w)-kr-5,cy-kr-5,kr*2+5+5,kr*2+5+5+3);
 	nvgCircle(vg, x+(int)(pos*w),cy, kr);
@@ -344,7 +344,7 @@ void drawSlider(NVGcontext* vg, float pos, float x, float y, float w, float h)
 	nvgFill(vg);
 
 	// Knob
-	knob = nvgLinearGradient(vg, x,cy-kr,x,cy+kr, nvgRGBA(255,255,255,16), nvgRGBA(0,0,0,16), 0);
+	knob = nvgLinearGradient(vg, x,cy-kr,x,cy+kr, nvgRGBA(255,255,255,16), nvgRGBA(0,0,0,16));
 	nvgBeginPath(vg);
 	nvgCircle(vg, x+(int)(pos*w),cy, kr-1);
 	nvgFillColor(vg, nvgRGBA(40,43,48,255));
@@ -373,14 +373,14 @@ void drawEyes(NVGcontext* vg, float x, float y, float w, float h, float mx, floa
 	float br = (ex < ey ? ex : ey) * 0.5f;
 	float blink = 1 - pow(sinf(t*0.5f),200)*0.8f;
 
-	bg = nvgLinearGradient(vg, x,y+h*0.5f,x+w*0.1f,y+h, nvgRGBA(0,0,0,32), nvgRGBA(0,0,0,16), 0);
+	bg = nvgLinearGradient(vg, x,y+h*0.5f,x+w*0.1f,y+h, nvgRGBA(0,0,0,32), nvgRGBA(0,0,0,16));
 	nvgBeginPath(vg);
 	nvgEllipse(vg, lx+3.0f,ly+16.0f, ex,ey);
 	nvgEllipse(vg, rx+3.0f,ry+16.0f, ex,ey);
 	nvgFillPaint(vg, bg);
 	nvgFill(vg);
 
-	bg = nvgLinearGradient(vg, x,y+h*0.25f,x+w*0.1f,y+h, nvgRGBA(220,220,220,255), nvgRGBA(128,128,128,255), 0);
+	bg = nvgLinearGradient(vg, x,y+h*0.25f,x+w*0.1f,y+h, nvgRGBA(220,220,220,255), nvgRGBA(128,128,128,255));
 	nvgBeginPath(vg);
 	nvgEllipse(vg, lx,ly, ex,ey);
 	nvgEllipse(vg, rx,ry, ex,ey);
@@ -413,13 +413,13 @@ void drawEyes(NVGcontext* vg, float x, float y, float w, float h, float mx, floa
 	nvgFillColor(vg, nvgRGBA(32,32,32,255));
 	nvgFill(vg);
 
-	gloss = nvgRadialGradient(vg, lx-ex*0.25f,ly-ey*0.5f, ex*0.1f,ex*0.75f, nvgRGBA(255,255,255,128), nvgRGBA(255,255,255,0), 0);
+	gloss = nvgRadialGradient(vg, lx-ex*0.25f,ly-ey*0.5f, ex*0.1f,ex*0.75f, nvgRGBA(255,255,255,128), nvgRGBA(255,255,255,0));
 	nvgBeginPath(vg);
 	nvgEllipse(vg, lx,ly, ex,ey);
 	nvgFillPaint(vg, gloss);
 	nvgFill(vg);
 
-	gloss = nvgRadialGradient(vg, rx-ex*0.25f,ry-ey*0.5f, ex*0.1f,ex*0.75f, nvgRGBA(255,255,255,128), nvgRGBA(255,255,255,0), 0);
+	gloss = nvgRadialGradient(vg, rx-ex*0.25f,ry-ey*0.5f, ex*0.1f,ex*0.75f, nvgRGBA(255,255,255,128), nvgRGBA(255,255,255,0));
 	nvgBeginPath(vg);
 	nvgEllipse(vg, rx,ry, ex,ey);
 	nvgFillPaint(vg, gloss);
@@ -447,7 +447,7 @@ void drawGraph(NVGcontext* vg, float x, float y, float w, float h, float t)
 	}
 
 	// Graph background
-	bg = nvgLinearGradient(vg, x,y,x,y+h, nvgRGBA(0,160,192,0), nvgRGBA(0,160,192,64), 0);
+	bg = nvgLinearGradient(vg, x,y,x,y+h, nvgRGBA(0,160,192,0), nvgRGBA(0,160,192,64));
 	nvgBeginPath(vg);
 	nvgMoveTo(vg, sx[0], sy[0]);
 	for (i = 1; i < 6; i++)
@@ -476,7 +476,7 @@ void drawGraph(NVGcontext* vg, float x, float y, float w, float h, float t)
 
 	// Graph sample pos
 	for (i = 0; i < 6; i++) {
-		bg = nvgRadialGradient(vg, sx[i],sy[i]+2, 3.0f,8.0f, nvgRGBA(0,0,0,32), nvgRGBA(0,0,0,0), 0);
+		bg = nvgRadialGradient(vg, sx[i],sy[i]+2, 3.0f,8.0f, nvgRGBA(0,0,0,32), nvgRGBA(0,0,0,0));
 		nvgBeginPath(vg);
 		nvgRect(vg, sx[i]-10, sy[i]-10+2, 20,20);
 		nvgFillPaint(vg, bg);
@@ -516,7 +516,7 @@ void drawSpinner(NVGcontext* vg, float cx, float cy, float r, float t)
 	ay = cy + sinf(a0) * (r0+r1)*0.5f;
 	bx = cx + cosf(a1) * (r0+r1)*0.5f;
 	by = cy + sinf(a1) * (r0+r1)*0.5f;
-	paint = nvgLinearGradient(vg, ax,ay, bx,by, nvgRGBA(0,0,0,0), nvgRGBA(0,0,0,128), 0);
+	paint = nvgLinearGradient(vg, ax,ay, bx,by, nvgRGBA(0,0,0,0), nvgRGBA(0,0,0,128));
 	nvgFillPaint(vg, paint);
 	nvgFill(vg);
 
@@ -612,13 +612,13 @@ void drawThumbnails(NVGcontext* vg, float x, float y, float w, float h, const in
 	nvgRestore(vg);
 
 	// Hide fades
-	fadePaint = nvgLinearGradient(vg, x,y,x,y+6, nvgRGBA(200,200,200,255), nvgRGBA(200,200,200,0), 0);
+	fadePaint = nvgLinearGradient(vg, x,y,x,y+6, nvgRGBA(200,200,200,255), nvgRGBA(200,200,200,0));
 	nvgBeginPath(vg);
 	nvgRect(vg, x+4,y,w-8,6);
 	nvgFillPaint(vg, fadePaint);
 	nvgFill(vg);
 
-	fadePaint = nvgLinearGradient(vg, x,y+h,x,y+h-6, nvgRGBA(200,200,200,255), nvgRGBA(200,200,200,0), 0);
+	fadePaint = nvgLinearGradient(vg, x,y+h,x,y+h-6, nvgRGBA(200,200,200,255), nvgRGBA(200,200,200,0));
 	nvgBeginPath(vg);
 	nvgRect(vg, x+4,y+h-6,w-8,6);
 	nvgFillPaint(vg, fadePaint);
@@ -674,7 +674,7 @@ void drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, float t)
 		ay = cy + sinf(a0) * (r0+r1)*0.5f;
 		bx = cx + cosf(a1) * (r0+r1)*0.5f;
 		by = cy + sinf(a1) * (r0+r1)*0.5f;
-		paint = nvgLinearGradient(vg, ax,ay, bx,by, nvgHSLA(a0/(NVG_PI*2),1.0f,0.55f,255), nvgHSLA(a1/(NVG_PI*2),1.0f,0.55f,255), 0);
+		paint = nvgLinearGradient(vg, ax,ay, bx,by, nvgHSLA(a0/(NVG_PI*2),1.0f,0.55f,255), nvgHSLA(a1/(NVG_PI*2),1.0f,0.55f,255));
 		nvgFillPaint(vg, paint);
 		nvgFill(vg);
 	}
@@ -717,10 +717,10 @@ void drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, float t)
 	nvgLineTo(vg, ax,ay);
 	nvgLineTo(vg, bx,by);
 	nvgClosePath(vg);
-	paint = nvgLinearGradient(vg, r,0, ax,ay, nvgHSLA(hue,1.0f,0.5f,255), nvgRGBA(255,255,255,255), 0);
+	paint = nvgLinearGradient(vg, r,0, ax,ay, nvgHSLA(hue,1.0f,0.5f,255), nvgRGBA(255,255,255,255));
 	nvgFillPaint(vg, paint);
 	nvgFill(vg);
-	paint = nvgLinearGradient(vg, (r+ax)*0.5f,(0+ay)*0.5f, bx,by, nvgRGBA(0,0,0,0), nvgRGBA(0,0,0,255), 0);
+	paint = nvgLinearGradient(vg, (r+ax)*0.5f,(0+ay)*0.5f, bx,by, nvgRGBA(0,0,0,0), nvgRGBA(0,0,0,255));
 	nvgFillPaint(vg, paint);
 	nvgFill(vg);
 	nvgStrokeColor(vg, nvgRGBA(0,0,0,64));
@@ -735,7 +735,7 @@ void drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, float t)
 	nvgStrokeColor(vg, nvgRGBA(255,255,255,192));
 	nvgStroke(vg);
 
-	paint = nvgRadialGradient(vg, ax,ay, 7,9, nvgRGBA(0,0,0,64), nvgRGBA(0,0,0,0), 0);
+	paint = nvgRadialGradient(vg, ax,ay, 7,9, nvgRGBA(0,0,0,64), nvgRGBA(0,0,0,0));
 	nvgBeginPath(vg);
 	nvgRect(vg, ax-20,ay-20,40,40);
 	nvgCircle(vg, ax,ay,7);
@@ -818,33 +818,6 @@ int loadDemoData(NVGcontext* vg, DemoData* data)
 			return -1;
 		}
 	}
-
-	NVGcolor buttonGradientSource[2];
-	buttonGradientSource[0] = nvgRGBA(50, 50, 50, 32);
-	buttonGradientSource[1] = nvgRGBA(0, 0, 0, 32);
-
-	data->gradients.buttonColored = nvgCreateGradient(vg, buttonGradientSource, 2);
-
-	buttonGradientSource[0] = nvgRGBA(30, 30, 30, 16);
-	buttonGradientSource[1] = nvgRGBA(0, 0, 0, 16);
-
-	data->gradients.buttonBlack = nvgCreateGradient(vg, buttonGradientSource, 2);
-
-	// NVGcolor buttonGradientSource[4];
-	// buttonGradientSource[0] = nvgRGBA(255, 0, 0, 255);
-	// buttonGradientSource[1] = nvgRGBA(0, 255, 0, 255);
-	// buttonGradientSource[2] = nvgRGBA(0, 0, 255, 255);
-	// buttonGradientSource[3] = nvgRGBA(0, 255, 255, 255);
-
-	// data->gradients.buttonColored = nvgCreateGradient(vg, buttonGradientSource, 4);
-
-	// buttonGradientSource[0] = nvgRGBA(255, 0, 0, 255);
-	// buttonGradientSource[1] = nvgRGBA(0, 255, 0, 255);
-	// buttonGradientSource[2] = nvgRGBA(0, 0, 255, 255);
-	// buttonGradientSource[3] = nvgRGBA(0, 255, 255, 255);
-
-	// data->gradients.buttonBlack = nvgCreateGradient(vg, buttonGradientSource, 4);
-
 
 	data->fontIcons = nvgCreateFont(vg, "icons", "../example/entypo.ttf");
 	if (data->fontIcons == -1) {
@@ -1131,7 +1104,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	drawEditBox(vg, "Password", x,y, 280,28);
 	y += 38;
 	drawCheckBox(vg, "Remember me", x,y, 140,28);
-	drawButton(vg, data, ICON_LOGIN, "Sign in", x+138, y, 140, 28, nvgRGBA(0,96,128,255));
+	drawButton(vg, ICON_LOGIN, "Sign in", x+138, y, 140, 28, nvgRGBA(0,96,128,255));
 	y += 45;
 
 	// Slider
@@ -1141,8 +1114,8 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	drawSlider(vg, 0.4f, x,y, 170,28);
 	y += 55;
 
-	drawButton(vg, data, ICON_TRASH, "Delete", x, y, 160, 28, nvgRGBA(128,16,8,255));
-	drawButton(vg, data, 0, "Cancel", x+170, y, 110, 28, nvgRGBA(0,0,0,0));
+	drawButton(vg, ICON_TRASH, "Delete", x, y, 160, 28, nvgRGBA(128,16,8,255));
+	drawButton(vg, 0, "Cancel", x+170, y, 110, 28, nvgRGBA(0,0,0,0));
 
 	// Thumbnails box
 	drawThumbnails(vg, 365, popy-30, 160, 300, data->images, 12, t);
