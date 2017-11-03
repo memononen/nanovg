@@ -277,6 +277,16 @@ void drawButton(NVGcontext* vg, int preicon, const char* text, float x, float y,
 	float tw = 0, iw = 0;
 
 	bg = nvgLinearGradient(vg, x,y,x,y+h, nvgRGBA(255,255,255,isBlack(col)?16:32), nvgRGBA(0,0,0,isBlack(col)?16:32));
+
+	NVGcolor colors[3] = {
+		nvgRGBA(255, 255, 0, 255),
+		nvgRGBA(0, 255, 0, 0),
+		nvgRGBA(0, 255, 255, 255)
+	};
+	float stops[3] = {0, 0.3, 1};
+
+	bg = nvgLinearGradientWithStops(vg, x,y,x,y+h, colors, stops, 3);
+
 	nvgBeginPath(vg);
 	nvgRoundedRect(vg, x+1,y+1, w-2,h-2, cornerRadius-1);
 	if (!isBlack(col)) {
