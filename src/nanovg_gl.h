@@ -147,6 +147,7 @@ struct GLNVGtexture {
 	int width, height;
 	int type;
 	int flags;
+	unsigned int salt;
 };
 typedef struct GLNVGtexture GLNVGtexture;
 
@@ -345,12 +346,12 @@ static void glnvg__blendFuncSeparate(GLNVGcontext* gl, const GLNVGblend* blend)
 
 static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 {
-	GLNVGtexture* tex = NULL;
-	int i;
+ 	GLNVGtexture* tex = NULL;
+	int i, idx = -1, salt;
 
 	for (i = 0; i < gl->ntextures; i++) {
 		if (gl->textures[i].id == 0) {
-			tex = &gl->textures[i];
+			idx = i;
 			break;
 		}
 	}
@@ -363,38 +364,54 @@ static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 			gl->textures = textures;
 			gl->ctextures = ctextures;
 		}
-		tex = &gl->textures[gl->ntextures++];
+		idx = gl->ntextures++;
 	}
 
+	tex = &gl->textures[idx];
+	while(!(salt = (unsigned int)rand()))
+		;
 	memset(tex, 0, sizeof(*tex));
-	tex->id = ++gl->textureId;
+	tex->salt = salt;
+	// salt value is in high 2 bytes, ID in low two bytes
+	tex->salt <<= 16;
+	tex->id = (idx & 0xffff) | tex->salt;
 
 	return tex;
 }
 
 static GLNVGtexture* glnvg__findTexture(GLNVGcontext* gl, int id)
 {
-	int i;
-	for (i = 0; i < gl->ntextures; i++)
-		if (gl->textures[i].id == id)
-			return &gl->textures[i];
-	return NULL;
+	int idx = id & 0xffff, salt = ((unsigned int)id) & 0xffff0000;
+	// Check that the texture index is valid
+	if (idx < 0 || idx >= gl->ntextures)
+		return NULL;
+	// Check that we're not trying to access deleted texture.
+	if (gl->textures[idx].salt != salt)
+		return NULL;
+	return &gl->textures[idx];
 }
 
 static int glnvg__deleteTexture(GLNVGcontext* gl, int id)
 {
-	int i;
-	for (i = 0; i < gl->ntextures; i++) {
-		if (gl->textures[i].id == id) {
-			if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVG_IMAGE_NODELETE) == 0)
-				glDeleteTextures(1, &gl->textures[i].tex);
-			memset(&gl->textures[i], 0, sizeof(gl->textures[i]));
-			return 1;
-		}
-	}
-	return 0;
-}
+	int idx = id & 0xffff, salt = ((unsigned int)id) & 0xffff0000;
+	GLNVGtexture* tex = NULL;
+	// Check that the texture index is valid
+	if (idx < 0 || idx >= gl->ntextures)
+		return 0;
+	// Check that we're not trying to access deleted texture.
+	if (gl->textures[idx].salt != salt)
+		return 0;
 
+	// Clear texture
+	tex = &gl->textures[idx];
+	if (tex->tex != 0 && (tex->flags & NVG_IMAGE_NODELETE) == 0)
+		glDeleteTextures(1, &tex->tex);
+	memset(tex, 0, sizeof(*tex));
+	// salt always > 0, so deleted texture will have illegal salt
+	tex->salt = 0; 
+	
+	return 1;
+}
 static void glnvg__dumpShaderError(GLuint shader, const char* name, const char* type)
 {
 	GLchar str[512+1];
