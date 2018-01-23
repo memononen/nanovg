@@ -269,6 +269,7 @@ struct GLNVGcontext {
 	GLuint stencilFuncMask;
 	GLNVGblend blendFunc;
 	#endif
+	unsigned int textureSalt;
 };
 typedef struct GLNVGcontext GLNVGcontext;
 
@@ -347,7 +348,7 @@ static void glnvg__blendFuncSeparate(GLNVGcontext* gl, const GLNVGblend* blend)
 static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 {
  	GLNVGtexture* tex = NULL;
-	int i, idx = -1, salt;
+	int i, idx = -1;
 
 	for (i = 0; i < gl->ntextures; i++) {
 		if (gl->textures[i].id == 0) {
@@ -355,7 +356,8 @@ static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 			break;
 		}
 	}
-	if (tex == NULL) {
+	// if no unused slot is available
+	if (idx == -1) {
 		if (gl->ntextures+1 > gl->ctextures) {
 			GLNVGtexture* textures;
 			int ctextures = glnvg__maxi(gl->ntextures+1, 4) +  gl->ctextures/2; // 1.5x Overallocate
@@ -368,10 +370,10 @@ static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 	}
 
 	tex = &gl->textures[idx];
-	while(!(salt = (unsigned int)rand()))
-		;
 	memset(tex, 0, sizeof(*tex));
-	tex->salt = salt;
+	// pre-increment so salt begins at one. When GLNVGcontext is
+	// allocated initially it is set to 0 via memset.
+	tex->salt = ++gl->textureSalt;
 	// salt value is in high 2 bytes, ID in low two bytes
 	tex->salt <<= 16;
 	tex->id = (idx & 0xffff) | tex->salt;
@@ -381,12 +383,12 @@ static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 
 static GLNVGtexture* glnvg__findTexture(GLNVGcontext* gl, int id)
 {
-	int idx = id & 0xffff, salt = ((unsigned int)id) & 0xffff0000;
+	int idx = id & 0xffff;
 	// Check that the texture index is valid
 	if (idx < 0 || idx >= gl->ntextures)
 		return NULL;
 	// Check that we're not trying to access deleted texture.
-	if (gl->textures[idx].salt != salt)
+	if (gl->textures[idx].salt != (id & 0xffff0000))
 		return NULL;
 	return &gl->textures[idx];
 }
@@ -408,10 +410,10 @@ static int glnvg__deleteTexture(GLNVGcontext* gl, int id)
 		glDeleteTextures(1, &tex->tex);
 	memset(tex, 0, sizeof(*tex));
 	// salt always > 0, so deleted texture will have illegal salt
-	tex->salt = 0; 
-	
+	tex->salt = 0;
 	return 1;
 }
+
 static void glnvg__dumpShaderError(GLuint shader, const char* name, const char* type)
 {
 	GLchar str[512+1];
