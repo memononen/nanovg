@@ -74,7 +74,7 @@
 //
 // USAGE
 //
-//   Include this file in whatever places neeed to refer to it. In ONE C/C++
+//   Include this file in whatever places need to refer to it. In ONE C/C++
 //   file, write:
 //      #define STB_TRUETYPE_IMPLEMENTATION
 //   before the #include of this file. This expands out the actual
@@ -212,7 +212,7 @@
 //   Sample code                        140 LOC  /
 //   Truetype parsing                   620 LOC  ---- 620 LOC TrueType
 //   Software rasterization             240 LOC  \                           .
-//   Curve tesselation                  120 LOC   \__ 550 LOC Bitmap creation
+//   Curve tessellation                  120 LOC   \__ 550 LOC Bitmap creation
 //   Bitmap management                  100 LOC   /
 //   Baked bitmap interface              70 LOC  /
 //   Font name matching & access        150 LOC  ---- 150 
@@ -627,7 +627,7 @@ STBTT_DEF int stbtt_GetFontOffsetForIndex(const unsigned char *data, int index);
 // this step if you know it's that kind of font.
 
 
-// The following structure is defined publically so you can declare one on
+// The following structure is defined publicly so you can declare one on
 // the stack or as a global or etc, but you should treat it as opaque.
 typedef struct stbtt_fontinfo
 {
@@ -739,7 +739,7 @@ STBTT_DEF int stbtt_GetGlyphShape(const stbtt_fontinfo *info, int glyph_index, s
 // returns # of vertices and fills *vertices with the pointer to them
 //   these are expressed in "unscaled" coordinates
 //
-// The shape is a series of countours. Each one starts with
+// The shape is a series of contours. Each one starts with
 // a STBTT_moveto, then consists of a series of mixed
 // STBTT_lineto and STBTT_curveto segments. A lineto
 // draws a line from previous endpoint to its x,y; a curveto
@@ -2178,7 +2178,7 @@ static void stbtt__sort_edges_ins_sort(stbtt__edge *p, int n)
 
 static void stbtt__sort_edges_quicksort(stbtt__edge *p, int n)
 {
-   /* threshhold for transitioning to insertion sort */
+   /* threshold for transitioning to insertion sort */
    while (n > 12) {
       stbtt__edge t;
       int c01,c12,c,m,i,j;
@@ -2313,7 +2313,7 @@ static void stbtt__add_point(stbtt__point *points, int n, float x, float y)
    points[n].y = y;
 }
 
-// tesselate until threshhold p is happy... @TODO warped to compensate for non-linear stretching
+// tessellate until threshold p is happy... @TODO warped to compensate for non-linear stretching
 static int stbtt__tesselate_curve(stbtt__point *points, int *num_points, float x0, float y0, float x1, float y1, float x2, float y2, float objspace_flatness_squared, int n)
 {
    // midpoint
