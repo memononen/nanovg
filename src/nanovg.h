@@ -470,7 +470,12 @@ void nvgLineTo(NVGcontext* ctx, float x, float y);
 // Adds cubic bezier segment from last point in the path via two control points to the specified point.
 void nvgBezierTo(NVGcontext* ctx, float c1x, float c1y, float c2x, float c2y, float x, float y);
 
-// Adds a Catmul-Rom segment from the last point in the path to the specified point.
+// Adds a Catmull-Rom spline segment from the last point in the path to the specified point.
+// Catmull-Rom splines require at least four points: the first and last are control points,
+// the second and third are the beginning and end of the segment. Thus you will need to make at least
+// four calls to nvgCurveTo to see a result. Because of this, you'll typically want to add
+// both the origin and the end of your curve twice, otherwise the first and last points of the curve will
+// just be control points.
 void nvgCurveTo(NVGcontext* ctx, float x, float y);
 	
 // Adds quadratic bezier segment from last point in the path via a control point to the specified point.
