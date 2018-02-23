@@ -470,6 +470,9 @@ void nvgLineTo(NVGcontext* ctx, float x, float y);
 // Adds cubic bezier segment from last point in the path via two control points to the specified point.
 void nvgBezierTo(NVGcontext* ctx, float c1x, float c1y, float c2x, float c2y, float x, float y);
 
+// Adds a Catmul-Rom segment from the last point in the path to the specified point.
+void nvgCurveTo(NVGcontext* ctx, float x, float y);
+	
 // Adds quadratic bezier segment from last point in the path via a control point to the specified point.
 void nvgQuadTo(NVGcontext* ctx, float cx, float cy, float x, float y);
 
