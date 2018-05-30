@@ -6,7 +6,7 @@
 #    By: tmilon <tmilon@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2017/11/07 18:38:31 by tmilon            #+#    #+#              #
-#    Updated: 2018/05/30 10:00:56 by cpieri           ###   ########.fr        #
+#    Updated: 2018/05/30 10:27:32 by cpieri           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,7 +14,7 @@ NAME	=	lnvg.a
 
 CC		=	gcc
 
-CFLAGS	=
+CFLAGS	=	-Wall -Wextra -Werror
 
 INCS	=	fontstash.h			\
 			nanovg.h			\
