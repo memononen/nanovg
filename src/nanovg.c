@@ -1729,7 +1729,7 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 
 	w += aa * 0.5f;
 
-	// Disable the gradient used for antialiasing when antialiasing is not used. 
+	// Disable the gradient used for antialiasing when antialiasing is not used.
 	if (aa == 0.0f) {
 		u0 = 0.5f;
 		u1 = 0.5f;
@@ -2253,8 +2253,8 @@ void nvgStroke(NVGcontext* ctx)
 	NVGpaint strokePaint = state->stroke;
 	const NVGpath* path;
 	int i;
-	
-	
+
+
 	if (strokeWidth < ctx->fringeWidth) {
 		// If the stroke width is less than pixel size, use alpha to emulate coverage.
 		// Since coverage is area, scale by alpha*alpha.
@@ -2460,12 +2460,12 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
 		float c[4*2];
 		if (iter.prevGlyphIndex == -1) { // can not retrieve glyph?
-			if (!nvg__allocTextAtlas(ctx))
-				break; // no memory :(
 			if (nverts != 0) {
 				nvg__renderText(ctx, verts, nverts);
 				nverts = 0;
 			}
+			if (!nvg__allocTextAtlas(ctx))
+				break; // no memory :(
 			iter = prevIter;
 			fonsTextIterNext(ctx->fs, &iter, &q); // try again
 			if (iter.prevGlyphIndex == -1) // still can not find glyph?
