@@ -273,6 +273,7 @@ int fons__tt_init(FONScontext *context)
 }
 
 int fons__tt_done(FONScontext *context)
+{
 	FONS_NOTUSED(context);
 	return 1;
 }
