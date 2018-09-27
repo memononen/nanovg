@@ -162,8 +162,16 @@ static FT_Library ftLibrary;
 int fons__tt_init(FONScontext *context)
 {
 	FT_Error ftError;
-        FONS_NOTUSED(context);
+	FONS_NOTUSED(context);
 	ftError = FT_Init_FreeType(&ftLibrary);
+	return ftError == 0;
+}
+
+int fons__tt_done(FONScontext *context)
+{
+	FT_Error ftError;
+	FONS_NOTUSED(context);
+	ftError = FT_Done_FreeType(ftLibrary);
 	return ftError == 0;
 }
 
@@ -260,6 +268,11 @@ typedef struct FONSttFontImpl FONSttFontImpl;
 
 int fons__tt_init(FONScontext *context)
 {
+	FONS_NOTUSED(context);
+	return 1;
+}
+
+int fons__tt_done(FONScontext *context)
 	FONS_NOTUSED(context);
 	return 1;
 }
@@ -1630,6 +1643,7 @@ void fonsDeleteInternal(FONScontext* stash)
 	if (stash->texData) free(stash->texData);
 	if (stash->scratch) free(stash->scratch);
 	free(stash);
+	fons__tt_done(stash);
 }
 
 void fonsSetErrorCallback(FONScontext* stash, void (*callback)(void* uptr, int error, int val), void* uptr)
