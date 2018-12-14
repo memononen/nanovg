@@ -622,20 +622,24 @@ static void nvg__setPaintColor(NVGpaint* p, NVGcolor color)
 
 
 // State handling
-void nvgSave(NVGcontext* ctx)
+int nvgSave(NVGcontext* ctx)
 {
 	if (ctx->nstates >= NVG_MAX_STATES)
 		return;
 	if (ctx->nstates > 0)
 		memcpy(&ctx->states[ctx->nstates], &ctx->states[ctx->nstates-1], sizeof(NVGstate));
 	ctx->nstates++;
+	return ctx->nstates - 1;
 }
 
-void nvgRestore(NVGcontext* ctx)
+void nvgRestore(NVGcontext* ctx, int count)
 {
-	if (ctx->nstates <= 1)
+	if (ctx->nstates <= count)
 		return;
-	ctx->nstates--;
+	if (count >= 0) 
+		ctx->nstates = count;
+	else if (ctx->nstates >= -count)
+		ctx->nstates += count;
 }
 
 void nvgReset(NVGcontext* ctx)

@@ -221,10 +221,12 @@ NVGcolor nvgHSLA(float h, float s, float l, unsigned char a);
 
 // Pushes and saves the current render state into a state stack.
 // A matching nvgRestore() must be used to restore the state.
-void nvgSave(NVGcontext* ctx);
+// Returns the saved state count.
+int nvgSave(NVGcontext* ctx);
 
 // Pops and restores current render state.
-void nvgRestore(NVGcontext* ctx);
+// Pop back (-count) times if count < 0, otherwise pop back to target count saved state.
+void nvgRestore(NVGcontext* ctx, int count);
 
 // Resets current render state to default values. Does not affect the render state stack.
 void nvgReset(NVGcontext* ctx);
