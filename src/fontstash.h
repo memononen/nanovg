@@ -418,7 +418,7 @@ struct FONSstate
 typedef struct FONSstate FONSstate;
 
 struct FONSatlasNode {
-    short x, y, width;
+	short x, y, width;
 };
 typedef struct FONSatlasNode FONSatlasNode;
 
@@ -509,11 +509,11 @@ static unsigned int fons__decutf8(unsigned int* state, unsigned int* codep, unsi
 		12,12,12,12,12,12,12,24,12,12,12,12, 12,24,12,12,12,12,12,12,12,24,12,12,
 		12,12,12,12,12,12,12,36,12,36,12,12, 12,36,12,12,12,12,12,36,12,36,12,12,
 		12,36,12,12,12,12,12,12,12,12,12,12,
-    };
+	};
 
 	unsigned int type = utf8d[byte];
 
-    *codep = (*state != FONS_UTF8_ACCEPT) ?
+	*codep = (*state != FONS_UTF8_ACCEPT) ?
 		(byte & 0x3fu) | (*codep << 6) :
 		(0xff >> type) & (byte);
 
