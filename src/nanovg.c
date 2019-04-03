@@ -2289,12 +2289,22 @@ void nvgStroke(NVGcontext* ctx)
 // Add fonts
 int nvgCreateFont(NVGcontext* ctx, const char* name, const char* path)
 {
-	return fonsAddFont(ctx->fs, name, path);
+	return nvgCreateFontFace(ctx, name, path, 0);
+}
+
+int nvgCreateFontFace(NVGcontext* ctx, const char* name, const char* path, int faceIdx)
+{
+	return fonsAddFont(ctx->fs, name, path, faceIdx);
 }
 
 int nvgCreateFontMem(NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int freeData)
 {
-	return fonsAddFontMem(ctx->fs, name, data, ndata, freeData);
+	return nvgCreateFontFaceMem(ctx, name, data, ndata, 0, freeData);
+}
+
+int nvgCreateFontFaceMem(NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int faceIdx, int freeData)
+{
+	return fonsAddFontMem(ctx->fs, name, data, ndata, faceIdx, freeData);
 }
 
 int nvgFindFont(NVGcontext* ctx, const char* name)

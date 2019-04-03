@@ -546,9 +546,17 @@ void nvgStroke(NVGcontext* ctx);
 // Returns handle to the font.
 int nvgCreateFont(NVGcontext* ctx, const char* name, const char* filename);
 
+// Creates font by loading it from the disk from specified file name, loading a specific face by index.
+// Returns handle to the font.
+int nvgCreateFontFace(NVGcontext* ctx, const char* name, const char* filename, int faceIdx);
+
 // Creates font by loading it from the specified memory chunk.
 // Returns handle to the font.
 int nvgCreateFontMem(NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int freeData);
+
+// Creates font by loading it from the specified memory chunk, loading a specific face by index.
+// Returns handle to the font.
+int nvgCreateFontFaceMem(NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int faceIdx, int freeData);
 
 // Finds a loaded font of specified name, and returns handle to it, or -1 if the font is not found.
 int nvgFindFont(NVGcontext* ctx, const char* name);
