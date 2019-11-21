@@ -2,16 +2,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#ifndef NANOVG_VULKAN_IMPLEMENTATION
 #ifdef NANOVG_GLEW
 #  include <GL/glew.h>
 #endif
 #include <GLFW/glfw3.h>
+#endif
 #include "nanovg.h"
 
 #ifdef _MSC_VER
 #define snprintf _snprintf
 #elif !defined(__MINGW32__)
+#ifndef NANOVG_VULKAN_IMPLEMENTATION
 #include <iconv.h>
+#endif
 #endif
 
 // timer query support
@@ -38,6 +42,8 @@ void initGPUTimer(GPUtimer* timer)
 		glGenQueries(GPU_QUERY_COUNT, timer->queries);
 	}*/
 }
+
+#ifndef NANOVG_VULKAN_IMPLEMENTATION
 
 void startGPUTimer(GPUtimer* timer)
 {
@@ -72,7 +78,7 @@ int stopGPUTimer(GPUtimer* timer, float* times, int maxTimes)
 	}
 	return n;
 }
-
+#endif
 
 void initGraph(PerfGraph* fps, int style, const char* name)
 {

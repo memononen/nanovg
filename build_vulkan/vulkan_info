@@ -1,0 +1,34 @@
+added:
+nanovg/src/nanovg_vk.h
+nanovg/src/shader/fill.frag
+nanovg/src/shader/fill.frag.inc
+nanovg/src/shader/fill.vert
+nanovg/src/shader/fill.vert.inc
+nanovg/src/shader/fill_edge_aa.frag
+nanovg/src/shader/fill_edge_aa.frag.inc
+nanovg/example/example_vulkan.c
+nanovg/example/vulkan_util.h
+
+
+edited
+nanovg/src/nanovg.h
+line 656 #ifdef NANOVG_VULKAN_IMPLEMENTATION
+
+few lines mark with (use search)
+#ifndef NANOVG_VULKAN_IMPLEMENTATION
+in
+nanovg/example/demo.c
+nanovg/example/demo.h
+nanovg/example/perf.c
+
+
+
+
+1. shaders is from nanovg_gl.h to files 
+shader/fill.frag
+shader/fill_edge_aa.frag (this come from using NVG_ANTIALIAS flag in nanovg_gl.h)
+
+2. *.inc is compile shaders to spirv
+glslangValidator -V -x -o fill.frag.inc fill.frag
+glslangValidator -V -x -o fill.vert.inc fill.vert
+glslangValidator -V -x -o fill_edge_aa.frag.inc fill_edge_aa.frag

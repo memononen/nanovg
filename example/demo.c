@@ -5,16 +5,21 @@
 #ifdef NANOVG_GLEW
 #  include <GL/glew.h>
 #endif
+#ifndef NANOVG_VULKAN_IMPLEMENTATION
 #include <GLFW/glfw3.h>
+#endif
 #include "nanovg.h"
+#ifndef NANOVG_VULKAN_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-
+#endif
 
 #ifdef _MSC_VER
 #define snprintf _snprintf
 #elif !defined(__MINGW32__)
+#ifndef NANOVG_VULKAN_IMPLEMENTATION
 #include <iconv.h>
+#endif
 #endif
 
 #define ICON_SEARCH 0x1F50D
@@ -1123,6 +1128,8 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	nvgRestore(vg);
 }
 
+#ifndef NANOVG_VULKAN_IMPLEMENTATION
+
 static int mini(int a, int b) { return a < b ? a : b; }
 
 static void unpremultiplyAlpha(unsigned char* image, int w, int h, int stride)
@@ -1224,3 +1231,4 @@ void saveScreenShot(int w, int h, int premult, const char* name)
  	stbi_write_png(name, w, h, 4, image, w*4);
  	free(image);
 }
+#endif
