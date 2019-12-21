@@ -1,3 +1,5 @@
+*This project is not actively maintained.*
+
 NanoVG
 ==========
 
@@ -111,6 +113,10 @@ See the header file [nanovg.h](/src/nanovg.h) for API reference.
 
 ## License
 The library is licensed under [zlib license](LICENSE.txt)
+Fonts used in examples:
+- Roboto licensed under [Apache license](http://www.apache.org/licenses/LICENSE-2.0)
+- Entypo licensed under CC BY-SA 4.0.
+- Noto Emoji licensed under [SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)
 
 ## Discussions
 [NanoVG mailing list](https://groups.google.com/forum/#!forum/nanovg)
