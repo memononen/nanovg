@@ -26,6 +26,7 @@ solution "nanovg"
 
 		kind "ConsoleApp"
 		language "C"
+		defines { "DEMO_OPENGL" }
 		files { "example/example_gl2.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
@@ -55,6 +56,7 @@ solution "nanovg"
 	project "example_gl3"
 		kind "ConsoleApp"
 		language "C"
+		defines { "DEMO_OPENGL" }
 		files { "example/example_gl3.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
@@ -84,7 +86,7 @@ solution "nanovg"
 	project "example_gl2_msaa"
 		kind "ConsoleApp"
 		language "C"
-		defines { "DEMO_MSAA" }
+		defines { "DEMO_OPENGL", "DEMO_MSAA" }
 		files { "example/example_gl2.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
@@ -114,7 +116,7 @@ solution "nanovg"
 	project "example_gl3_msaa"
 		kind "ConsoleApp"
 		language "C"
-		defines { "DEMO_MSAA" }
+		defines { "DEMO_OPENGL", "DEMO_MSAA" }
 		files { "example/example_gl3.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
@@ -144,6 +146,7 @@ solution "nanovg"
 	project "example_fbo"
 		kind "ConsoleApp"
 		language "C"
+		defines { "DEMO_OPENGL" }
 		files { "example/example_fbo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
@@ -172,6 +175,7 @@ solution "nanovg"
 	project "example_gles2"
 		kind "ConsoleApp"
 		language "C"
+		defines { "DEMO_OPENGL" }
 		files { "example/example_gles2.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")
@@ -200,6 +204,7 @@ solution "nanovg"
 	project "example_gles3"
 		kind "ConsoleApp"
 		language "C"
+		defines { "DEMO_OPENGL" }
 		files { "example/example_gles3.c", "example/demo.c", "example/perf.c" }
 		includedirs { "src", "example" }
 		targetdir("build")

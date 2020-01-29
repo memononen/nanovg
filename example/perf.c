@@ -5,7 +5,9 @@
 #ifdef NANOVG_GLEW
 #  include <GL/glew.h>
 #endif
-#include <GLFW/glfw3.h>
+#ifdef DEMO_OPENGL
+#  include <GLFW/glfw3.h>
+#endif
 #include "nanovg.h"
 
 #ifdef _MSC_VER
@@ -51,6 +53,7 @@ int stopGPUTimer(GPUtimer* timer, float* times, int maxTimes)
 {
 	NVG_NOTUSED(times);
 	NVG_NOTUSED(maxTimes);
+#ifdef DEMO_OPENGL
 	GLint available = 1;
 	int n = 0;
 	if (!timer->supported)
@@ -71,6 +74,9 @@ int stopGPUTimer(GPUtimer* timer, float* times, int maxTimes)
 		}
 	}
 	return n;
+#else
+	return 0;
+#endif
 }
 
 
