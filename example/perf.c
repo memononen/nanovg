@@ -45,8 +45,10 @@ void startGPUTimer(GPUtimer* timer)
 {
 	if (!timer->supported)
 		return;
+#ifdef DEMO_OPENGL
 	glBeginQuery(GL_TIME_ELAPSED, timer->queries[timer->cur % GPU_QUERY_COUNT] );
 	timer->cur++;
+#endif
 }
 
 int stopGPUTimer(GPUtimer* timer, float* times, int maxTimes)
