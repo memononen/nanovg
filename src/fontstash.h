@@ -102,8 +102,8 @@ int fonsExpandAtlas(FONScontext* s, int width, int height);
 int fonsResetAtlas(FONScontext* stash, int width, int height);
 
 // Add fonts
-int fonsAddFont(FONScontext* s, const char* name, const char* path);
-int fonsAddFontMem(FONScontext* s, const char* name, unsigned char* data, int ndata, int freeData);
+int fonsAddFont(FONScontext* s, const char* name, const char* path, int faceIdx);
+int fonsAddFontMem(FONScontext* s, const char* name, unsigned char* data, int ndata, int faceIdx, int freeData);
 int fonsGetFontByName(FONScontext* s, const char* name);
 
 // State handling
@@ -175,13 +175,13 @@ int fons__tt_done(FONScontext *context)
 	return ftError == 0;
 }
 
-int fons__tt_loadFont(FONScontext *context, FONSttFontImpl *font, unsigned char *data, int dataSize)
+int fons__tt_loadFont(FONScontext *context, FONSttFontImpl *font, unsigned char *data, int dataSize, int faceIdx)
 {
 	FT_Error ftError;
 	FONS_NOTUSED(context);
 
 	//font->font.userdata = stash;
-	ftError = FT_New_Memory_Face(ftLibrary, (const FT_Byte*)data, dataSize, 0, &font->font);
+	ftError = FT_New_Memory_Face(ftLibrary, (const FT_Byte*)data, dataSize, faceIdx, &font->font);
 	return ftError == 0;
 }
 
@@ -278,13 +278,18 @@ int fons__tt_done(FONScontext *context)
 	return 1;
 }
 
-int fons__tt_loadFont(FONScontext *context, FONSttFontImpl *font, unsigned char *data, int dataSize)
+int fons__tt_loadFont(FONScontext *context, FONSttFontImpl *font, unsigned char *data, int dataSize, int faceIdx)
 {
 	int stbError;
 	FONS_NOTUSED(dataSize);
 
+	int offset = stbtt_GetFontOffsetForIndex(data, faceIdx);
+
+	if (offset < 0)
+		return 0;
+
 	font->font.userdata = context;
-	stbError = stbtt_InitFont(&font->font, data, 0);
+	stbError = stbtt_InitFont(&font->font, data, offset);
 	return stbError;
 }
 
@@ -413,7 +418,7 @@ struct FONSstate
 typedef struct FONSstate FONSstate;
 
 struct FONSatlasNode {
-    short x, y, width;
+	short x, y, width;
 };
 typedef struct FONSatlasNode FONSatlasNode;
 
@@ -504,11 +509,11 @@ static unsigned int fons__decutf8(unsigned int* state, unsigned int* codep, unsi
 		12,12,12,12,12,12,12,24,12,12,12,12, 12,24,12,12,12,12,12,12,12,24,12,12,
 		12,12,12,12,12,12,12,36,12,36,12,12, 12,36,12,12,12,12,12,36,12,36,12,12,
 		12,36,12,12,12,12,12,12,12,12,12,12,
-    };
+	};
 
 	unsigned int type = utf8d[byte];
 
-    *codep = (*state != FONS_UTF8_ACCEPT) ?
+	*codep = (*state != FONS_UTF8_ACCEPT) ?
 		(byte & 0x3fu) | (*codep << 6) :
 		(0xff >> type) & (byte);
 
@@ -890,7 +895,7 @@ error:
 	return FONS_INVALID;
 }
 
-int fonsAddFont(FONScontext* stash, const char* name, const char* path)
+int fonsAddFont(FONScontext* stash, const char* name, const char* path, int faceIdx)
 {
 	FILE* fp = 0;
 	int dataSize = 0;
@@ -910,7 +915,7 @@ int fonsAddFont(FONScontext* stash, const char* name, const char* path)
 	fp = 0;
 	if (readed != dataSize) goto error;
 
-	return fonsAddFontMem(stash, name, data, dataSize, 1);
+	return fonsAddFontMem(stash, name, data, dataSize, faceIdx, 1);
 
 error:
 	if (data) free(data);
@@ -918,7 +923,7 @@ error:
 	return FONS_INVALID;
 }
 
-int fonsAddFontMem(FONScontext* stash, const char* name, unsigned char* data, int dataSize, int freeData)
+int fonsAddFontMem(FONScontext* stash, const char* name, unsigned char* data, int dataSize, int faceIdx, int freeData)
 {
 	int i, ascent, descent, fh, lineGap;
 	FONSfont* font;
@@ -943,7 +948,7 @@ int fonsAddFontMem(FONScontext* stash, const char* name, unsigned char* data, in
 
 	// Init font
 	stash->nscratch = 0;
-	if (!fons__tt_loadFont(stash, &font->font, data, dataSize)) goto error;
+	if (!fons__tt_loadFont(stash, &font->font, data, dataSize, faceIdx)) goto error;
 
 	// Store normalized line height. The real line height is got
 	// by multiplying the lineh by font size.
