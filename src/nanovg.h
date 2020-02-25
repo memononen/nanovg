@@ -565,6 +565,12 @@ int nvgAddFallbackFontId(NVGcontext* ctx, int baseFont, int fallbackFont);
 // Adds a fallback font by name.
 int nvgAddFallbackFont(NVGcontext* ctx, const char* baseFont, const char* fallbackFont);
 
+// Resets fallback fonts by handle.
+void nvgResetFallbackFontsId(NVGcontext* ctx, int baseFont);
+
+// Resets fallback fonts by name.
+void nvgResetFallbackFonts(NVGcontext* ctx, const char* baseFont);
+
 // Sets the font size of current text style.
 void nvgFontSize(NVGcontext* ctx, float size);
 
