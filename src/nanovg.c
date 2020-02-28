@@ -2433,7 +2433,7 @@ static void nvg__renderText(NVGcontext* ctx, NVGvertex* verts, int nverts)
 	paint.innerColor.a *= state->alpha;
 	paint.outerColor.a *= state->alpha;
 
-	ctx->params.renderTriangles(ctx->params.userPtr, &paint, state->compositeOperation, &state->scissor, verts, nverts);
+	ctx->params.renderTriangles(ctx->params.userPtr, &paint, state->compositeOperation, &state->scissor, verts, nverts, ctx->fringeWidth);
 
 	ctx->drawCallCount++;
 	ctx->textTriCount += nverts/3;
