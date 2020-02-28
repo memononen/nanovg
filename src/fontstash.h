@@ -797,6 +797,17 @@ int fonsAddFallbackFont(FONScontext* stash, int base, int fallback)
 	return 0;
 }
 
+void fonsResetFallbackFont(FONScontext* stash, int base)
+{
+	int i;
+
+	FONSfont* baseFont = stash->fonts[base];
+	baseFont->nfallbacks = 0;
+	baseFont->nglyphs = 0;
+	for (i = 0; i < FONS_HASH_LUT_SIZE; i++)
+		baseFont->lut[i] = -1;
+}
+
 void fonsSetSize(FONScontext* stash, float size)
 {
 	fons__getState(stash)->size = size;

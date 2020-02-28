@@ -2325,6 +2325,16 @@ int nvgAddFallbackFont(NVGcontext* ctx, const char* baseFont, const char* fallba
 	return nvgAddFallbackFontId(ctx, nvgFindFont(ctx, baseFont), nvgFindFont(ctx, fallbackFont));
 }
 
+void nvgResetFallbackFontsId(NVGcontext* ctx, int baseFont)
+{
+	fonsResetFallbackFont(ctx->fs, baseFont);
+}
+
+void nvgResetFallbackFonts(NVGcontext* ctx, const char* baseFont)
+{
+	nvgResetFallbackFontsId(ctx, nvgFindFont(ctx, baseFont));
+}
+
 // State setting
 void nvgFontSize(NVGcontext* ctx, float size)
 {
