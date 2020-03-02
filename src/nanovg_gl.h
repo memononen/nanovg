@@ -268,6 +268,10 @@ struct GLNVGcontext {
 	GLuint stencilFuncMask;
 	GLNVGblend blendFunc;
 	#endif
+
+#ifdef __EMSCRIPTEN__
+	int dummyTex;
+#endif
 };
 typedef struct GLNVGcontext GLNVGcontext;
 
@@ -704,6 +708,10 @@ static int glnvg__renderCreate(void* uptr)
 
 	glFinish();
 
+#ifdef __EMSCRIPTEN__
+	gl->dummyTex = 0;
+#endif
+
 	return 1;
 }
 
@@ -985,7 +993,15 @@ static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 		glnvg__bindTexture(gl, tex != NULL ? tex->tex : 0);
 		glnvg__checkError(gl, "tex paint tex");
 	} else {
+#ifdef __EMSCRIPTEN__
+		if(gl->dummyTex == 0) {
+			gl->dummyTex = glnvg__renderCreateTexture(&gl, NVG_TEXTURE_ALPHA, 2, 2, 0, NULL);
+		}
+		GLNVGtexture* tex = glnvg__findTexture(gl, gl->dummyTex);
+		glnvg__bindTexture(gl, tex->tex);
+#else
 		glnvg__bindTexture(gl, 0);
+#endif
 	}
 }
 
