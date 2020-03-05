@@ -704,13 +704,13 @@ static int glnvg__renderCreate(void* uptr)
 #endif
 	gl->fragSize = sizeof(GLNVGfragUniforms) + align - sizeof(GLNVGfragUniforms) % align;
 
+#ifdef __EMSCRIPTEN__
+	gl->dummyTex = glnvg__renderCreateTexture(&gl, NVG_TEXTURE_ALPHA, 1, 1, 0, NULL);
+#endif
+
 	glnvg__checkError(gl, "create done");
 
 	glFinish();
-
-#ifdef __EMSCRIPTEN__
-	gl->dummyTex = 0;
-#endif
 
 	return 1;
 }
@@ -994,9 +994,6 @@ static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 		glnvg__checkError(gl, "tex paint tex");
 	} else {
 #ifdef __EMSCRIPTEN__
-		if(gl->dummyTex == 0) {
-			gl->dummyTex = glnvg__renderCreateTexture(&gl, NVG_TEXTURE_ALPHA, 2, 2, 0, NULL);
-		}
 		GLNVGtexture* tex = glnvg__findTexture(gl, gl->dummyTex);
 		glnvg__bindTexture(gl, tex->tex);
 #else
