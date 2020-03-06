@@ -70,6 +70,7 @@ struct FONSquad
 {
 	float x0,y0,s0,t0;
 	float x1,y1,s1,t1;
+	float xadv;
 };
 typedef struct FONSquad FONSquad;
 
@@ -1232,6 +1233,7 @@ static void fons__getQuad(FONScontext* stash, FONSfont* font,
 		q->y0 = ry;
 		q->x1 = rx + x1 - x0;
 		q->y1 = ry + y1 - y0;
+		q->xadv = glyph->xadv / 10.0f;
 
 		q->s0 = x0 * stash->itw;
 		q->t0 = y0 * stash->ith;
@@ -1245,6 +1247,7 @@ static void fons__getQuad(FONScontext* stash, FONSfont* font,
 		q->y0 = ry;
 		q->x1 = rx + x1 - x0;
 		q->y1 = ry - y1 + y0;
+		q->xadv = glyph->xadv / 10.0f;
 
 		q->s0 = x0 * stash->itw;
 		q->t0 = y0 * stash->ith;
@@ -1540,7 +1543,7 @@ float fonsTextBounds(FONScontext* stash,
 		if (glyph != NULL) {
 			fons__getQuad(stash, font, prevGlyphIndex, glyph, scale, state->spacing, &x, &y, &q);
 			if (q.x0 < minx) minx = q.x0;
-			if (q.x1 > maxx) maxx = q.x1;
+			if ((q.x0 + q.xadv) > maxx) maxx = (q.x0 + q.xadv);
 			if (stash->params.flags & FONS_ZERO_TOPLEFT) {
 				if (q.y0 < miny) miny = q.y0;
 				if (q.y1 > maxy) maxy = q.y1;
