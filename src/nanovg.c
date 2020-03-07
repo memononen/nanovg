@@ -2704,7 +2704,7 @@ int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, floa
 					rowStartX = iter.x;
 					rowStart = iter.str;
 					rowEnd = iter.next;
-					rowWidth = iter.nextx - rowStartX; // q.x1 - rowStartX;
+					rowWidth = iter.nextx - rowStartX;
 					rowMinX = q.x0 - rowStartX;
 					rowMaxX = q.x1 - rowStartX;
 					wordStart = iter.str;
@@ -2734,7 +2734,7 @@ int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, floa
 				if ((ptype == NVG_SPACE && (type == NVG_CHAR || type == NVG_CJK_CHAR)) || type == NVG_CJK_CHAR) {
 					wordStart = iter.str;
 					wordStartX = iter.x;
-					wordMinX = q.x0 - rowStartX;
+					wordMinX = q.x0;
 				}
 
 				// Break to new line when a character is beyond break width.
@@ -2771,13 +2771,13 @@ int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, floa
 						nrows++;
 						if (nrows >= maxRows)
 							return nrows;
+						// Update row
 						rowStartX = wordStartX;
 						rowStart = wordStart;
 						rowEnd = iter.next;
 						rowWidth = iter.nextx - rowStartX;
-						rowMinX = wordMinX;
+						rowMinX = wordMinX - rowStartX;
 						rowMaxX = q.x1 - rowStartX;
-						// No change to the word start
 					}
 					// Set null break point
 					breakEnd = rowStart;
