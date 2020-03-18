@@ -924,7 +924,7 @@ int fonsAddFont(FONScontext* stash, const char* name, const char* path, int font
 	readed = fread(data, 1, dataSize, fp);
 	fclose(fp);
 	fp = 0;
-	if (readed != dataSize) goto error;
+	if (readed != (size_t)dataSize) goto error;
 
 	return fonsAddFontMem(stash, name, data, dataSize, 1, fontIndex);
 
@@ -1225,8 +1225,8 @@ static void fons__getQuad(FONScontext* stash, FONSfont* font,
 	y1 = (float)(glyph->y1-1);
 
 	if (stash->params.flags & FONS_ZERO_TOPLEFT) {
-		rx = (float)(int)(*x + xoff);
-		ry = (float)(int)(*y + yoff);
+		rx = floorf(*x + xoff);
+		ry = floorf(*y + yoff);
 
 		q->x0 = rx;
 		q->y0 = ry;
@@ -1238,8 +1238,8 @@ static void fons__getQuad(FONScontext* stash, FONSfont* font,
 		q->s1 = x1 * stash->itw;
 		q->t1 = y1 * stash->ith;
 	} else {
-		rx = (float)(int)(*x + xoff);
-		ry = (float)(int)(*y - yoff);
+		rx = floorf(*x + xoff);
+		ry = floorf(*y - yoff);
 
 		q->x0 = rx;
 		q->y0 = ry;
