@@ -373,7 +373,7 @@ int nvgCreateImage(NVGcontext* ctx, const char* filename, int imageFlags);
 
 // Creates image by loading it from the specified chunk of memory.
 // Returns handle to the image.
-int nvgCreateImageMem(NVGcontext* ctx, int imageFlags, unsigned char* data, int ndata);
+int nvgCreateImageMem(NVGcontext* ctx, int imageFlags, const unsigned char* data, int ndata);
 
 // Creates image from specified image data.
 // Returns handle to the image.
@@ -381,6 +381,9 @@ int nvgCreateImageRGBA(NVGcontext* ctx, int w, int h, int imageFlags, const unsi
 
 // Updates image data specified by image handle.
 void nvgUpdateImage(NVGcontext* ctx, int image, const unsigned char* data);
+
+// Updates image data from YUV by image handle.
+void nvgUpdateImageYUV(NVGcontext* ctx, int image, unsigned char* data[3], int linesize[3], unsigned char* work);
 
 // Returns the dimensions of a created image.
 void nvgImageSize(NVGcontext* ctx, int image, int* w, int* h);
