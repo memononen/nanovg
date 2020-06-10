@@ -24,8 +24,19 @@
 #include "nanovg.h"
 #define FONTSTASH_IMPLEMENTATION
 #include "fontstash.h"
+#ifdef __ARM_NEON__
+#define STBI_NEON
+#endif
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+#if defined(STBI_NEON) || defined(STBI_SSE2)
+#define resample_row_hv_2 stbi__resample_row_hv_2_simd
+#define YCbCr_to_RGB_row stbi__YCbCr_to_RGB_simd
+#else
+#define resample_row_hv_2 stbi__resample_row_hv_2
+#define YCbCr_to_RGB_row stbi__YCbCr_to_RGB_row
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4100)  // unreferenced formal parameter
@@ -804,7 +815,7 @@ int nvgCreateImage(NVGcontext* ctx, const char* filename, int imageFlags)
 	return image;
 }
 
-int nvgCreateImageMem(NVGcontext* ctx, int imageFlags, unsigned char* data, int ndata)
+int nvgCreateImageMem(NVGcontext* ctx, int imageFlags, const unsigned char* data, int ndata)
 {
 	int w, h, n, image;
 	unsigned char* img = stbi_load_from_memory(data, ndata, &w, &h, &n, 4);
@@ -827,6 +838,37 @@ void nvgUpdateImage(NVGcontext* ctx, int image, const unsigned char* data)
 	int w, h;
 	ctx->params.renderGetTextureSize(ctx->params.userPtr, image, &w, &h);
 	ctx->params.renderUpdateTexture(ctx->params.userPtr, image, 0,0, w,h, data);
+}
+
+void nvgUpdateImageYUV(NVGcontext* ctx, int image, unsigned char* data[3], int linesize[3], unsigned char* work)
+{
+	int w, h;
+	ctx->params.renderGetTextureSize(ctx->params.userPtr, image, &w, &h);
+
+	unsigned char *pimg	= work;
+	unsigned char *rowu	= (unsigned char*)malloc(w + 32);
+	unsigned char *rowv	= (unsigned char*)malloc(w + 32);
+	unsigned char *py	= data[0];
+	unsigned char *pu	= data[1];
+	unsigned char *pv	= data[2];
+	for (int y = 0; y < h / 2; y++)
+	{
+		resample_row_hv_2(rowu, pu, pu, w / 2, 0);
+		resample_row_hv_2(rowv, pv, pv, w / 2, 0);
+		YCbCr_to_RGB_row(pimg, py, rowu, rowv, w, 4);
+		pimg += w * 4;
+		int last = (y == (h / 2 - 1));
+		resample_row_hv_2(rowu, pu, pu + (last ? 0 : linesize[1]), w / 2, 0);
+		resample_row_hv_2(rowv, pv, pv + (last ? 0 : linesize[2]), w / 2, 0);
+		YCbCr_to_RGB_row(pimg, py + linesize[0], rowu, rowv, w, 4);
+		pimg += w * 4;
+		py += linesize[0] * 2;
+		pu += linesize[1];
+		pv += linesize[2];
+	}
+	free(rowu);
+	free(rowv);
+	ctx->params.renderUpdateTexture(ctx->params.userPtr, image, 0,0, w,h, work);
 }
 
 void nvgImageSize(NVGcontext* ctx, int image, int* w, int* h)
