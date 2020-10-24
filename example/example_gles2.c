@@ -25,7 +25,7 @@
 #include "nanovg_gl.h"
 #include "nanovg_gl_utils.h"
 #include "demo.h"
-#include "perf.h"
+//#include "perf.h"
 
 
 void errorcb(int error, const char* desc)
@@ -56,7 +56,7 @@ int main()
 	GLFWwindow* window;
 	DemoData data;
 	NVGcontext* vg = NULL;
-	PerfGraph fps;
+	//PerfGraph fps;
 	double prevt = 0;
 
 	if (!glfwInit()) {
@@ -64,11 +64,12 @@ int main()
 		return -1;
 	}
 
-	initGraph(&fps, GRAPH_RENDER_FPS, "Frame Time");
+	//initGraph(&fps, GRAPH_RENDER_FPS, "Frame Time");
 
 	glfwSetErrorCallback(errorcb);
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+	glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
@@ -92,7 +93,7 @@ int main()
 	if (loadDemoData(vg, &data) == -1)
 		return -1;
 
-	glfwSwapInterval(0);
+	glfwSwapInterval(1);
 
 	glfwSetTime(0);
 	prevt = glfwGetTime();
@@ -107,7 +108,7 @@ int main()
 		t = glfwGetTime();
 		dt = t - prevt;
 		prevt = t;
-		updateGraph(&fps, dt);
+		//updateGraph(&fps, dt);
 
 		glfwGetCursorPos(window, &mx, &my);
 		glfwGetWindowSize(window, &winWidth, &winHeight);
@@ -131,7 +132,7 @@ int main()
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
-		renderGraph(vg, 5,5, &fps);
+		//renderGraph(vg, 5,5, &fps);
 
 		nvgEndFrame(vg);
 

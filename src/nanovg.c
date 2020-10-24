@@ -2568,7 +2568,7 @@ int nvgTextGlyphPositions(NVGcontext* ctx, float x, float y, const char* string,
 	if (end == NULL)
 		end = string + strlen(string);
 
-	if (string == end)
+	if (string >= end)
 		return 0;
 
 	fonsSetSize(ctx->fs, state->fontSize*scale);
