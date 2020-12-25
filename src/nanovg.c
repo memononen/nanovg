@@ -2470,7 +2470,7 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 	float invscale = 1.0f / scale;
 	int cverts = 0;
 	int nverts = 0;
-	int isFlipped = nvg__isTransformFlipped(xform);
+	int isFlipped = nvg__isTransformFlipped(state->xform);
 
 	if (end == NULL)
 		end = string + strlen(string);
