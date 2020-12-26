@@ -49,6 +49,7 @@ struct NVGpaint {
 	float feather;
 	NVGcolor innerColor;
 	NVGcolor outerColor;
+	int gradientIndex;
 	int image;
 };
 typedef struct NVGpaint NVGpaint;
@@ -394,11 +395,18 @@ void nvgDeleteImage(NVGcontext* ctx, int image);
 // NanoVG supports four types of paints: linear gradient, box gradient, radial gradient and image pattern.
 // These can be used as paints for strokes and fills.
 
+// Creates and retruns a linear gradient paint with supports for multiple stops.
+// Parameters (sx,sy)-(ex,ey) specify the start and end coordinates
+// of the linear gradient, icol specifies the start color and ocol the end color.
+// The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
+NVGpaint nvgLinearGradientWithStops(NVGcontext* ctx, float sx, float sy, float ex, float ey,
+						NVGcolor* colors, float* stops, int count);
+
 // Creates and returns a linear gradient. Parameters (sx,sy)-(ex,ey) specify the start and end coordinates
 // of the linear gradient, icol specifies the start color and ocol the end color.
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgLinearGradient(NVGcontext* ctx, float sx, float sy, float ex, float ey,
-						   NVGcolor icol, NVGcolor ocol);
+						NVGcolor icol, NVGcolor ocol);
 
 // Creates and returns a box gradient. Box gradient is a feathered rounded rectangle, it is useful for rendering
 // drop shadows or highlights for boxes. Parameters (x,y) define the top-left corner of the rectangle,
