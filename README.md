@@ -14,6 +14,18 @@ Usage
 
 The NanoVG API is modeled loosely on HTML5 canvas API. If you know canvas, you're up to speed with NanoVG in no time.
 
+## Building nanovg - Using vcpkg
+
+You can download and install nanovg using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    ./vcpkg install nanovg
+
+The nanovg port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
+
 ## Creating drawing context
 
 The drawing context is created using platform specific constructor function. If you're using the OpenGL 2.0 back-end the context is created as follows:
