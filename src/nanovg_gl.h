@@ -105,7 +105,7 @@ enum NVGimageFlagsGL {
 
 #endif /* NANOVG_GL_H */
 
-#ifdef NANOVG_GL_IMPLEMENTATION
+#if defined NANOVG_GL_IMPLEMENTATION && !defined NANOVG_GL_HEADER_ONLY
 
 #include <stdlib.h>
 #include <stdio.h>
