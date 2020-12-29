@@ -6,13 +6,22 @@ solution "nanovg"
 	configurations { "Debug", "Release" }
 	platforms {"native", "x64", "x32"}
 
+    newoption 
+    {
+        trigger = "with-freetype",
+        description = "Compile with FreeType support"
+    }
+
    	project "nanovg"
 		language "C"
 		kind "StaticLib"
 		includedirs { "src" }
 		files { "src/*.c" }
 		targetdir("build")
-		defines { "_CRT_SECURE_NO_WARNINGS" } --,"FONS_USE_FREETYPE" } Uncomment to compile with FreeType support
+		defines { "_CRT_SECURE_NO_WARNINGS" } 
+
+        configuration "with-freetype"
+            defines { "FONS_USE_FREETYPE" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
