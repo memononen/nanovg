@@ -135,8 +135,6 @@ enum GLNVGuniformBindings {
 
 struct GLNVGshader {
 	GLuint prog;
-	GLuint frag;
-	GLuint vert;
 	GLint loc[GLNVG_MAX_LOCS];
 };
 typedef struct GLNVGshader GLNVGshader;
@@ -474,8 +472,9 @@ static int glnvg__createShader(GLNVGshader* shader, const char* name, const char
 	}
 
 	shader->prog = prog;
-	shader->vert = vert;
-	shader->frag = frag;
+    
+    glDeleteShader(vert);
+    glDeleteShader(frag);
 
 	return 1;
 }
@@ -484,10 +483,6 @@ static void glnvg__deleteShader(GLNVGshader* shader)
 {
 	if (shader->prog != 0)
 		glDeleteProgram(shader->prog);
-	if (shader->vert != 0)
-		glDeleteShader(shader->vert);
-	if (shader->frag != 0)
-		glDeleteShader(shader->frag);
 }
 
 static void glnvg__getUniforms(GLNVGshader* shader)
