@@ -9,6 +9,13 @@ NanoVG is small antialiased vector graphics rendering library for OpenGL. It has
 
 ![screenshot of some text rendered witht the sample program](/example/screenshot-01.png?raw=true)
 
+Building Example Programs
+=========================
+
+To build the example programs, you must first install the [premake](http://premake.github.io/) build tool.
+
+Next, run `premake4` in the root of the nanovg directory. This will create a "build" subdirectory that contains a regular gnu `Makefile`. Now you can change into the build directory and run "make" to compile the example programs.
+
 Usage
 =====
 
