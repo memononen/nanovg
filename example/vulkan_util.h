@@ -184,7 +184,14 @@ static VkInstance createVkInstance(bool enable_debug_layer) {
     printf("cannot find a compatible Vulkan ICD\n");
     exit(-1);
   } else if (res) {
-    printf("unknown error\n");
+    switch(res){
+      case(VK_ERROR_OUT_OF_HOST_MEMORY):printf("VK_ERROR_OUT_OF_HOST_MEMORY\n");break;
+      case(VK_ERROR_OUT_OF_DEVICE_MEMORY):printf("VK_ERROR_OUT_OF_DEVICE_MEMORY\n");break;
+      case(VK_ERROR_INITIALIZATION_FAILED):printf("VK_ERROR_INITIALIZATION_FAILED\n");break;
+      case(VK_ERROR_LAYER_NOT_PRESENT):printf("VK_ERROR_LAYER_NOT_PRESENT\n");break;
+      case(VK_ERROR_EXTENSION_NOT_PRESENT):printf("VK_ERROR_EXTENSION_NOT_PRESENT\n");break;
+      default:printf("unknown error %d\n", res);break;
+    }
     exit(-1);
   }
   return inst;

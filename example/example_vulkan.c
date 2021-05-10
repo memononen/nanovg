@@ -15,6 +15,8 @@
 
 #include "vulkan_util.h"
 
+//#define NDEBUG
+
 void errorcb(int error, const char *desc) {
   printf("GLFW error %d: %s\n", error, desc);
 }
@@ -148,7 +150,7 @@ int main() {
 
   glfwSetTime(0);
 
-#ifdef NDEBUG
+#ifndef NDEBUG
   VkInstance instance = createVkInstance(false);
 #else
   VkInstance instance = createVkInstance(true);
@@ -239,7 +241,7 @@ int main() {
 
   destroyVulkanDevice(device);
 
-#ifndef NDEBUG
+#ifdef NDEBUG
   _vkDestroyDebugReportCallbackEXT(instance, debug_callback, 0);
 #endif
 

@@ -1,3 +1,18 @@
+
+update 2021 - fixed build glfw
+
+build with glfw:
+
+cd build_vulkan
+cp -r ../example example
+git clone https://github.com/glfw/glfw
+mkdir build
+cd build
+cmake ../
+make
+
+
+
 added:
 nanovg/src/nanovg_vk.h
 nanovg/src/shader/fill.frag

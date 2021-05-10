@@ -690,7 +690,8 @@ static VKNVGPipeline *vknvg_createPipeline(VKNVGcontext *vk, VKNVGCreatePipeline
   vp.viewportCount = 1;
   vp.scissorCount = 1;
 
-  VkDynamicState dynamicStateEnables[VK_DYNAMIC_STATE_RANGE_SIZE] = {
+  #define NUM_DYNAMIC_STATES 2
+  VkDynamicState dynamicStateEnables[NUM_DYNAMIC_STATES] = {
       VK_DYNAMIC_STATE_VIEWPORT,
       VK_DYNAMIC_STATE_SCISSOR};
 
@@ -884,31 +885,23 @@ static void vknvg_setUniforms(VKNVGcontext *vk, VkDescriptorSet descSet, int uni
   writes[1].dstBinding = 1;
 
   VkDescriptorImageInfo image_info;
+  
+  VKNVGtexture *tex = NULL;
   if (image != 0) {
-    VKNVGtexture *tex = vknvg_findTexture(vk, image);
-
-    image_info.imageLayout = tex->imageLayout;
-    image_info.imageView = tex->view;
-    image_info.sampler = tex->sampler;
-
-    writes[2].dstSet = descSet;
-    writes[2].dstBinding = 2;
-    writes[2].descriptorCount = 1;
-    writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writes[2].pImageInfo = &image_info;
+    tex = vknvg_findTexture(vk, image);
   } else {
-    //fixme
-    VKNVGtexture *tex = vknvg_findTexture(vk, 1);
-    image_info.imageLayout = tex->imageLayout;
-    image_info.imageView = tex->view;
-    image_info.sampler = tex->sampler;
-
-    writes[2].dstSet = descSet;
-    writes[2].dstBinding = 2;
-    writes[2].descriptorCount = 1;
-    writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writes[2].pImageInfo = &image_info;
+    tex = vknvg_findTexture(vk, 1);
   }
+
+  image_info.imageLayout = tex->imageLayout;
+  image_info.imageView = tex->view;
+  image_info.sampler = tex->sampler;
+
+  writes[2].dstSet = descSet;
+  writes[2].dstBinding = 2;
+  writes[2].descriptorCount = 1;
+  writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  writes[2].pImageInfo = &image_info;
 
   vkUpdateDescriptorSets(device, 3, writes, 0, nullptr);
 }
@@ -1156,6 +1149,12 @@ static int vknvg_renderCreateTexture(void *uptr, int type, int w, int h, int ima
   if (!tex) {
     return 0;
   }
+  if (!data) {
+    w=1;
+    h=1;
+    type = NVG_TEXTURE_RGBA;
+    imageFlags = NVG_IMAGE_NEAREST;
+  }
 
   VkDevice device = vk->createInfo.device;
   const VkAllocationCallbacks *allocator = vk->createInfo.allocator;
@@ -1261,6 +1260,25 @@ static int vknvg_renderCreateTexture(void *uptr, int type, int w, int h, int ima
   tex->flags = imageFlags;
   if (data) {
     vknvg_UpdateTexture(device, tex, 0, 0, w, h, data);
+  }
+  else{
+    int tx_format=1;
+    if(type == NVG_TEXTURE_RGBA)tx_format=4;
+    size_t texture_size = w * h * tx_format * sizeof(uint8_t);
+    uint8_t *generated_texture = malloc(texture_size);
+    for (unsigned int i = 0; i < w; ++i){
+        for (unsigned int j = 0; j < h; ++j){
+            size_t pixel = (i * w + j) * tx_format * sizeof(uint8_t);
+            if (type == NVG_TEXTURE_RGBA) {
+              generated_texture[pixel + 0] = 0x00;
+              generated_texture[pixel + 1] = 0x00;
+              generated_texture[pixel + 2] = 0x00;
+              generated_texture[pixel + 3] = 0x00;
+            }else generated_texture[pixel + 0] = 0x00;
+        }
+    }
+    vknvg_UpdateTexture(device, tex, 0, 0, w, h, generated_texture);
+    free(generated_texture);
   }
 
   return vknvg_textureId(vk, tex);
