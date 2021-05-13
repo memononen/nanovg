@@ -1,5 +1,21 @@
 added vulkan build, and cmake files, removed premake4.lua
 
+2021 update - fixed all errors, this code has no Validation errors and work correctly everywhere.
+
+```
+build with glfw:
+
+cd build_vulkan
+cp -r ../example example
+git clone https://github.com/glfw/glfw
+mkdir build
+cd build
+cmake ../
+make
+```
+
+glfw used only to get Vulkan surface and Mouse input.
+
 *This project is not actively maintained.*
 
 NanoVG
