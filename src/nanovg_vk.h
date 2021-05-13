@@ -24,7 +24,7 @@ typedef struct VKNVGCreateInfo {
 #ifdef __cplusplus
 extern "C" {
 #endif
-NVGcontext *nvgCreateVk(VKNVGCreateInfo createInfo, int flags);
+NVGcontext *nvgCreateVk(VKNVGCreateInfo createInfo, int flags, VkQueue queue);
 void nvgDeleteVk(NVGcontext *ctx);
 
 #ifdef __cplusplus
@@ -190,6 +190,7 @@ typedef struct VKNVGcontext {
   VkShaderModule fillFragShader;
   VkShaderModule fillFragShaderAA;
   VkShaderModule fillVertShader;
+  VkQueue queue;
 } VKNVGcontext;
 
 static int vknvg_maxi(int a, int b) { return a > b ? a : b; }
@@ -773,6 +774,52 @@ static int vknvg_UpdateTexture(VkDevice device, VKNVGtexture *tex, int dx, int d
   return 1;
 }
 
+// call it after vknvg_UpdateTexture
+static void vknvg_InitTexture(VkCommandBuffer cmdbuffer, VkQueue queue, VKNVGtexture *tex) {
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer( cmdbuffer, &beginInfo );
+
+    VkImageMemoryBarrier layoutTransitionBarrier = {};
+    layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    layoutTransitionBarrier.srcAccessMask = 0;
+    layoutTransitionBarrier.dstAccessMask = 0;
+    layoutTransitionBarrier.oldLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+    layoutTransitionBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    layoutTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    layoutTransitionBarrier.image = tex->image;
+    VkImageSubresourceRange resourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+    layoutTransitionBarrier.subresourceRange = resourceRange;
+
+    vkCmdPipelineBarrier(   cmdbuffer, 
+                            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 
+                            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 
+                            0,
+                            0, NULL,
+                            0, NULL, 
+                            1, &layoutTransitionBarrier );
+
+    vkEndCommandBuffer( cmdbuffer );
+
+    VkPipelineStageFlags waitStageMash[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.waitSemaphoreCount = 0;
+    submitInfo.pWaitSemaphores = NULL;
+    submitInfo.pWaitDstStageMask = waitStageMash;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &cmdbuffer;
+    submitInfo.signalSemaphoreCount = 0;
+    submitInfo.pSignalSemaphores = NULL;
+    vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
+    vkQueueWaitIdle(queue);
+    vkResetCommandBuffer( cmdbuffer, 0 );
+    tex->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+}
+
 static int vknvg_maxVertCount(const NVGpath *paths, int npaths) {
   int i, count = 0;
   for (i = 0; i < npaths; i++) {
@@ -926,7 +973,7 @@ static void vknvg_fill(VKNVGcontext *vk, VKNVGcall *call) {
   };
   VkDescriptorSet descSet;
   NVGVK_CHECK_RESULT(vkAllocateDescriptorSets(device, alloc_info, &descSet));
-  vknvg_setUniforms(vk, descSet, call->uniformOffset, call->image); //fixme
+  vknvg_setUniforms(vk, descSet, call->uniformOffset, call->image);
   vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk->pipelineLayout, 0, 1, &descSet, 0, nullptr);
 
   for (i = 0; i < npaths; i++) {
@@ -1149,12 +1196,6 @@ static int vknvg_renderCreateTexture(void *uptr, int type, int w, int h, int ima
   if (!tex) {
     return 0;
   }
-  if (!data) {
-    w=1;
-    h=1;
-    type = NVG_TEXTURE_RGBA;
-    imageFlags = NVG_IMAGE_NEAREST;
-  }
 
   VkDevice device = vk->createInfo.device;
   const VkAllocationCallbacks *allocator = vk->createInfo.allocator;
@@ -1280,6 +1321,8 @@ static int vknvg_renderCreateTexture(void *uptr, int type, int w, int h, int ima
     vknvg_UpdateTexture(device, tex, 0, 0, w, h, generated_texture);
     free(generated_texture);
   }
+  
+  vknvg_InitTexture(vk->createInfo.cmdBuffer, vk->queue, tex);
 
   return vknvg_textureId(vk, tex);
 }
@@ -1584,7 +1627,7 @@ static void vknvg_renderDelete(void *uptr) {
   free(vk);
 }
 
-NVGcontext *nvgCreateVk(VKNVGCreateInfo createInfo, int flags) {
+NVGcontext *nvgCreateVk(VKNVGCreateInfo createInfo, int flags, VkQueue queue) {
   NVGparams params;
   NVGcontext *ctx = nullptr;
   VKNVGcontext *vk = (VKNVGcontext *)malloc(sizeof(VKNVGcontext));
@@ -1610,6 +1653,7 @@ NVGcontext *nvgCreateVk(VKNVGCreateInfo createInfo, int flags) {
 
   vk->flags = flags;
   vk->createInfo = createInfo;
+  vk->queue = queue;
 
   ctx = nvgCreateInternal(&params);
   if (ctx == nullptr)
