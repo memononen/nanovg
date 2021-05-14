@@ -270,20 +270,30 @@ DepthBuffer createDepthBuffer(const VulkanDevice *device, int width, int height)
   VkResult res;
   DepthBuffer depth;
   depth.format = VK_FORMAT_D24_UNORM_S8_UINT;
-
-  const VkFormat depth_format = depth.format;
-  VkFormatProperties fprops;
-  vkGetPhysicalDeviceFormatProperties(device->gpu, depth_format, &fprops);
+  
+  #define dformats 3
+  const VkFormat depth_formats[dformats] = {VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT};
   VkImageTiling image_tilling;
-  if (fprops.linearTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-    image_tilling = VK_IMAGE_TILING_LINEAR;
-  } else if (fprops.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-    image_tilling = VK_IMAGE_TILING_OPTIMAL;
-  } else {
-    /* Try other depth formats? */
-    printf("depth_format %d Unsupported.\n", depth_format);
-    exit(-1);
+  for (int i=0;i<dformats;i++){
+    VkFormatProperties fprops;
+    vkGetPhysicalDeviceFormatProperties(device->gpu, depth_formats[i], &fprops);
+
+    if (fprops.linearTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+      depth.format=depth_formats[i];
+      image_tilling = VK_IMAGE_TILING_LINEAR;
+      break;
+    } else if (fprops.optimalTilingFeatures  & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+      depth.format=depth_formats[i];
+      image_tilling = VK_IMAGE_TILING_OPTIMAL;
+      break;
+    }
+    if(i==dformats-1){
+      printf("Failed to find supported depth format!\n");
+      exit(-1);
+    }
   }
+  
+  const VkFormat depth_format = depth.format;
 
   VkImageCreateInfo image_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
   image_info.imageType = VK_IMAGE_TYPE_2D;
