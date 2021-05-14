@@ -16,6 +16,8 @@ make
 
 glfw used only to get Vulkan surface and Mouse input.
 
+### Contact: [**Join discord server**](https://discord.gg/JKyqWgt)
+
 *This project is not actively maintained.*
 
 NanoVG
