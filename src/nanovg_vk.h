@@ -588,6 +588,7 @@ static VkPipelineDepthStencilStateCreateInfo initializeDepthStencilCreateInfo(VK
 
   VkPipelineDepthStencilStateCreateInfo ds = {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
   ds.depthWriteEnable = VK_FALSE;
+  ds.depthTestEnable = VK_TRUE;
   ds.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
   ds.depthBoundsTestEnable = VK_FALSE;
   ds.stencilTestEnable = VK_FALSE;
@@ -601,6 +602,7 @@ static VkPipelineDepthStencilStateCreateInfo initializeDepthStencilCreateInfo(VK
     ds.front.depthFailOp = VK_STENCIL_OP_KEEP;
     ds.front.passOp = VK_STENCIL_OP_INCREMENT_AND_WRAP;
     ds.front.reference = 0x0;
+    ds.front.compareMask = 0xff;
     ds.front.writeMask = 0xff;
     ds.back = ds.front;
     ds.back.passOp = VK_STENCIL_OP_DECREMENT_AND_WRAP;
