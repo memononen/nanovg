@@ -272,7 +272,7 @@ DepthBuffer createDepthBuffer(const VulkanDevice *device, int width, int height)
   depth.format = VK_FORMAT_D24_UNORM_S8_UINT;
   
   #define dformats 3
-  const VkFormat depth_formats[dformats] = {VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT};
+  const VkFormat depth_formats[dformats] = {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT};
   VkImageTiling image_tilling;
   for (int i=0;i<dformats;i++){
     VkFormatProperties fprops;
