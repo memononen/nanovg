@@ -22,6 +22,7 @@ void errorcb(int error, const char *desc) {
 int blowup = 0;
 int screenshot = 0;
 int premult = 0;
+bool resize_event = false;
 
 static void key(GLFWwindow *window, int key, int scancode, int action, int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -42,6 +43,12 @@ void prepareFrame(VkDevice device, VkCommandBuffer cmd_buffer, FrameBuffers *fb)
                               fb->present_complete_semaphore,
                               0,
                               &fb->current_buffer);
+  if (res == VK_ERROR_OUT_OF_DATE_KHR)
+  {
+      resize_event = true;
+      res = 0;
+      return;
+  }
   assert(res == VK_SUCCESS);
 
   const VkCommandBufferBeginInfo cmd_buf_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
@@ -141,6 +148,13 @@ void submitFrame(VkDevice device, VkQueue queue, VkCommandBuffer cmd_buffer, Fra
   present.pWaitSemaphores = &fb->render_complete_semaphore;
 
   res = vkQueuePresentKHR(queue, &present);
+  if (res == VK_ERROR_OUT_OF_DATE_KHR)
+  {
+      res = vkQueueWaitIdle(queue);
+      resize_event = true;
+      res = 0;
+      return;
+  }
   assert(res == VK_SUCCESS);
 
   res = vkQueueWaitIdle(queue);
@@ -224,15 +238,16 @@ int main() {
 
     int cwinWidth, cwinHeight;
     glfwGetWindowSize(window, &cwinWidth, &cwinHeight);
-    if (winWidth != cwinWidth || winHeight != cwinHeight) {
+    if ((resize_event)||(winWidth != cwinWidth || winHeight != cwinHeight)) {
       winWidth = cwinWidth;
       winHeight = cwinHeight;
       destroyFrameBuffers(device, &fb);
       fb = createFrameBuffers(device, surface, queue, winWidth, winHeight, 0);
-    }
+      resize_event=false;
+    }else{
 
     prepareFrame(device->device, cmd_buffer, &fb);
-
+    if(resize_event)continue;
     t = glfwGetTime();
     dt = t - prevt;
     prevt = t;
@@ -246,9 +261,9 @@ int main() {
     renderGraph(vg, 5, 5, &fps);
 
     nvgEndFrame(vg);
-
+    
     submitFrame(device->device, queue, cmd_buffer, &fb);
-
+}
     glfwPollEvents();
   }
 
