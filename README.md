@@ -2,6 +2,8 @@ added vulkan build, and cmake files, removed premake4.lua
 
 2021 update - fixed all errors, this code has no Validation errors and work correctly everywhere.
 
+### Contact: [**Join discord server**](https://discord.gg/JKyqWgt)
+
 ```
 build with glfw:
 
@@ -19,8 +21,6 @@ glfw used only to get Vulkan surface and Mouse input.
 Depth order bug - I test myself on Nvidia and AMD and have not seen any depth-bugs. But on some AMD videocards depth bugged. I can not test my self so I can not fix it. I dont see any "logical error" myself. *Screenshot from Vulkan version* of this build on AMD GPU, elements draw in the same order as in OpenGL.
 
 ![nvgvk](https://danilw.github.io/GLSL-howto/nvgvk.png)
-
-### Contact: [**Join discord server**](https://discord.gg/JKyqWgt)
 
 *This project is not actively maintained.*
 
