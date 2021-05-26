@@ -28,7 +28,7 @@
 #ifndef NVG_NO_STB
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#endif 
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4100)  // unreferenced formal parameter
@@ -808,7 +808,7 @@ int nvgCreateImage(NVGcontext* ctx, const char* filename, int imageFlags)
 	return image;
 }
 
-int nvgCreateImageMem(NVGcontext* ctx, int imageFlags, unsigned char* data, int ndata)
+int nvgCreateImageMem(NVGcontext* ctx, int imageFlags, const unsigned char* data, int ndata)
 {
 	int w, h, n, image;
 	unsigned char* img = stbi_load_from_memory(data, ndata, &w, &h, &n, 4);
@@ -2302,7 +2302,7 @@ int nvgCreateFontAtIndex(NVGcontext* ctx, const char* name, const char* filename
 	return fonsAddFont(ctx->fs, name, filename, fontIndex);
 }
 
-int nvgCreateFontMem(NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int freeData)
+int nvgCreateFontMem(NVGcontext* ctx, const char* name, const unsigned char* data, int ndata, int freeData)
 {
 	return fonsAddFontMem(ctx->fs, name, data, ndata, freeData, 0);
 }
