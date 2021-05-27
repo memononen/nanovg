@@ -2,7 +2,7 @@ added vulkan build, and cmake files, removed premake4.lua
 
 2021 update - fixed all errors, this code has no Validation errors and work correctly everywhere.
 
-**Why I made this** - I made it as a "test task for Vulkan related job" a year ago, for me this project has no real use. I would recommend for everyone use [**imgui**](https://github.com/ocornut/imgui) if you look for Vulkan UI. I will not support or update this project at all, the last update was just to fix bugs and Validation errors.
+**Why I made this** - I made it as a "test task for Vulkan related job" a year ago, for me this project has no real use. I would recommend for everyone use [**imgui**](https://github.com/ocornut/imgui) if you look for production-ready Vulkan UI. I will not support or update this project at all, the last update was just to fix bugs and Validation errors.
 
 ### Contact: [**Join discord server**](https://discord.gg/JKyqWgt)
 
