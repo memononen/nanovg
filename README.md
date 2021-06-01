@@ -22,7 +22,7 @@ make
 
 glfw used only to get Vulkan surface and Mouse input.
 
-Depth order bug - I test myself on Nvidia and AMD and have not seen any depth-bugs. But on some AMD videocards depth bugged. I can not test my self so I can not fix it. I dont see any "logical error" myself. *Screenshot from Vulkan version* of this build on AMD GPU, elements draw in the same order as in OpenGL.
+Depth order bug on AMD - I test myself on Nvidia and AMD and have not seen any depth-bugs. But on some AMD videocards depth bugged. I can not test my self so I can not fix it. I dont see any "logical error" myself. *Screenshot from Vulkan version* of this build on AMD GPU, elements draw in the same order as in OpenGL. SHould by fixed by https://github.com/danilw/nanovg_vulkan/commit/6ee100956134cab2aab67a6a8a7a5bda54c0f9ab 
 
 ![nvgvk](https://danilw.github.io/GLSL-howto/nvgvk.png)
 
