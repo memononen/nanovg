@@ -33,7 +33,7 @@ void nvgDeleteVk(NVGcontext *ctx);
 
 #ifdef NANOVG_VULKAN_IMPLEMENTATION
 
-// optional defian to switch to VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN
+// optional define to switch to VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN
 // by default used VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
 //#define USE_TOPOLOGY_TRIANGLE_FAN
 
