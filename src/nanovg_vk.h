@@ -33,6 +33,10 @@ void nvgDeleteVk(NVGcontext *ctx);
 
 #ifdef NANOVG_VULKAN_IMPLEMENTATION
 
+// optional defian to switch to VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN
+// by default used VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
+//#define USE_TOPOLOGY_TRIANGLE_FAN
+
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -408,7 +412,7 @@ static int vknvg_convertPaint(VKNVGcontext *vk, VKNVGfragUniforms *frag, NVGpain
       frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0 : 1;
     else
       frag->texType = 2;
-    //		printf("frag->texType = %d\n", frag->texType);
+    //    printf("frag->texType = %d\n", frag->texType);
   } else {
     frag->type = NSVG_SHADER_FILLGRAD;
     frag->radius = paint->radius;
@@ -831,6 +835,7 @@ static int vknvg_maxVertCount(const NVGpath *paths, int npaths) {
   return count;
 }
 
+#ifndef USE_TOPOLOGY_TRIANGLE_FAN
 static int vknvg_maxVertCountList(const NVGpath *paths, int npaths) {
   int i, count = 0;
   for (i = 0; i < npaths; i++) {
@@ -839,6 +844,7 @@ static int vknvg_maxVertCountList(const NVGpath *paths, int npaths) {
   }
   return count;
 }
+#endif
 
 static VKNVGcall *vknvg_allocCall(VKNVGcontext *vk) {
   VKNVGcall *ret = nullptr;
@@ -973,7 +979,11 @@ static void vknvg_fill(VKNVGcontext *vk, VKNVGcall *call) {
 
   VKNVGCreatePipelineKey pipelinekey = {0};
   pipelinekey.compositOperation = call->compositOperation;
+#ifndef USE_TOPOLOGY_TRIANGLE_FAN
   pipelinekey.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+#else
+  pipelinekey.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+#endif
   pipelinekey.stencilFill = true;
   pipelinekey.edgeAAShader = vk->flags & NVG_ANTIALIAS;
 
@@ -1035,7 +1045,11 @@ static void vknvg_convexFill(VKNVGcontext *vk, VKNVGcall *call) {
 
   VKNVGCreatePipelineKey pipelinekey = {0};
   pipelinekey.compositOperation = call->compositOperation;
+#ifndef USE_TOPOLOGY_TRIANGLE_FAN
   pipelinekey.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+#else
+  pipelinekey.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+#endif
   pipelinekey.edgeAAShader = vk->flags & NVG_ANTIALIAS;
 
   vknvg_bindPipeline(vk, cmdBuffer, &pipelinekey);
@@ -1445,7 +1459,11 @@ static void vknvg_renderFill(void *uptr, NVGpaint *paint, NVGcompositeOperationS
   }
 
   // Allocate vertices for all the paths.
+#ifndef USE_TOPOLOGY_TRIANGLE_FAN
   maxverts = vknvg_maxVertCountList(paths, npaths) + call->triangleCount;
+#else
+  maxverts = vknvg_maxVertCount(paths, npaths) + call->triangleCount;
+#endif
   offset = vknvg_allocVerts(vk, maxverts);
   if (offset == -1)
     goto error;
@@ -1455,15 +1473,21 @@ static void vknvg_renderFill(void *uptr, NVGpaint *paint, NVGcompositeOperationS
     const NVGpath *path = &paths[i];
     memset(copy, 0, sizeof(VKNVGpath));
     if (path->nfill > 0) {
-      int i;
       copy->fillOffset = offset;
       copy->fillCount = (path->nfill - 2) * 3;
-      for (i = 0; i < path->nfill -2; i++) {
+#ifndef USE_TOPOLOGY_TRIANGLE_FAN
+      int j;
+      for (j = 0; j < path->nfill -2; j++) {
         vk->verts[offset] = path->fill[0];
-        vk->verts[offset+1] = path->fill[i+1];
-        vk->verts[offset+2] = path->fill[i+2];
+        vk->verts[offset+1] = path->fill[j+1];
+        vk->verts[offset+2] = path->fill[j+2];
         offset += 3;
       }
+#else
+      copy->fillCount = path->nfill;
+      memcpy(&vk->verts[offset], path->fill, sizeof(NVGvertex) * path->nfill);
+      offset += path->nfill;
+#endif
     }
     if (path->nstroke > 0) {
       copy->strokeOffset = offset;
