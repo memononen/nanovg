@@ -831,6 +831,15 @@ static int vknvg_maxVertCount(const NVGpath *paths, int npaths) {
   return count;
 }
 
+static int vknvg_maxVertCountList(const NVGpath *paths, int npaths) {
+  int i, count = 0;
+  for (i = 0; i < npaths; i++) {
+    count += (paths[i].nfill - 2) * 3;
+    count += paths[i].nstroke;
+  }
+  return count;
+}
+
 static VKNVGcall *vknvg_allocCall(VKNVGcontext *vk) {
   VKNVGcall *ret = nullptr;
   if (vk->ncalls + 1 > vk->ccalls) {
@@ -964,7 +973,7 @@ static void vknvg_fill(VKNVGcontext *vk, VKNVGcall *call) {
 
   VKNVGCreatePipelineKey pipelinekey = {0};
   pipelinekey.compositOperation = call->compositOperation;
-  pipelinekey.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+  pipelinekey.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   pipelinekey.stencilFill = true;
   pipelinekey.edgeAAShader = vk->flags & NVG_ANTIALIAS;
 
@@ -1026,7 +1035,7 @@ static void vknvg_convexFill(VKNVGcontext *vk, VKNVGcall *call) {
 
   VKNVGCreatePipelineKey pipelinekey = {0};
   pipelinekey.compositOperation = call->compositOperation;
-  pipelinekey.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+  pipelinekey.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   pipelinekey.edgeAAShader = vk->flags & NVG_ANTIALIAS;
 
   vknvg_bindPipeline(vk, cmdBuffer, &pipelinekey);
@@ -1436,7 +1445,7 @@ static void vknvg_renderFill(void *uptr, NVGpaint *paint, NVGcompositeOperationS
   }
 
   // Allocate vertices for all the paths.
-  maxverts = vknvg_maxVertCount(paths, npaths) + call->triangleCount;
+  maxverts = vknvg_maxVertCountList(paths, npaths) + call->triangleCount;
   offset = vknvg_allocVerts(vk, maxverts);
   if (offset == -1)
     goto error;
@@ -1446,10 +1455,15 @@ static void vknvg_renderFill(void *uptr, NVGpaint *paint, NVGcompositeOperationS
     const NVGpath *path = &paths[i];
     memset(copy, 0, sizeof(VKNVGpath));
     if (path->nfill > 0) {
+      int i;
       copy->fillOffset = offset;
-      copy->fillCount = path->nfill;
-      memcpy(&vk->verts[offset], path->fill, sizeof(NVGvertex) * path->nfill);
-      offset += path->nfill;
+      copy->fillCount = (path->nfill - 2) * 3;
+      for (i = 0; i < path->nfill -2; i++) {
+        vk->verts[offset] = path->fill[0];
+        vk->verts[offset+1] = path->fill[i+1];
+        vk->verts[offset+2] = path->fill[i+2];
+        offset += 3;
+      }
     }
     if (path->nstroke > 0) {
       copy->strokeOffset = offset;
