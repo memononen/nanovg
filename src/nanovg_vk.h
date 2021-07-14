@@ -1376,10 +1376,10 @@ static int vknvg_renderGetTextureSize(void *uptr, int image, int *w, int *h) {
   }
   return 0;
 }
-static void vknvg_renderViewport(void *uptr, int width, int height, float devicePixelRatio) {
+static void vknvg_renderViewport(void *uptr, float width, float height, float devicePixelRatio) {
   VKNVGcontext *vk = (VKNVGcontext *)uptr;
-  vk->view[0] = (float)width;
-  vk->view[1] = (float)height;
+  vk->view[0] = width;
+  vk->view[1] = height;
 }
 static void vknvg_renderCancel(void *uptr) {
   VKNVGcontext *vk = (VKNVGcontext *)uptr;
