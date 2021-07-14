@@ -653,11 +653,7 @@ struct NVGparams {
 	int (*renderDeleteTexture)(void* uptr, int image);
 	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
-#ifdef NANOVG_VULKAN_IMPLEMENTATION
-	void (*renderViewport)(void* uptr, int width, int height, float devicePixelRatio);
-#else
     void (*renderViewport)(void* uptr, float width, float height, float devicePixelRatio);
-#endif
 	void (*renderCancel)(void* uptr);
 	void (*renderFlush)(void* uptr);
 	void (*renderFill)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths);
