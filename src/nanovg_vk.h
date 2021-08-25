@@ -1664,6 +1664,11 @@ static void vknvg_renderDelete(void *uptr) {
   }
 
   free(vk->textures);
+  free(vk->pipelines);
+  free(vk->calls);
+  free(vk->paths);
+  free(vk->verts);
+  free(vk->uniforms);
   free(vk);
 }
 
