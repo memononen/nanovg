@@ -196,15 +196,61 @@ int main() {
     printf("glfwCreateWindowSurface failed\n");
     exit(-1);
   }
+  
+  uint32_t gpu_count = 0;
 
-  VkPhysicalDevice gpu;
-  uint32_t gpu_count = 1;
-  res = vkEnumeratePhysicalDevices(instance, &gpu_count, &gpu);
+  res = vkEnumeratePhysicalDevices(instance, &gpu_count, NULL);
+  if (VK_SUCCESS != res && res != VK_INCOMPLETE) {
+    printf("vkEnumeratePhysicalDevices failed %d \n", res);
+    exit(-1);
+  }
+  if (gpu_count < 1){
+    printf("No Vulkan device found.\n");
+    exit(-1);
+  }
+
+  VkPhysicalDevice gpu[gpu_count];
+  res = vkEnumeratePhysicalDevices(instance, &gpu_count, gpu);
   if (res != VK_SUCCESS && res != VK_INCOMPLETE) {
     printf("vkEnumeratePhysicalDevices failed %d \n", res);
     exit(-1);
   }
-  VulkanDevice *device = createVulkanDevice(gpu);
+  
+  uint32_t idx = 0;
+  bool use_idx = false;
+  for (uint32_t i = 0; i < gpu_count && (!use_idx); i++)
+  {
+    uint32_t qfc = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu[i], &qfc, NULL);
+    if (qfc < 1)continue;
+
+    VkQueueFamilyProperties *queue_family_properties;
+    queue_family_properties = malloc(qfc * sizeof(VkQueueFamilyProperties));
+
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu[i], &qfc, queue_family_properties);
+
+    for (uint32_t j = 0; j < qfc; j++)
+    {
+      VkBool32 supports_present;
+      vkGetPhysicalDeviceSurfaceSupportKHR(gpu[i], j, surface, &supports_present);
+
+      if ((queue_family_properties[j].queueFlags & VK_QUEUE_GRAPHICS_BIT) && supports_present)
+      {
+        idx = i;
+        use_idx = true;
+        break;
+      }
+    }
+    free(queue_family_properties);
+  }
+  if (!use_idx){
+      printf("Not found suitable queue which supports graphics.\n");
+      exit(-1);
+  }
+
+  printf("Using GPU device %lu\n", (unsigned long) idx);
+  
+  VulkanDevice *device = createVulkanDevice(gpu[idx]);
 
   int winWidth, winHeight;
   glfwGetWindowSize(window, &winWidth, &winHeight);
