@@ -1180,7 +1180,7 @@ static void glnvg__renderFlush(void* uptr)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	int i;
-	
+
 	if (gl->ncalls > 0) {
 		GLuint lastProgram = 0;
 		glGetIntegerv(GL_CURRENT_PROGRAM, (GLint*)&lastProgram);
