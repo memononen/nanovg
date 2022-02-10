@@ -122,11 +122,14 @@ typedef struct VKNVGBuffer {
   VkDeviceSize size;
 } VKNVGBuffer;
 
-enum VKNVGstencilType {
-  VKNVG_STENCIL_NONE = 0,
-  VKNVG_STENCIL_FILL,
+enum StencilSetting {
+  VKNVG_STENCIL_STROKE_UNDEFINED = 0,
+  VKNVG_STENCIL_STROKE_FILL = 1,
+  VKNVG_STENCIL_STROKE_DRAW_AA,
+  VKNVG_STENCIL_STROKE_CLEAR,
 };
 typedef struct VKNVGCreatePipelineKey {
+  int stencilStroke;
   bool stencilFill;
   bool stencilTest;
   bool edgeAA;
@@ -307,6 +310,9 @@ static int vknvg_compareCreatePipelineKey(const VKNVGCreatePipelineKey *a, const
   }
   if (a->stencilFill != b->stencilFill) {
     return a->stencilFill - b->stencilFill;
+  }
+  if (a->stencilStroke != b->stencilStroke) {
+    return a->stencilStroke - b->stencilStroke;
   }
 
   if (a->stencilTest != b->stencilTest) {
@@ -591,6 +597,42 @@ static VkPipelineLayout vknvg_createPipelineLayout(VkDevice device, VkDescriptor
 static VkPipelineDepthStencilStateCreateInfo initializeDepthStencilCreateInfo(VKNVGCreatePipelineKey *pipelinekey) {
 
   VkPipelineDepthStencilStateCreateInfo ds = {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+  if (pipelinekey->stencilStroke) {
+    ds.depthWriteEnable = VK_FALSE;
+    ds.depthTestEnable = VK_TRUE;
+    ds.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    ds.depthBoundsTestEnable = VK_FALSE;
+
+    ds.stencilTestEnable = VK_TRUE;
+    ds.front.failOp = VK_STENCIL_OP_KEEP;
+    ds.front.depthFailOp = VK_STENCIL_OP_KEEP;
+    ds.front.passOp = VK_STENCIL_OP_KEEP;
+    ds.front.compareOp = VK_COMPARE_OP_EQUAL;
+    ds.front.reference = 0x00;
+    ds.front.compareMask = 0xff;
+    ds.front.writeMask = 0xff;
+    ds.back = ds.front;
+    ds.back.passOp = VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+    switch (pipelinekey->stencilStroke)
+    {
+      case VKNVG_STENCIL_STROKE_FILL:
+        ds.front.passOp = VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+        ds.back.passOp = VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+        break;
+      case VKNVG_STENCIL_STROKE_DRAW_AA:
+        ds.front.passOp = VK_STENCIL_OP_KEEP;
+        ds.back.passOp = VK_STENCIL_OP_KEEP;
+        break;
+      case VKNVG_STENCIL_STROKE_CLEAR:
+        ds.front.failOp = VK_STENCIL_OP_ZERO;
+        ds.front.depthFailOp = VK_STENCIL_OP_ZERO;
+        ds.front.passOp = VK_STENCIL_OP_ZERO;
+        ds.front.compareOp = VK_COMPARE_OP_ALWAYS;
+        ds.back = ds.front;
+        break;
+    }
+    return ds;
+  }
   ds.depthWriteEnable = VK_FALSE;
   ds.depthTestEnable = VK_TRUE;
   ds.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
@@ -683,6 +725,10 @@ static VKNVGPipeline *vknvg_createPipeline(VKNVGcontext *vk, VKNVGCreatePipeline
   rs.lineWidth = 1.0f;
 
   VkPipelineColorBlendAttachmentState colorblend = vknvg_compositOperationToColorBlendAttachmentState(pipelinekey->compositOperation);
+
+  if (pipelinekey->stencilStroke == VKNVG_STENCIL_STROKE_CLEAR) {
+    colorblend.colorWriteMask = 0;
+  }
 
   if (pipelinekey->stencilFill) {
     rs.cullMode = VK_CULL_MODE_NONE;
@@ -1089,46 +1135,58 @@ static void vknvg_stroke(VKNVGcontext *vk, VKNVGcall *call) {
   int npaths = call->pathCount;
 
   if (vk->flags & NVG_STENCIL_STROKES) {
-
+    const VkDescriptorSetLayout descLayouts[2] = { vk->descLayout, vk->descLayout };
     VkDescriptorSetAllocateInfo alloc_info[1] = {
-        {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, vk->descPool, 1, &vk->descLayout},
+        {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, vk->descPool, 2, descLayouts},
     };
-    VkDescriptorSet descSet;
-    NVGVK_CHECK_RESULT(vkAllocateDescriptorSets(device, alloc_info, &descSet));
-    vknvg_setUniforms(vk, descSet, call->uniformOffset, call->image);
-    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk->pipelineLayout, 0, 1, &descSet, 0, nullptr);
+    VkDescriptorSet descSets[2] = {NULL, NULL};
+    NVGVK_CHECK_RESULT(vkAllocateDescriptorSets(device, alloc_info, &descSets));
+
+    VkDescriptorSet descSetAA = descSets[0];
+    VkDescriptorSet descSetBase = descSets[1];
+    vknvg_setUniforms(vk, descSetAA, call->uniformOffset, call->image);
+    vknvg_setUniforms(vk, descSetBase, call->uniformOffset + vk->fragSize, call->image);
+
     VKNVGCreatePipelineKey pipelinekey = {0};
     pipelinekey.compositOperation = call->compositOperation;
-    pipelinekey.stencilFill = false;
     pipelinekey.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-    pipelinekey.edgeAAShader = vk->flags & NVG_ANTIALIAS;
-    vknvg_bindPipeline(vk, cmdBuffer, &pipelinekey);
 
-    for (int i = 0; i < npaths; ++i) {
-      const VkDeviceSize offsets[1] = {paths[i].strokeOffset * sizeof(NVGvertex)};
-      vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vk->vertexBuffer.buffer, offsets);
-      vkCmdDraw(cmdBuffer, paths[i].strokeCount, 1, 0, 0);
-    }
-
-    pipelinekey.stencilFill = false;
-    pipelinekey.stencilTest = true;
-    pipelinekey.edgeAA = true;
-    vknvg_bindPipeline(vk, cmdBuffer, &pipelinekey);
-    for (int i = 0; i < npaths; ++i) {
-      const VkDeviceSize offsets[1] = {paths[i].strokeOffset * sizeof(NVGvertex)};
-      vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vk->vertexBuffer.buffer, offsets);
-      vkCmdDraw(cmdBuffer, paths[i].strokeCount, 1, 0, 0);
-    }
-
-    pipelinekey.stencilFill = true;
-    pipelinekey.stencilTest = true;
     pipelinekey.edgeAAShader = false;
-    pipelinekey.edgeAA = false;
+    pipelinekey.edgeAAShader = vk->flags & NVG_ANTIALIAS;    
+    
+    // Fill stencil with 1 if stencil EQUAL passes 
+    pipelinekey.stencilStroke = VKNVG_STENCIL_STROKE_FILL;
+
+    vknvg_bindPipeline(vk, cmdBuffer, &pipelinekey);
+    vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk->pipelineLayout, 0, 1, &descSetBase, 0, nullptr);
+
     for (int i = 0; i < npaths; ++i) {
       const VkDeviceSize offsets[1] = {paths[i].strokeOffset * sizeof(NVGvertex)};
       vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vk->vertexBuffer.buffer, offsets);
       vkCmdDraw(cmdBuffer, paths[i].strokeCount, 1, 0, 0);
     }
+
+    // //Draw AA shape if stencil EQUAL passes
+     pipelinekey.stencilStroke = VKNVG_STENCIL_STROKE_DRAW_AA;
+     vknvg_bindPipeline(vk, cmdBuffer, &pipelinekey);
+     vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk->pipelineLayout, 0, 1, &descSetAA, 0, nullptr);
+
+     for (int i = 0; i < npaths; ++i) {
+       const VkDeviceSize offsets[1] = {paths[i].strokeOffset * sizeof(NVGvertex)};
+       vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vk->vertexBuffer.buffer, offsets);
+       vkCmdDraw(cmdBuffer, paths[i].strokeCount, 1, 0, 0);
+     }
+
+     // Fill stencil with 0, always
+     pipelinekey.stencilStroke = VKNVG_STENCIL_STROKE_CLEAR;
+     vknvg_bindPipeline(vk, cmdBuffer, &pipelinekey);
+     vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk->pipelineLayout, 0, 1, &descSetAA, 0, nullptr);
+
+     for (int i = 0; i < npaths; ++i) {
+       const VkDeviceSize offsets[1] = {paths[i].strokeOffset * sizeof(NVGvertex)};
+       vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vk->vertexBuffer.buffer, offsets);
+       vkCmdDraw(cmdBuffer, paths[i].strokeCount, 1, 0, 0);
+     }
   } else {
 
     VKNVGCreatePipelineKey pipelinekey = {0};
