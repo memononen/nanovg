@@ -1141,7 +1141,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 {
 	int cols = 3;
 	int rows = 3;
-	if (blowup)
+	if (!blowup)
 		cols = rows = 1;
 	for (int x = 0; x < cols; x++) {
 		for (int y = 0; y < rows; y++) {
