@@ -140,10 +140,10 @@ static VkInstance createVkInstance(bool enable_debug_layer) {
 
   const char **extensions = (const char **)calloc(extensions_count + append_extensions_count, sizeof(char *));
 
-  for (int i = 0; i < extensions_count; ++i) {
+  for (uint32_t i = 0; i < extensions_count; ++i) {
     extensions[i] = glfw_extensions[i];
   }
-  for (int i = 0; i < append_extensions_count; ++i) {
+  for (uint32_t i = 0; i < append_extensions_count; ++i) {
     extensions[extensions_count++] = append_extensions[i];
   }
 
@@ -166,7 +166,7 @@ static VkInstance createVkInstance(bool enable_debug_layer) {
     VkLayerProperties *layerprop = (VkLayerProperties *)malloc(sizeof(VkLayerProperties) * layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, layerprop);
     printf("vkEnumerateInstanceLayerProperties:");
-    for (int i = 0; i < layerCount; ++i) {
+    for (uint32_t i = 0; i < layerCount; ++i) {
       printf("%s\n", layerprop[i].layerName);
     }
     free(layerprop);
@@ -176,7 +176,7 @@ static VkInstance createVkInstance(bool enable_debug_layer) {
   VkResult res;
   res = vkCreateInstance(&inst_info, NULL, &inst);
 
-  free(extensions);
+  free((void*) extensions);
 
   if (res == VK_ERROR_INCOMPATIBLE_DRIVER) {
     printf("cannot find a compatible Vulkan ICD\n");
@@ -692,7 +692,7 @@ void destroyFrameBuffers(const VulkanDevice *device, FrameBuffers *buffer) {
     vkDestroySemaphore(device->device, buffer->render_complete_semaphore, NULL);
   }
 
-  for (int i = 0; i < buffer->swapchain_image_count; ++i) {
+  for (uint32_t i = 0; i < buffer->swapchain_image_count; ++i) {
     vkDestroyImageView(device->device, buffer->swap_chain_buffers[i].view, 0);
     vkDestroyFramebuffer(device->device, buffer->framebuffers[i], 0);
   }

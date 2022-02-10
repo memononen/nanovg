@@ -78,12 +78,12 @@ void prepareFrame(VkDevice device, VkCommandBuffer cmd_buffer, FrameBuffers *fb)
   vkCmdBeginRenderPass(cmd_buffer, &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
 
   VkViewport viewport;
-  viewport.width = fb->buffer_size.width;
-  viewport.height = fb->buffer_size.height;
-  viewport.minDepth = (float)0.0f;
-  viewport.maxDepth = (float)1.0f;
-  viewport.x = rp_begin.renderArea.offset.x;
-  viewport.y = rp_begin.renderArea.offset.y;
+  viewport.width = (float) fb->buffer_size.width;
+  viewport.height = (float) fb->buffer_size.height;
+  viewport.minDepth = (float) 0.0f;
+  viewport.maxDepth = (float) 1.0f;
+  viewport.x = (float) rp_begin.renderArea.offset.x;
+  viewport.y = (float) rp_begin.renderArea.offset.y;
   vkCmdSetViewport(cmd_buffer, 0, 1, &viewport);
 
   VkRect2D scissor = rp_begin.renderArea;
@@ -318,7 +318,7 @@ int main() {
 
     glfwGetCursorPos(window, &mx, &my);
 
-    nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
+    nvgBeginFrame(vg, (float)winWidth, (float)winHeight, pxRatio);
     renderDemo(vg, (float)mx, (float)my, (float)winWidth, (float)winHeight, (float)t, blowup, &data);
     renderGraph(vg, 5, 5, &fps);
 

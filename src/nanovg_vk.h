@@ -1137,10 +1137,10 @@ static void vknvg_stroke(VKNVGcontext *vk, VKNVGcall *call) {
   if (vk->flags & NVG_STENCIL_STROKES) {
     const VkDescriptorSetLayout descLayouts[2] = { vk->descLayout, vk->descLayout };
     VkDescriptorSetAllocateInfo alloc_info[1] = {
-        {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, vk->descPool, 2, descLayouts},
+        {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, vk->descPool, 2, &descLayouts[0]},
     };
     VkDescriptorSet descSets[2] = {NULL, NULL};
-    NVGVK_CHECK_RESULT(vkAllocateDescriptorSets(device, alloc_info, &descSets));
+    NVGVK_CHECK_RESULT(vkAllocateDescriptorSets(device, alloc_info, &descSets[0]));
 
     VkDescriptorSet descSetAA = descSets[0];
     VkDescriptorSet descSetBase = descSets[1];
@@ -1264,9 +1264,9 @@ static int vknvg_renderCreate(void *uptr) {
   vk->fillVertShader = vknvg_createShaderModule(device, fillVertShader, sizeof(fillVertShader), allocator);
   vk->fillFragShader = vknvg_createShaderModule(device, fillFragShader, sizeof(fillFragShader), allocator);
   vk->fillFragShaderAA = vknvg_createShaderModule(device, fillFragShaderAA, sizeof(fillFragShaderAA), allocator);
-  int align = vk->gpuProperties.limits.minUniformBufferOffsetAlignment;
+  VkDeviceSize align = vk->gpuProperties.limits.minUniformBufferOffsetAlignment;
 
-  vk->fragSize = sizeof(VKNVGfragUniforms) + align - sizeof(VKNVGfragUniforms) % align;
+  vk->fragSize = (int) (sizeof(VKNVGfragUniforms) + align - sizeof(VKNVGfragUniforms) % align);
 
   vk->descLayout = vknvg_createDescriptorSetLayout(device, allocator);
   vk->pipelineLayout = vknvg_createPipelineLayout(device, vk->descLayout, allocator);
@@ -1390,8 +1390,8 @@ static int vknvg_renderCreateTexture(void *uptr, int type, int w, int h, int ima
     if(type == NVG_TEXTURE_RGBA)tx_format=4;
     size_t texture_size = w * h * tx_format * sizeof(uint8_t);
     uint8_t *generated_texture = (uint8_t*)malloc(texture_size);
-    for (unsigned int i = 0; i < w; ++i){
-        for (unsigned int j = 0; j < h; ++j){
+    for (uint32_t i = 0; i < (uint32_t) w; ++i){
+        for (uint32_t j = 0; j < (uint32_t) h; ++j){
             size_t pixel = (i * w + j) * tx_format * sizeof(uint8_t);
             if (type == NVG_TEXTURE_RGBA) {
               generated_texture[pixel + 0] = 0x00;
