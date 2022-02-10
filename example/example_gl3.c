@@ -105,11 +105,19 @@ int main()
 	glGetError();
 #endif
 
-#ifdef DEMO_MSAA
-	vg = nvgCreateGL3(NVG_STENCIL_STROKES | NVG_DEBUG);
-#else
-	vg = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+	int flags = 0;
+#ifndef NDEBUG
+	flags |= NVG_DEBUG;
 #endif
+#if !defined(DEMO_MSAA) && defined(DEMO_ANTIALIAS)
+	flags |= NVG_ANTIALIAS;
+#endif
+#ifdef DEMO_STENCIL_STROKES
+	flags |= NVG_STENCIL_STROKES;
+#endif
+
+	vg = nvgCreateGL3(flags);
+
 	if (vg == NULL) {
 		printf("Could not init nanovg.\n");
 		return -1;
