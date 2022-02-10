@@ -23,7 +23,11 @@
 #ifdef __APPLE__
 #	define GLFW_INCLUDE_GLCOREARB
 #endif
-#define GLFW_INCLUDE_GLEXT
+#ifdef NANOVG_GLAD
+#	include <glad/glad.h>
+#else
+#	define GLFW_INCLUDE_GLEXT
+#endif
 #include <GLFW/glfw3.h>
 #include "nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
@@ -103,6 +107,13 @@ int main()
 	}
 	// GLEW generates GL error because it calls glGetString(GL_EXTENSIONS), we'll consume it here.
 	glGetError();
+#endif
+
+#ifdef NANOVG_GLAD
+    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
+		printf("Could not init glad.\n");
+        return -1;
+    }
 #endif
 
 	int flags = 0;

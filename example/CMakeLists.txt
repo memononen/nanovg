@@ -17,6 +17,8 @@ option(BUILD_EXAMPLE_GL3 "Build Example using OpenGL3" ON)
 option(BUILD_EXAMPLE_VULKAN "Build Example using Vulkan" ON)
 option(DEMO_ANTIALIAS "NVG_ANTIALIAS" ON)
 option(DEMO_STENCIL_STROKES "NVG_STENCIL_STROKES" ON)
+option(USE_GLAD "Use glad instead of glew" ON)
+
 
 
 if (DEMO_ANTIALIAS)
@@ -66,13 +68,24 @@ if (BUILD_EXAMPLE_VULKAN)
 endif() 
 
 if (BUILD_EXAMPLE_GL3)
-
+if (USE_GLAD)
+    add_executable(
+        example-gl3
+        ${COMMON_SRC}
+        ../src/nanovg_gl.h
+        ../src/nanovg_gl_utils.h
+        ../glad-3.2-compat/src/glad.c
+        ../example/example_gl3.c
+    )
+    target_include_directories(example-gl3 PRIVATE ../src ../glad-3.2-compat/include)
+    target_compile_definitions(example-gl3 PRIVATE NANOVG_GLAD)
+    target_link_libraries(example-gl3 PRIVATE glfw)
+else()
     # Build glew
     set( ONLY_LIBS ON CACHE BOOL ""  )
     set( glew-cmake_BUILD_SHARED OFF CACHE BOOL ""  )
     set( glew-cmake_BUILD_STATIC ON CACHE BOOL ""  )
     add_subdirectory(../glew-cmake glew)
-
     add_executable(
         example-gl3
         ${COMMON_SRC}
@@ -80,16 +93,20 @@ if (BUILD_EXAMPLE_GL3)
         ../src/nanovg_gl_utils.h
         ../example/example_gl3.c
     )
-
     target_include_directories(example-gl3 PRIVATE ../src)
     target_compile_definitions(example-gl3 PRIVATE NANOVG_GLEW)
     target_link_libraries(example-gl3 PRIVATE glfw libglew_static)
+endif()
 
 endif()
 
 
 if (MSVC) 
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    if (DEFINED EXE_NAME)
+        set_property(TARGET example-gl3 PROPERTY OUTPUT_NAME ${EXE_NAME}-gl3)
+        set_property(TARGET example-vk PROPERTY OUTPUT_NAME ${EXE_NAME}-vk)
+    endif()
     set_property(TARGET example-vk example-gl3 PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
     set_property(TARGET example-vk example-gl3 PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}$<0:...>)
 endif()

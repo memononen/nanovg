@@ -4,7 +4,10 @@
 #include <math.h>
 #ifndef NANOVG_VULKAN_IMPLEMENTATION
 #ifdef NANOVG_GLEW
-#  include <GL/glew.h>
+# 	include <GL/glew.h>
+#endif
+#ifdef NANOVG_GLAD
+#	include <glad/glad.h>
 #endif
 #include <GLFW/glfw3.h>
 #endif
