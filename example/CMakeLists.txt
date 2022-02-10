@@ -13,20 +13,18 @@ set( GLFW_BUILD_INSTALL OFF CACHE BOOL ""  )
 
 add_subdirectory(../glfw glfw)
 
+option(BUILD_USE_GLAD "Use glad instead of glew" ON)
+
 option(BUILD_EXAMPLE_GL3 "Build Example using OpenGL3" ON)
 option(BUILD_EXAMPLE_VULKAN "Build Example using Vulkan" ON)
-option(DEMO_ANTIALIAS "NVG_ANTIALIAS" ON)
+
+option(DEMO_ANTIALIAS "Use NVG_ANTIALIAS" ON)
+option(DEMO_MSAA "Use MSAA instead of NVG_ANTIALIAS" OFF)
 option(DEMO_STENCIL_STROKES "NVG_STENCIL_STROKES" ON)
-option(USE_GLAD "Use glad instead of glew" ON)
 
-
-
-if (DEMO_ANTIALIAS)
-    add_compile_definitions(DEMO_ANTIALIAS)
-endif()
-if (DEMO_STENCIL_STROKES)
-    add_compile_definitions(DEMO_STENCIL_STROKES)
-endif()
+add_compile_definitions(DEMO_MSAA=$<BOOL:${DEMO_MSAA}>)
+add_compile_definitions(DEMO_ANTIALIAS=$<BOOL:${DEMO_ANTIALIAS}>)
+add_compile_definitions(DEMO_STENCIL_STROKES=$<BOOL:${DEMO_STENCIL_STROKES}>)
 
 include_directories(../src)
 
@@ -68,7 +66,7 @@ if (BUILD_EXAMPLE_VULKAN)
 endif() 
 
 if (BUILD_EXAMPLE_GL3)
-if (USE_GLAD)
+if (BUILD_USE_GLAD)
     add_executable(
         example-gl3
         ${COMMON_SRC}

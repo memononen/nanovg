@@ -7,6 +7,13 @@
 
 #include <vulkan/vulkan.h>
 
+#ifndef DEMO_ANTIALIAS
+#	  define DEMO_ANTIALIAS 1
+#endif
+#ifndef DEMO_STENCIL_STROKES
+#	  define DEMO_STENCIL_STROKES 1
+#endif
+
 #include "nanovg.h"
 #include "nanovg_vk.h"
 
@@ -14,6 +21,7 @@
 #include "perf.h"
 
 #include "vulkan_util.h"
+
 
 void errorcb(int error, const char *desc) {
   printf("GLFW error %d: %s\n", error, desc);
@@ -275,10 +283,10 @@ int main() {
 #ifndef NDEBUG
 	flags |= NVG_DEBUG; // unused in nanovg_vk
 #endif
-#if !defined(DEMO_MSAA) && defined(DEMO_ANTIALIAS)
+#if DEMO_ANTIALIAS
 	flags |= NVG_ANTIALIAS;
 #endif
-#ifdef DEMO_STENCIL_STROKES
+#if DEMO_ANTIALIAS
 	flags |= NVG_STENCIL_STROKES;
 #endif
 

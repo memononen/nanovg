@@ -29,9 +29,21 @@
 #	define GLFW_INCLUDE_GLEXT
 #endif
 #include <GLFW/glfw3.h>
+
+#ifndef DEMO_ANTIALIAS
+#	define DEMO_ANTIALIAS 1
+#endif
+#ifndef DEMO_STENCIL_STROKES
+#	define DEMO_STENCIL_STROKES 1
+#endif
+#ifndef DEMO_MSAA
+#	define DEMO_MSAA 0
+#endif
+
 #include "nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
 #include "nanovg_gl.h"
+
 #include "demo.h"
 #include "perf.h"
 
@@ -120,10 +132,10 @@ int main()
 #ifndef NDEBUG
 	flags |= NVG_DEBUG;
 #endif
-#if !defined(DEMO_MSAA) && defined(DEMO_ANTIALIAS)
+#if DEMO_MSAA && DEMO_ANTIALIAS
 	flags |= NVG_ANTIALIAS;
 #endif
-#ifdef DEMO_STENCIL_STROKES
+#if DEMO_STENCIL_STROKES
 	flags |= NVG_STENCIL_STROKES;
 #endif
 

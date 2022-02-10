@@ -1067,7 +1067,12 @@ void drawScissor(NVGcontext* vg, float x, float y, float t)
 
 	nvgRestore(vg);
 }
-
+void renderDemoScene2(NVGcontext* vg, float mx, float my, float width, float height,
+				float t, int blowup, DemoData* data)
+{
+	drawGraph(vg, 0, height/2, width, height/2, t);
+	drawLines(vg, 120, height - 50, 600, 50, t);
+}
 void renderDemoScene(NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, DemoData* data)
 {
@@ -1149,7 +1154,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 			nvgSave(vg);
 			nvgTranslate(vg, x * width / cols, y * height / rows);
 			nvgScissor(vg, 0, 0, width / cols, height / rows);
-
+			
 			renderDemoScene(vg, mx, my, width / cols, height / rows, t, blowup, data);
 			nvgRestore(vg);
 		}
