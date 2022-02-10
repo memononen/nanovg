@@ -782,13 +782,13 @@ static int vknvg_UpdateTexture(VkDevice device, VKNVGtexture *tex, int dx, int d
 
 // call it after vknvg_UpdateTexture
 static void vknvg_InitTexture(VkCommandBuffer cmdbuffer, VkQueue queue, VKNVGtexture *tex) {
-    VkCommandBufferBeginInfo beginInfo = {};
+    VkCommandBufferBeginInfo beginInfo = {0};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     vkBeginCommandBuffer( cmdbuffer, &beginInfo );
 
-    VkImageMemoryBarrier layoutTransitionBarrier = {};
+    VkImageMemoryBarrier layoutTransitionBarrier = {0};
     layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     layoutTransitionBarrier.srcAccessMask = 0;
     layoutTransitionBarrier.dstAccessMask = 0;
@@ -811,7 +811,7 @@ static void vknvg_InitTexture(VkCommandBuffer cmdbuffer, VkQueue queue, VKNVGtex
     vkEndCommandBuffer( cmdbuffer );
 
     VkPipelineStageFlags waitStageMash[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    VkSubmitInfo submitInfo = {};
+    VkSubmitInfo submitInfo = {0};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.waitSemaphoreCount = 0;
     submitInfo.pWaitSemaphores = NULL;

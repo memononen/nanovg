@@ -177,7 +177,7 @@ int main() {
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-  window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
+  window = glfwCreateWindow(1000, 600, "NanoVG Example Vulkan", NULL, NULL);
   if (!window) {
     glfwTerminate();
     return -1;
@@ -209,7 +209,7 @@ int main() {
     exit(-1);
   }
 
-  VkPhysicalDevice gpu[gpu_count];
+  VkPhysicalDevice gpu[32];
   res = vkEnumeratePhysicalDevices(instance, &gpu_count, gpu);
   if (res != VK_SUCCESS && res != VK_INCOMPLETE) {
     printf("vkEnumeratePhysicalDevices failed %d \n", res);
@@ -266,7 +266,18 @@ int main() {
   create_info.renderpass = fb.render_pass;
   create_info.cmdBuffer = cmd_buffer;
 
-  NVGcontext *vg = nvgCreateVk(create_info, NVG_ANTIALIAS | NVG_STENCIL_STROKES, queue);
+	int flags = 0;
+#ifndef NDEBUG
+	flags |= NVG_DEBUG; // unused in nanovg_vk
+#endif
+#if !defined(DEMO_MSAA) && defined(DEMO_ANTIALIAS)
+	flags |= NVG_ANTIALIAS;
+#endif
+#ifdef DEMO_STENCIL_STROKES
+	flags |= NVG_STENCIL_STROKES;
+#endif
+
+  NVGcontext *vg = nvgCreateVk(create_info, flags, queue);
 
   DemoData data;
   PerfGraph fps;//, cpuGraph, gpuGraph;

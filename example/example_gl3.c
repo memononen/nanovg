@@ -85,8 +85,8 @@ int main()
 #ifdef DEMO_MSAA
 	glfwWindowHint(GLFW_SAMPLES, 4);
 #endif
-	window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
-//	window = glfwCreateWindow(1000, 600, "NanoVG", glfwGetPrimaryMonitor(), NULL);
+	window = glfwCreateWindow(1000, 600, "NanoVG Example OpenGL 3.2", NULL, NULL);
+//	window = glfwCreateWindow(1000, 600, "NanoVG Example OpenGL 3.2", glfwGetPrimaryMonitor(), NULL);
 	if (!window) {
 		glfwTerminate();
 		return -1;

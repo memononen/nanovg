@@ -1065,7 +1065,7 @@ void drawScissor(NVGcontext* vg, float x, float y, float t)
 	nvgRestore(vg);
 }
 
-void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
+void renderDemoScene(NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, DemoData* data)
 {
 	float x,y,popy;
@@ -1076,7 +1076,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	drawColorwheel(vg, width - 300, height - 300, 250.0f, 250.0f, t);
 
 	// Line joints
-	drawLines(vg, 120, height-50, 600, 50, t);
+	drawLines(vg, 120, height - 50, 600, 50, t);
 
 	// Line caps
 	drawWidths(vg, 10, 50, 30);
@@ -1126,7 +1126,33 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	drawThumbnails(vg, 365, popy-30, 160, 300, data->images, 12, t);
 
 	nvgRestore(vg);
+
+	drawLines(vg, 140, height - 200, width - 160, 120, t);
+
+	drawLines(vg, 40, height - 350, width - 40, 280, t);
+
 }
+
+void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
+	float t, int blowup, DemoData* data)
+{
+	int cols = 3;
+	int rows = 3;
+	if (blowup)
+		cols = rows = 1;
+	for (int x = 0; x < cols; x++) {
+		for (int y = 0; y < rows; y++) {
+
+			nvgSave(vg);
+			nvgTranslate(vg, x * width / cols, y * height / rows);
+			nvgScissor(vg, 0, 0, width / cols, height / rows);
+
+			renderDemoScene(vg, mx, my, width / cols, height / rows, t, blowup, data);
+			nvgRestore(vg);
+		}
+	}
+}
+
 
 #ifndef NANOVG_VULKAN_IMPLEMENTATION
 
