@@ -187,7 +187,12 @@ int main() {
 
   glfwSetTime(0);
 
-  VkInstance instance = createVkInstance(false);
+  bool enableValidationLayer = false;
+#ifndef NDEBUG
+  enableValidationLayer = true;
+#endif
+
+  VkInstance instance = createVkInstance(enableValidationLayer);
 
   VkResult res;
   VkSurfaceKHR surface;
@@ -330,6 +335,8 @@ int main() {
   destroyFrameBuffers(device, &fb);
 
   destroyVulkanDevice(device);
+
+  destroyDebugCallback(instance);
 
   vkDestroyInstance(instance, NULL);
 
