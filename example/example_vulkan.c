@@ -13,6 +13,9 @@
 #ifndef DEMO_STENCIL_STROKES
 #	  define DEMO_STENCIL_STROKES 1
 #endif
+#ifndef DEMO_VULKAN_VALIDATON_LAYER
+#	  define DEMO_VULKAN_VALIDATON_LAYER 0
+#endif
 
 #include "nanovg.h"
 #include "nanovg_vk.h"
@@ -196,7 +199,7 @@ int main() {
   glfwSetTime(0);
 
   bool enableValidationLayer = false;
-#ifndef NDEBUG
+#if DEMO_VULKAN_VALIDATON_LAYER
   enableValidationLayer = true;
 #endif
 
