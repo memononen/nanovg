@@ -579,7 +579,7 @@ FrameBuffers createFrameBuffers(const VulkanDevice *device, VkSurfaceKHR surface
   // own only 1 image at a time, besides the images being displayed and
   // queued for display):
   uint32_t desiredNumberOfSwapchainImages =
-      surfCapabilities.minImageCount + 1;
+      max(surfCapabilities.minImageCount+1, 3);
   if ((surfCapabilities.maxImageCount > 0) &&
       (desiredNumberOfSwapchainImages > surfCapabilities.maxImageCount)) {
     // Application must settle for fewer images than desired:
