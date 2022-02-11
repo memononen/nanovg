@@ -1,0 +1,28 @@
+name: CI
+
+on: [push]
+
+env:
+  BUILD_TYPE: release
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install required packages
+      run: sudo apt-get install premake4 build-essential libglfw3-dev libglew-dev pkg-config
+
+    - name: Premake
+      run:  premake4 gmake
+
+# due to glew problems with in the current ubuntu-latest, we don't build the examples (yet)
+# https://github.com/openai/mujoco-py/issues/383 has the same problem for reference
+# this doesn't happen in focal 
+    - name: Make
+      run:  cd build && make nanovg 
