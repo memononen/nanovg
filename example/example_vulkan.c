@@ -289,7 +289,7 @@ int main() {
 #if DEMO_ANTIALIAS
 	flags |= NVG_ANTIALIAS;
 #endif
-#if DEMO_ANTIALIAS
+#if DEMO_STENCIL_STROKES
 	flags |= NVG_STENCIL_STROKES;
 #endif
 
