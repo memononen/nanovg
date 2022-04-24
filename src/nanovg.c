@@ -132,6 +132,7 @@ struct NVGcontext {
 	int fillTriCount;
 	int strokeTriCount;
 	int textTriCount;
+    DirectOpenGLDisplayFunc directDisplayFunc;
 };
 
 static float nvg__sqrtf(float a) { return sqrtf(a); }
@@ -384,6 +385,7 @@ void nvgBeginFrame(NVGcontext* ctx, float windowWidth, float windowHeight, float
 	ctx->fillTriCount = 0;
 	ctx->strokeTriCount = 0;
 	ctx->textTriCount = 0;
+    ctx->directDisplayFunc = NULL;
 }
 
 void nvgCancelFrame(NVGcontext* ctx)
@@ -419,6 +421,9 @@ void nvgEndFrame(NVGcontext* ctx)
 		ctx->fontImages[0] = fontImage;
 		ctx->fontImageIdx = 0;
 	}
+
+    if (ctx->directDisplayFunc != NULL)
+        ctx->directDisplayFunc();
 }
 
 NVGcolor nvgRGB(unsigned char r, unsigned char g, unsigned char b)
@@ -2942,3 +2947,8 @@ void nvgTextMetrics(NVGcontext* ctx, float* ascender, float* descender, float* l
 		*lineh *= invscale;
 }
 // vim: ft=c nu noet ts=4
+
+void nvgRenderDirectOpenGL(NVGcontext* ctx, DirectOpenGLDisplayFunc func)
+{
+    ctx->directDisplayFunc = func;
+}

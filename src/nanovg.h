@@ -684,6 +684,10 @@ NVGparams* nvgInternalParams(NVGcontext* ctx);
 // Debug function to dump cached path data.
 void nvgDebugDumpPathCache(NVGcontext* ctx);
 
+// Can call this almost anywhere, at the end it will be called at the end...
+typedef void (*DirectOpenGLDisplayFunc)();
+void nvgRenderDirectOpenGL(NVGcontext* ctx, DirectOpenGLDisplayFunc func);
+
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
