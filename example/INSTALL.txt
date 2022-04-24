@@ -1,0 +1,7 @@
+on linux, try this line to compile the demo :
+
+gcc -I../src/ ../src/nanovg.c example_gl2.c demo.c perf.c -lglfw -pthread -lGL -lGLU -lX11 -lXxf86vm -lXrandr -lpthread -lXi -ldl -lm -o demo
+
+you may need to :
+
+apt install libglfw3-dev libglu1-mesa-dev libxxf86vm-dev libxi-dev
