@@ -817,11 +817,11 @@ int loadDemoData(NVGcontext* vg, DemoData* data)
 			printf("Could not load %s.\n", file);
 			return -1;
 		} else {
-		    const int glTextureId = nvgGetImageTextureId(vg, data->images[i]);
-            if(glTextureId<0) {
-                printf("Invalid GL Texture Id for Image\n");
-            }
-        }
+			const int glTextureId = nvgGetImageTextureId(vg, data->images[i]);
+			if(glTextureId<0) {
+				printf("Invalid GL Texture Id for Image\n");
+			}
+		}
 	}
 
 	data->fontIcons = nvgCreateFont(vg, "icons", "../example/entypo.ttf");
