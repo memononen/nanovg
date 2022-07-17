@@ -624,6 +624,10 @@ void nvgTextMetrics(NVGcontext* ctx, float* ascender, float* descender, float* l
 // Words longer than the max width are slit at nearest character (i.e. no hyphenation).
 int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, float breakRowWidth, NVGtextRow* rows, int maxRows);
 
+// Get the GL texture id for specified image handle. Permits shaders to bind to image texture so we can
+// directly render to image while preserving z-order and not adding any frame delay.
+int nvgGetImageTextureId(NVGcontext* ctx, int handle);
+
 //
 // Internal Render API
 //
@@ -665,6 +669,7 @@ struct NVGparams {
 	int (*renderDeleteTexture)(void* uptr, int image);
 	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
+	int (*renderGetImageTextureId)(void* uptr, int handle);
 	void (*renderViewport)(void* uptr, float width, float height, float devicePixelRatio);
 	void (*renderCancel)(void* uptr);
 	void (*renderFlush)(void* uptr);

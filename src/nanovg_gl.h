@@ -882,6 +882,17 @@ static int glnvg__renderGetTextureSize(void* uptr, int image, int* w, int* h)
 	return 1;
 }
 
+static int glnvg__renderGetImageTextureId(void* uptr, int handle)
+{
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+    GLNVGtexture* tex = glnvg__findTexture(gl, handle);
+    if(tex) {
+        return tex->tex;
+    } else {
+        return -1;
+    }
+}
+
 static void glnvg__xformToMat3x4(float* m3, float* t)
 {
 	m3[0] = t[0];
@@ -1582,6 +1593,7 @@ NVGcontext* nvgCreateGLES3(int flags)
 	params.renderDeleteTexture = glnvg__renderDeleteTexture;
 	params.renderUpdateTexture = glnvg__renderUpdateTexture;
 	params.renderGetTextureSize = glnvg__renderGetTextureSize;
+	params.renderGetImageTextureId = glnvg__renderGetImageTextureId;
 	params.renderViewport = glnvg__renderViewport;
 	params.renderCancel = glnvg__renderCancel;
 	params.renderFlush = glnvg__renderFlush;
