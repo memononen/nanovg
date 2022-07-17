@@ -625,7 +625,7 @@ void nvgTextMetrics(NVGcontext* ctx, float* ascender, float* descender, float* l
 int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, float breakRowWidth, NVGtextRow* rows, int maxRows);
 
 // Get the GL texture id for specified image handle. Permits shaders to bind to image texture so we can
-// directly render to image while preserving z-order and not adding any frame delay.
+// directly render to image while preserving z-order.
 int nvgGetImageTextureId(NVGcontext* ctx, int handle);
 
 //
