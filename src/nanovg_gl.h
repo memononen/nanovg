@@ -885,12 +885,12 @@ static int glnvg__renderGetTextureSize(void* uptr, int image, int* w, int* h)
 static int glnvg__renderGetImageTextureId(void* uptr, int handle)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
-    GLNVGtexture* tex = glnvg__findTexture(gl, handle);
-    if(tex) {
-        return tex->tex;
-    } else {
-        return -1;
-    }
+	GLNVGtexture* tex = glnvg__findTexture(gl, handle);
+	if(tex) {
+	    return tex->tex;
+	} else {
+	    return -1;
+	}
 }
 
 static void glnvg__xformToMat3x4(float* m3, float* t)
