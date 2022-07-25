@@ -1193,7 +1193,7 @@ static void fons__maxDiagDown(unsigned char* dst, int w, int h, int dstStride)
 	}
 }
 
-// Gray level morphological dilation approximated by convoling with a max stencil along
+// Gray level morphological dilation approximated by convolving with a max stencil along
 // Diagonal convolution overlaps with horizontal & vertical, so we alternate between vertical & horizontal
 // and diagonal directions to prevent the dilation from being too large.
 static void fons__dilate(FONScontext* stash, unsigned char* dst, int w, int h, int dstStride, int dilate)
@@ -1228,7 +1228,7 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	if (iblur > 20) iblur = 20;
 	if (idilate > 20) idilate = 20;
 	const int antiAliasBonus = 2;
-	pad= antiAliasBonus + iblur + idilate;
+	pad = antiAliasBonus + iblur + idilate;
 
 	// Reset allocator.
 	stash->nscratch = 0;
