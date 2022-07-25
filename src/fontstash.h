@@ -1228,7 +1228,7 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	if (iblur > 20) iblur = 20;
 	if (idilate > 20) idilate = 20;
 	const int antiAliasBonus = 2;
-	pad= antiAliasBonus + iblur + idilate;
+	pad = antiAliasBonus + iblur + idilate;
 
 	// Reset allocator.
 	stash->nscratch = 0;
