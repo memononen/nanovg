@@ -1082,19 +1082,22 @@ static void fons__maxRows(unsigned char* dst, int w, int h, int dstStride)
 {
 	int x, y;
 	unsigned char prev, current;
+	unsigned char* ptr;
 	for (x = 0; x < w; x++) {
 		prev=dst[0];
 		for (y = dstStride; y < h*dstStride; y += dstStride) {
-			current=dst[y];
+			ptr=&dst[y];
+			current=*ptr;
 			if(prev > current){
-				dst[y]=prev;
+				*ptr=prev;
 			}
 			prev=current;
 		}
 		for (y = (h-2)*dstStride; y >= 0; y -= dstStride) {
-			current=dst[y];
+			ptr=&dst[y];
+			current=*ptr;
 			if(prev > current){
-				dst[y]=prev;
+				*ptr=prev;
 			}
 			prev=current;
 		}
@@ -1106,19 +1109,22 @@ static void fons__maxCols(unsigned char* dst, int w, int h, int dstStride)
 {
 	int x, y;
 	unsigned char prev, current;
+	unsigned char* ptr;
 	for (y = 0; y < h; y++) {
 		prev=dst[0];
 		for (x = 1; x < w; x++) {
-			current=dst[x];
+			ptr=&dst[x];
+			current=*ptr;
 			if(prev > current){
-				dst[x]=prev;
+				*ptr=prev;
 			}
 			prev=current;
 		}
 		for (x = w-2; x >= 0; x--) {
-			current=dst[x];
+			ptr=&dst[x];
+			current=*ptr;
 			if(prev > current){
-				dst[x]=prev;
+				*ptr=prev;
 			}
 			prev=current;
 		}
@@ -1132,21 +1138,24 @@ static void fons__maxDiagUp(unsigned char* dst, int w, int h, int dstStride)
 	const int a =dstStride-1;
 	const int d=w+h;
 	unsigned char prev, current;
+	unsigned char* ptr;
 	for(t=0;t<d;t++){
 		const int y_min=(t-w<0)?0:t-w;
 		const int y_max=(t<h-1)?t:h-1;
 		prev=dst[t+y_min*a];
 		for(y=y_min;y<=y_max;y++){
-			current=dst[t+y*a];
+			ptr=&dst[t+y*a];
+			current=*ptr;
 			if(prev > current){
-				dst[t+y*a]=prev;
+				*ptr=prev;
 			}
 			prev=current;
 		}
 		for(y=y_max-2;y>=y_min;y--){
-			current=dst[t+y*a];
+			ptr=&dst[t+y*a];
+			current=*ptr;
 			if(prev > current){
-				dst[t+y*a]=prev;
+				*ptr=prev;
 			}
 			prev=current;
 		}
@@ -1160,21 +1169,24 @@ static void fons__maxDiagDown(unsigned char* dst, int w, int h, int dstStride)
 	const int b=dstStride+1;
 	const int d=w+h;
 	unsigned char prev, current;
+	unsigned char* ptr;
 	for(t=0;t<d;t++){
 		const int y_min=(t-w<0)?0:t-w;
 		const int y_max=(t<h-1)?t:h-1;
 		prev=dst[t-y_min*b+a];
 		for(y=y_min;y<=y_max;y++){
-			current=dst[t-y*b+a];
+			ptr=&dst[t-y*b+a];
+			current=*ptr;
 			if(prev > current){
-				dst[t-y*b+a]=prev;
+				*ptr=prev;
 			}
 			prev=current;
 		}
 		for(y=y_max-2;y>=y_min;y--){
-			current=dst[t-y*b+a];
+			ptr=&dst[t-y*b+a];
+			current=*ptr;
 			if(prev > current){
-				dst[t-y*b+a]=prev;
+				*ptr=prev;
 			}
 			prev=current;
 		}
