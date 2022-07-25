@@ -1134,7 +1134,7 @@ static void fons__maxDiagUp(unsigned char* dst, int w, int h, int dstStride)
 	for(t=0;t<d;t++){
 		const int y_min=(t-w<0)?0:t-w;
 		const int y_max=(t<h-1)?t:h-1;
-		prev=(unsigned char)(dst[(t-y_min)+y_min*dstStride]);
+		prev=(unsigned char)(dst[t+y_min*a]);
 		for(y=y_min;y<=y_max;y++){
 			current=dst[t+y*a];
 			if(prev > current){
