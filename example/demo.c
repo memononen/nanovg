@@ -364,7 +364,7 @@ void drawFancyText(NVGcontext* vg, float x, float y, const char* text){
 	nvgFontSize(vg, 50.0f);
 	nvgFontFace(vg, "sans-bold");
 	nvgTextAlign(vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-	nvgFontDilate(vg, 3); // dilate will always be applied before blur
+	nvgFontDilate(vg, 2); // Dilate will always be applied before blur
 	nvgFontBlur(vg, 1);
 	nvgFillColor(vg, nvgRGB(255, 51, 204));
 	nvgText(vg, x, y, text, NULL);
