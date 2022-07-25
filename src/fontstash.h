@@ -1081,17 +1081,18 @@ static void fons__blur(FONScontext* stash, unsigned char* dst, int w, int h, int
 static void fons__maxRows(unsigned char* dst, int w, int h, int dstStride)
 {
 	int x, y;
+	unsigned char prev, current;
 	for (x = 0; x < w; x++) {
-		unsigned char prev=dst[0];
+		prev=dst[0];
 		for (y = dstStride; y < h*dstStride; y += dstStride) {
-			unsigned char current=dst[y];
+			current=dst[y];
 			if(prev > current){
 				dst[y]=prev;
 			}
 			prev=current;
 		}
 		for (y = (h-2)*dstStride; y >= 0; y -= dstStride) {
-			unsigned char current=dst[y];
+			current=dst[y];
 			if(prev > current){
 				dst[y]=prev;
 			}
@@ -1128,13 +1129,13 @@ static void fons__maxCols(unsigned char* dst, int w, int h, int dstStride)
 static void fons__maxDiagUp(unsigned char* dst, int w, int h, int dstStride)
 {
 	int t, y;
-	const int d=w+h;
 	const int a =dstStride-1;
+	const int d=w+h;
 	unsigned char prev, current;
 	for(t=0;t<d;t++){
 		const int y_min=(t-w<0)?0:t-w;
 		const int y_max=(t<h-1)?t:h-1;
-		prev=(unsigned char)(dst[t+y_min*a]);
+		prev=dst[t+y_min*a];
 		for(y=y_min;y<=y_max;y++){
 			current=dst[t+y*a];
 			if(prev > current){
@@ -1155,14 +1156,14 @@ static void fons__maxDiagUp(unsigned char* dst, int w, int h, int dstStride)
 static void fons__maxDiagDown(unsigned char* dst, int w, int h, int dstStride)
 {
 	int t, y;
-	const int d=w+h;
 	const int a=(h-1)*dstStride;
 	const int b=dstStride+1;
+	const int d=w+h;
 	unsigned char prev, current;
 	for(t=0;t<d;t++){
 		const int y_min=(t-w<0)?0:t-w;
 		const int y_max=(t<h-1)?t:h-1;
-		prev=(unsigned char)(dst[t-y_min*b+a]);
+		prev=dst[t-y_min*b+a];
 		for(y=y_min;y<=y_max;y++){
 			current=dst[t-y*b+a];
 			if(prev > current){
