@@ -1151,7 +1151,7 @@ static void fons__maxDiagUp(unsigned char* dst, int w, int h, int dstStride)
 			}
 			prev=current;
 		}
-		for(y=y_max-2;y>=y_min;y--){
+		for(y=y_max-1;y>=y_min;y--){
 			ptr=&dst[t+y*a];
 			current=*ptr;
 			if(prev > current){
@@ -1182,7 +1182,7 @@ static void fons__maxDiagDown(unsigned char* dst, int w, int h, int dstStride)
 			}
 			prev=current;
 		}
-		for(y=y_max-2;y>=y_min;y--){
+		for(y=y_max-1;y>=y_min;y--){
 			ptr=&dst[t-y*b+a];
 			current=*ptr;
 			if(prev > current){
