@@ -830,11 +830,6 @@ int loadDemoData(NVGcontext* vg, DemoData* data)
 		if (data->images[i] == 0) {
 			printf("Could not load %s.\n", file);
 			return -1;
-		} else {
-			const int glTextureId = nvgGetImageTextureId(vg, data->images[i]);
-			if(glTextureId < 0) {
-				printf("Invalid GL Texture Id for Image\n");
-			}
 		}
 	}
 

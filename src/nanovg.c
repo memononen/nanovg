@@ -339,11 +339,6 @@ error:
 	return 0;
 }
 
-int nvgGetImageTextureId(NVGcontext* ctx, int handle)
-{
-	return ctx->params.renderGetImageTextureId(ctx->params.userPtr, handle);
-}
-
 NVGparams* nvgInternalParams(NVGcontext* ctx)
 {
     return &ctx->params;
