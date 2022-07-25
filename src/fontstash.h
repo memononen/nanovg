@@ -76,7 +76,7 @@ typedef struct FONSquad FONSquad;
 struct FONStextIter {
 	float x, y, nextx, nexty, scale, spacing;
 	unsigned int codepoint;
-	short isize, iblur;
+	short isize, iblur, idilate;
 	struct FONSfont* font;
 	int prevGlyphIndex;
 	const char* str;
@@ -116,6 +116,7 @@ void fonsSetSize(FONScontext* s, float size);
 void fonsSetColor(FONScontext* s, unsigned int color);
 void fonsSetSpacing(FONScontext* s, float spacing);
 void fonsSetBlur(FONScontext* s, float blur);
+void fonsSetDilate(FONScontext* s, float dilate);
 void fonsSetAlign(FONScontext* s, int align);
 void fonsSetFont(FONScontext* s, int font);
 
@@ -225,7 +226,7 @@ struct FONSglyph
 	unsigned int codepoint;
 	int index;
 	int next;
-	short size, blur;
+	short size, blur, dilate;
 	short x0,y0,x1,y1;
 	short xadv,xoff,yoff;
 };
@@ -257,6 +258,7 @@ struct FONSstate
 	float size;
 	unsigned int color;
 	float blur;
+	float dilate;
 	float spacing;
 };
 typedef struct FONSstate FONSstate;
@@ -834,6 +836,10 @@ void fonsSetBlur(FONScontext* stash, float blur)
 {
 	fons__getState(stash)->blur = blur;
 }
+void fonsSetDilate(FONScontext* stash, float dilate)
+{
+	fons__getState(stash)->dilate = dilate;
+}
 
 void fonsSetAlign(FONScontext* stash, int align)
 {
@@ -874,6 +880,7 @@ void fonsClearState(FONScontext* stash)
 	state->color = 0xffffffff;
 	state->font = 0;
 	state->blur = 0;
+	state->dilate= 0;
 	state->spacing = 0;
 	state->align = FONS_ALIGN_LEFT | FONS_ALIGN_BASELINE;
 }
@@ -1069,12 +1076,127 @@ static void fons__blur(FONScontext* stash, unsigned char* dst, int w, int h, int
 	fons__blurCols(dst, w, h, dstStride, alpha);
 	fons__blurRows(dst, w, h, dstStride, alpha);
 	fons__blurCols(dst, w, h, dstStride, alpha);
-//	fons__blurrows(dst, w, h, dstStride, alpha);
-//	fons__blurcols(dst, w, h, dstStride, alpha);
+}
+
+static void fons__maxRows(unsigned char* dst, int w, int h, int dstStride)
+{
+	int x, y;
+	for (x = 0; x < w; x++) {
+		unsigned char prev=dst[0];
+		for (y = dstStride; y < h*dstStride; y += dstStride) {
+			unsigned char current=dst[y];
+			if(prev > current){
+				dst[y]=prev;
+			}
+			prev=current;
+		}
+		for (y = (h-2)*dstStride; y >= 0; y -= dstStride) {
+			unsigned char current=dst[y];
+			if(prev > current){
+				dst[y]=prev;
+			}
+			prev=current;
+		}
+		dst++;
+	}
+}
+
+static void fons__maxCols(unsigned char* dst, int w, int h, int dstStride)
+{
+	int x, y;
+	unsigned char prev, current;
+	for (y = 0; y < h; y++) {
+		prev=dst[0];
+		for (x = 1; x < w; x++) {
+			current=dst[x];
+			if(prev > current){
+				dst[x]=prev;
+			}
+			prev=current;
+		}
+		for (x = w-2; x >= 0; x--) {
+			current=dst[x];
+			if(prev > current){
+				dst[x]=prev;
+			}
+			prev=current;
+		}
+		dst += dstStride;
+	}
+}
+
+static void fons__maxDiagUp(unsigned char* dst, int w, int h, int dstStride)
+{
+	int t, y;
+	const int d=w+h;
+	const int a =dstStride-1;
+	unsigned char prev, current;
+	for(t=0;t<d;t++){
+		const int y_min=(t-w<0)?0:t-w;
+		const int y_max=(t<h-1)?t:h-1;
+		prev=(unsigned char)(dst[(t-y_min)+y_min*dstStride]);
+		for(y=y_min;y<=y_max;y++){
+			current=dst[t+y*a];
+			if(prev > current){
+				dst[t+y*a]=prev;
+			}
+			prev=current;
+		}
+		for(y=y_max-2;y>=y_min;y--){
+			current=dst[t+y*a];
+			if(prev > current){
+				dst[t+y*a]=prev;
+			}
+			prev=current;
+		}
+	}
+}
+
+static void fons__maxDiagDown(unsigned char* dst, int w, int h, int dstStride)
+{
+	int t, y;
+	const int d=w+h;
+	const int a=(h-1)*dstStride;
+	const int b=dstStride+1;
+	unsigned char prev, current;
+	for(t=0;t<d;t++){
+		const int y_min=(t-w<0)?0:t-w;
+		const int y_max=(t<h-1)?t:h-1;
+		prev=(unsigned char)(dst[t-y_min*b+a]);
+		for(y=y_min;y<=y_max;y++){
+			current=dst[t-y*b+a];
+			if(prev > current){
+				dst[t-y*b+a]=prev;
+			}
+			prev=current;
+		}
+		for(y=y_max-2;y>=y_min;y--){
+			current=dst[t-y*b+a];
+			if(prev > current){
+				dst[t-y*b+a]=prev;
+			}
+			prev=current;
+		}
+	}
+}
+
+static void fons__dilate(FONScontext* stash, unsigned char* dst, int w, int h, int dstStride, int dilate)
+{
+	(void)stash;
+
+	for(int iter=0;iter<dilate;iter++){
+		if(iter%2==0){
+			fons__maxRows(dst, w, h, dstStride);
+			fons__maxCols(dst, w, h, dstStride);
+		} else {
+			fons__maxDiagUp(dst,w,h,dstStride);
+			fons__maxDiagDown(dst,w, h,dstStride);
+		}
+	}
 }
 
 static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned int codepoint,
-								 short isize, short iblur, int bitmapOption)
+								 short isize, short iblur, short idilate, int bitmapOption)
 {
 	int i, g, advance, lsb, x0, y0, x1, y1, gw, gh, gx, gy, x, y;
 	float scale;
@@ -1088,7 +1210,9 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 
 	if (isize < 2) return NULL;
 	if (iblur > 20) iblur = 20;
-	pad = iblur+2;
+	if (idilate > 20) idilate = 20;
+	const int antiAliasBonus = 2;
+	pad= antiAliasBonus + iblur + idilate;
 
 	// Reset allocator.
 	stash->nscratch = 0;
@@ -1097,7 +1221,9 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	h = fons__hashint(codepoint) & (FONS_HASH_LUT_SIZE-1);
 	i = font->lut[h];
 	while (i != -1) {
-		if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur) {
+		if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize
+				&& font->glyphs[i].blur == iblur
+				&& font->glyphs[i].dilate == idilate) {
 			glyph = &font->glyphs[i];
 			if (bitmapOption == FONS_GLYPH_BITMAP_OPTIONAL || (glyph->x0 >= 0 && glyph->y0 >= 0)) {
 			  return glyph;
@@ -1151,6 +1277,7 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 		glyph->codepoint = codepoint;
 		glyph->size = isize;
 		glyph->blur = iblur;
+		glyph->dilate = idilate;
 		glyph->next = 0;
 
 		// Insert char to hash lookup.
@@ -1194,6 +1321,13 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 			fdst[x+y*stash->params.width] = a;
 		}
 	}*/
+
+	// Dilate
+	if (idilate > 0) {
+		stash->nscratch = 0;
+		bdst = &stash->texData[glyph->x0 + glyph->y0 * stash->params.width];
+		fons__dilate(stash, bdst, gw, gh, stash->params.width, idilate);
+	}
 
 	// Blur
 	if (iblur > 0) {
@@ -1331,6 +1465,7 @@ float fonsDrawText(FONScontext* stash,
 	int prevGlyphIndex = -1;
 	short isize = (short)(state->size*10.0f);
 	short iblur = (short)state->blur;
+	short idilate = (short)state->dilate;
 	float scale;
 	FONSfont* font;
 	float width;
@@ -1361,7 +1496,7 @@ float fonsDrawText(FONScontext* stash,
 	for (; str != end; ++str) {
 		if (fons__decutf8(&utf8state, &codepoint, *(const unsigned char*)str))
 			continue;
-		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur, FONS_GLYPH_BITMAP_REQUIRED);
+		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur, idilate, FONS_GLYPH_BITMAP_REQUIRED);
 		if (glyph != NULL) {
 			fons__getQuad(stash, font, prevGlyphIndex, glyph, scale, state->spacing, &x, &y, &q);
 
@@ -1398,6 +1533,7 @@ int fonsTextIterInit(FONScontext* stash, FONStextIter* iter,
 
 	iter->isize = (short)(state->size*10.0f);
 	iter->iblur = (short)state->blur;
+	iter->idilate = (short)state->dilate;
 	iter->scale = fons__tt_getPixelHeightScale(&iter->font->font, (float)iter->isize/10.0f);
 
 	// Align horizontally
@@ -1445,7 +1581,7 @@ int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, FONSquad* quad)
 		// Get glyph and quad
 		iter->x = iter->nextx;
 		iter->y = iter->nexty;
-		glyph = fons__getGlyph(stash, iter->font, iter->codepoint, iter->isize, iter->iblur, iter->bitmapOption);
+		glyph = fons__getGlyph(stash, iter->font, iter->codepoint, iter->isize, iter->iblur, iter->idilate, iter->bitmapOption);
 		// If the iterator was initialized with FONS_GLYPH_BITMAP_OPTIONAL, then the UV coordinates of the quad will be invalid.
 		if (glyph != NULL)
 			fons__getQuad(stash, iter->font, iter->prevGlyphIndex, glyph, iter->scale, iter->spacing, &iter->nextx, &iter->nexty, quad);
@@ -1518,6 +1654,7 @@ float fonsTextBounds(FONScontext* stash,
 	int prevGlyphIndex = -1;
 	short isize = (short)(state->size*10.0f);
 	short iblur = (short)state->blur;
+	short idilate = (short)state->dilate;
 	float scale;
 	FONSfont* font;
 	float startx, advance;
@@ -1543,7 +1680,7 @@ float fonsTextBounds(FONScontext* stash,
 	for (; str != end; ++str) {
 		if (fons__decutf8(&utf8state, &codepoint, *(const unsigned char*)str))
 			continue;
-		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur, FONS_GLYPH_BITMAP_OPTIONAL);
+		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur, idilate, FONS_GLYPH_BITMAP_OPTIONAL);
 		if (glyph != NULL) {
 			fons__getQuad(stash, font, prevGlyphIndex, glyph, scale, state->spacing, &x, &y, &q);
 			if (q.x0 < minx) minx = q.x0;
