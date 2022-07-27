@@ -360,6 +360,40 @@ void drawSlider(NVGcontext* vg, float pos, float x, float y, float w, float h)
 	nvgRestore(vg);
 }
 
+void drawFancyLines(NVGcontext* vg, float cx, float cy, float r){
+	nvgStrokeColor(vg,nvgRGBAf(0.6f,0.6f,1.0f,1.0f));
+	nvgFillColor(vg,nvgRGBAf(0.3f,0.3f,0.3f,1.0f));
+	const int N = 5;
+	float pathX[N];
+	float pathY[N];
+	nvgBeginPath(vg);
+	for(int n=0; n < N; n++) {
+		const float angle=2*(n-0.5f)*M_PI/(float)N;
+		const float x=sin(angle);
+		const float y=cos(angle);
+		pathX[n]=x;
+		pathY[n]=y;
+	}
+	nvgLineJoin(vg, NVG_ROUND);
+	nvgStrokeWidth(vg, 5.0f);
+	for(int style=1;style<=4;style++){
+		nvgLineStyle(vg, style);
+		nvgBeginPath(vg);
+		for(int n=0; n < N; n++) {
+			const float x=cx+r*pathX[n];
+			const float y=cy+r*pathY[n];
+			if(n==0){
+				nvgMoveTo(vg, x, y);
+			} else {
+				nvgLineTo(vg, x, y);
+			}
+		}
+		nvgClosePath(vg);
+		nvgStroke(vg);
+		r+=8;
+	}
+	nvgLineStyle(vg, NVG_LINE_SOLID);
+}
 void drawEyes(NVGcontext* vg, float x, float y, float w, float h, float mx, float my, float t)
 {
 	NVGpaint gloss, bg;
@@ -1067,6 +1101,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 {
 	float x,y,popy;
 
+	drawFancyLines(vg, width - 380.0f, 375.0f, 60.0f);
 	drawEyes(vg, width - 250, 50, 150, 100, mx, my, t);
 	drawParagraph(vg, width - 450, 50, 150, 100, mx, my);
 	drawGraph(vg, 0, height/2, width, height/2, t);

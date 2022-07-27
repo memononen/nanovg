@@ -63,6 +63,13 @@ enum NVGsolidity {
 	NVG_HOLE = 2,			// CW
 };
 
+enum NVGlineStyle {
+	NVG_LINE_SOLID = 1,
+	NVG_LINE_DASHED = 2,
+	NVG_LINE_DOTTED = 3,
+	NVG_LINE_GLOW = 4
+};
+
 enum NVGlineCap {
 	NVG_BUTT,
 	NVG_ROUND,
@@ -259,6 +266,10 @@ void nvgMiterLimit(NVGcontext* ctx, float limit);
 
 // Sets the stroke width of the stroke style.
 void nvgStrokeWidth(NVGcontext* ctx, float size);
+
+// Sets how line is drawn.
+// Can be one of NVG_LINE_SOLID (default), NVG_LINE_GLOW, NVG_LINE_DASHED, NVG LINE_DOTTED
+void nvgLineStyle(NVGcontext* ctx, int lineStyle);
 
 // Sets how the end of the line (cap) is drawn,
 // Can be one of: NVG_BUTT (default), NVG_ROUND, NVG_SQUARE.
@@ -639,7 +650,7 @@ struct NVGscissor {
 typedef struct NVGscissor NVGscissor;
 
 struct NVGvertex {
-	float x,y,u,v;
+	float x,y,u,v,s,t;
 };
 typedef struct NVGvertex NVGvertex;
 
@@ -669,7 +680,7 @@ struct NVGparams {
 	void (*renderCancel)(void* uptr);
 	void (*renderFlush)(void* uptr);
 	void (*renderFill)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths);
-	void (*renderStroke)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, float strokeWidth, const NVGpath* paths, int npaths);
+	void (*renderStroke)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe, float strokeWidth, int lineStyle, const NVGpath* paths, int npaths);
 	void (*renderTriangles)(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, const NVGvertex* verts, int nverts, float fringe);
 	void (*renderDelete)(void* uptr);
 };
