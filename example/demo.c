@@ -375,8 +375,11 @@ void drawFancyLines(NVGcontext* vg, float cx, float cy, float r){
 		pathY[n]=y;
 	}
 	nvgLineJoin(vg, NVG_ROUND);
-	nvgStrokeWidth(vg, 5.0f);
+	nvgLineCap(vg, NVG_ROUND);
+	nvgStrokeWidth(vg, 8.0f);
+	float rorgin=r+15;
 	for(int style=1;style<=4;style++){
+		nvgStrokeWidth(vg, 8.0f);
 		nvgLineStyle(vg, style);
 		nvgBeginPath(vg);
 		for(int n=0; n < N; n++) {
@@ -390,7 +393,27 @@ void drawFancyLines(NVGcontext* vg, float cx, float cy, float r){
 		}
 		nvgClosePath(vg);
 		nvgStroke(vg);
-		r+=8;
+		nvgStrokeWidth(vg, 15.0f);
+		nvgBeginPath(vg);
+
+		nvgLineCap(vg, NVG_ROUND);
+		nvgMoveTo(vg, 20, 640 - 20*style - 30);
+		nvgLineTo(vg, 20+16*15, 640 - 20*style - 30);
+		nvgStroke(vg);
+
+		nvgLineCap(vg, NVG_BUTT);
+		nvgBeginPath(vg);
+		nvgMoveTo(vg, 30 + 16*15, 640 - 20*style - 30);
+		nvgLineTo(vg, 30 + 2*16*15, 640 - 20*style - 30);
+		nvgStroke(vg);
+
+		nvgLineCap(vg, NVG_SQUARE);
+		nvgBeginPath(vg);
+		nvgMoveTo(vg, 40 + 2*16*15, 640 - 20*style - 30);
+		nvgLineTo(vg, 40 + 3*16*15, 640 - 20*style - 30);
+		nvgStroke(vg);
+
+		r+=11;
 	}
 	nvgLineStyle(vg, NVG_LINE_SOLID);
 }
@@ -1100,8 +1123,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, DemoData* data)
 {
 	float x,y,popy;
-
-	drawFancyLines(vg, width - 380.0f, 375.0f, 60.0f);
+/*
 	drawEyes(vg, width - 250, 50, 150, 100, mx, my, t);
 	drawParagraph(vg, width - 450, 50, 150, 100, mx, my);
 	drawGraph(vg, 0, height/2, width, height/2, t);
@@ -1158,6 +1180,8 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	drawThumbnails(vg, 365, popy-30, 160, 300, data->images, 12, t);
 
 	nvgRestore(vg);
+*/
+	drawFancyLines(vg, width - 380.0f, 375.0f, 60.0f);
 }
 
 static int mini(int a, int b) { return a < b ? a : b; }
