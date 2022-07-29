@@ -374,9 +374,12 @@ void drawFancyLines(NVGcontext* vg, float cx, float cy, float r){
 		pathX[n]=x;
 		pathY[n]=y;
 	}
-	nvgLineJoin(vg, NVG_MITER);
-	nvgLineCap(vg, NVG_BUTT);
-	nvgStrokeWidth(vg, 8.0f);
+	float sw=8;
+	nvgStrokeWidth(vg, sw);
+	float ox=cx+r*2;
+	float oy=20;
+	float len=100;
+	sw+=3;
 	for(int style=1;style<=5;style++){
 		nvgLineStyle(vg, style);
 		nvgBeginPath(vg);
@@ -390,29 +393,29 @@ void drawFancyLines(NVGcontext* vg, float cx, float cy, float r){
 			}
 		}
 		nvgClosePath(vg);
+
+		nvgLineJoin(vg, NVG_ROUND);
 		nvgStroke(vg);
 
-		nvgStrokeWidth(vg, 10.0f);
 		nvgBeginPath(vg);
-
 		nvgLineCap(vg, NVG_ROUND);
-		nvgMoveTo(vg, 20, 640 - 20*style - 30);
-		nvgLineTo(vg, 20+16*15, 640 - 20*style - 30);
+		nvgMoveTo(vg, ox, oy+sw*style);
+		nvgLineTo(vg, ox+len, oy+sw*style);
 		nvgStroke(vg);
 
 		nvgLineCap(vg, NVG_BUTT);
 		nvgBeginPath(vg);
-		nvgMoveTo(vg, 30 + 16*15, 640 - 20*style - 30);
-		nvgLineTo(vg, 30 + 2*16*15, 640 - 20*style - 30);
+		nvgMoveTo(vg, ox, oy+sw*(6+style));
+		nvgLineTo(vg, ox+len, oy+sw*(6+style));
 		nvgStroke(vg);
 
 		nvgLineCap(vg, NVG_SQUARE);
 		nvgBeginPath(vg);
-		nvgMoveTo(vg, 40 + 2*16*15, 640 - 20*style - 30);
-		nvgLineTo(vg, 40 + 3*16*15, 640 - 20*style - 30);
+		nvgMoveTo(vg, ox, oy+sw*(12+style));
+		nvgLineTo(vg, ox+len, oy+sw*(12+style));
 		nvgStroke(vg);
 
-		r+=11;
+		r+=13;
 	}
 	nvgLineStyle(vg, NVG_LINE_SOLID);
 }
