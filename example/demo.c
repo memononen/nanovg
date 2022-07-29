@@ -363,7 +363,7 @@ void drawSlider(NVGcontext* vg, float pos, float x, float y, float w, float h)
 void drawFancyLines(NVGcontext* vg, float cx, float cy, float r){
 	nvgStrokeColor(vg,nvgRGBAf(0.6f,0.6f,1.0f,1.0f));
 	nvgFillColor(vg,nvgRGBAf(0.3f,0.3f,0.3f,1.0f));
-	const int N = 5;
+	const int N = 6;
 	float pathX[N];
 	float pathY[N];
 	nvgBeginPath(vg);
@@ -374,12 +374,10 @@ void drawFancyLines(NVGcontext* vg, float cx, float cy, float r){
 		pathX[n]=x;
 		pathY[n]=y;
 	}
-	nvgLineJoin(vg, NVG_ROUND);
-	nvgLineCap(vg, NVG_ROUND);
+	nvgLineJoin(vg, NVG_MITER);
+	nvgLineCap(vg, NVG_BUTT);
 	nvgStrokeWidth(vg, 8.0f);
-	float rorgin=r+15;
-	for(int style=1;style<=4;style++){
-		nvgStrokeWidth(vg, 8.0f);
+	for(int style=1;style<=5;style++){
 		nvgLineStyle(vg, style);
 		nvgBeginPath(vg);
 		for(int n=0; n < N; n++) {
@@ -393,7 +391,8 @@ void drawFancyLines(NVGcontext* vg, float cx, float cy, float r){
 		}
 		nvgClosePath(vg);
 		nvgStroke(vg);
-		nvgStrokeWidth(vg, 15.0f);
+
+		nvgStrokeWidth(vg, 10.0f);
 		nvgBeginPath(vg);
 
 		nvgLineCap(vg, NVG_ROUND);
@@ -1181,7 +1180,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 
 	nvgRestore(vg);
 */
-	drawFancyLines(vg, width - 380.0f, 375.0f, 60.0f);
+	drawFancyLines(vg, 300, 300.0f, 200.0f);
 }
 
 static int mini(int a, int b) { return a < b ? a : b; }
