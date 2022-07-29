@@ -1836,6 +1836,9 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 				dst = nvg__roundCapStart(dst, p0, dx, dy, w, ncap, aa, u0, u1);
 		}
 		for (j = s; j < e; ++j) {
+			dx = p1->x - p0->x;
+			dy = p1->y - p0->y;
+			nvg__normalize(&dx, &dy);
 			dst = nvg_insertSpacer(dst, p0, dx, dy, w, u0, u1, t);
 			t+=nvg__length(p1->x-p0->x, p1->y-p0->y);
 			dst = nvg_insertSpacer(dst, p1, dx, dy, w, u0, u1, t);
@@ -1850,22 +1853,14 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 				nvg__vset(dst, p1->x - (p1->dmx * w), p1->y - (p1->dmy * w), u1,1, 1); dst->t=t; dst++;
 			}
 			p0 = p1++;
-			dx = p1->x - p0->x;
-			dy = p1->y - p0->y;
-			nvg__normalize(&dx, &dy);
 		}
 		if (loop) {
-			dx = p1->x - p0->x;
-			dy = p1->y - p0->y;
-			nvg__normalize(&dx, &dy);
-			dst = nvg_insertSpacer(dst, p0, dx, dy, w, u0, u1, t);
 			p1 = &pts[0];
-			dst = nvg_insertSpacer(dst, p1, dx, dy, w, u0, u1, 0);
+			dst = nvg_insertSpacer(dst, p0, dx, dy, w, u0, u1, t);
+			t+=nvg__length(p1->x-p0->x, p1->y-p0->y);
 			// Loop it
 			nvg__vset(dst, verts[0].x, verts[0].y, u0,1, 0); dst->t=t; dst++;
 			nvg__vset(dst, verts[1].x, verts[1].y, u1,1, 1); dst->t=t; dst++;
-
-
 		} else {
 			// Add cap
 			dx = p1->x - p0->x;
