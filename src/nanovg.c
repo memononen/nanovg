@@ -1768,11 +1768,12 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 	for (i = 0; i < cache->npaths; i++) {
 		NVGpath* path = &cache->paths[i];
 		int loop = (path->closed == 0) ? 0 : 1;
-		if (lineJoin == NVG_ROUND)
+		if (lineJoin == NVG_ROUND) {
 			cverts += (path->count + path->nbevel*(ncap+2) + 1) * 2; // plus one for loop
-		else
+		} else {
 			cverts += (path->count + path->nbevel*5 + 1) * 2; // plus one for loop
-			if(lineStyle > 1) cverts += 2*(path->count+1); // extra verticies for spacers
+		}
+		if(lineStyle > 1) cverts += 2 * (path->count + 1); // extra vertices for spacers
 		if (loop == 0) {
 			// space for caps
 			if (lineCap == NVG_ROUND) {
@@ -1831,7 +1832,7 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 		}
 
 		for (j = s; j < e; ++j) {
-			if(lineStyle>1){
+			if(lineStyle > 1){
 				dx = p1->x - p0->x;
 				dy = p1->y - p0->y;
 				float dt=nvg__normalize(&dx, &dy);
@@ -1860,7 +1861,7 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 			dx = p1->x - p0->x;
 			dy = p1->y - p0->y;
 			float dt = nvg__normalize(&dx, &dy);
-			if(lineStyle>1){
+			if(lineStyle > 1){
 				dst = nvg_insertSpacer(dst, p0, dx, dy, w, u0, u1, t);
 				t+=dt*invStrokeWidth;
 				dst = nvg_insertSpacer(dst, p1, dx, dy, w, u0, u1, t);

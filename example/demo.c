@@ -749,10 +749,10 @@ void drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, float t)
 }
 
 void drawStylizedLines(NVGcontext* vg, float x, float y, float w, float h, float t){
-	nvgLineJoin(vg, NVG_MITER);
+	nvgLineJoin(vg, NVG_ROUND);
 	nvgLineStyle(vg, NVG_LINE_DASHED);
 	nvgStrokeColor(vg,nvgRGBAf(0.6f,0.6f,1.0f,1.0f));
-	nvgStrokeWidth(vg, 5.0);
+	nvgStrokeWidth(vg, 5.0f);
 	nvgBeginPath(vg);
 	nvgRect(vg, x, y, w, h);
 	nvgStroke(vg);
@@ -777,7 +777,6 @@ void drawLines(NVGcontext* vg, float x, float y, float w, float h, float strokeW
 	pts[5] = 0;
 	pts[6] = s*0.25f + cosf(-t*0.3f) * s*0.5f;
 	pts[7] = sinf(-t*0.3f) * s*0.5f;
-
 	for (i = 0; i < 3; i++) {
 		for (j = 0; j < 3; j++) {
 			fx = x + s*0.5f + (i*3+j)/9.0f*w + pad;
