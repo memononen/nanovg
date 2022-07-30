@@ -200,7 +200,6 @@ struct GLNVGfragUniforms {
 		float feather;
 		float strokeMult;
 		float strokeThr;
-		float strokeWidth;
 		int lineStyle;
 		int texType;
 		int type;
@@ -221,12 +220,12 @@ struct GLNVGfragUniforms {
 				float feather;
 				float strokeMult;
 				float strokeThr;
-				float strokeWidth;
 				float lineStyle;
 				float texType;
 				float type;
 				float unused1;
 				float unused2;
+				float unused3;
 			};
 			float uniformArray[NANOVG_GL_UNIFORMARRAY_SIZE][4];
 		};
@@ -556,7 +555,7 @@ static int glnvg__renderCreate(void* uptr)
 		"#endif\n"
 		"void main(void) {\n"
 		"	ftcoord = tcoord.xy;\n"
-		"	uv = tcoord.zw;\n"
+		"	uv = 0.5 * tcoord.zw;\n"
 		"	fpos = vertex;\n"
 		"	gl_Position = vec4(2.0*vertex.x/viewSize.x - 1.0, 1.0 - 2.0*vertex.y/viewSize.y, 0, 1);\n"
 		"}\n";
@@ -583,7 +582,6 @@ static int glnvg__renderCreate(void* uptr)
 		"		float feather;\n"
 		"		float strokeMult;\n"
 		"		float strokeThr;\n"
-			"	float strokeWidth;\n"
 			"   int lineStyle;\n"
 		"		int texType;\n"
 		"		int type;\n"
@@ -615,10 +613,9 @@ static int glnvg__renderCreate(void* uptr)
 		"	#define feather frag[9].w\n"
 		"	#define strokeMult frag[10].x\n"
 		"	#define strokeThr frag[10].y\n"
-		"	#define strokeWidth frag[10].z\n"
-		"	#define lineStyle frag[10].w\n"
-		"	#define texType int(frag[11].x)\n"
-		"	#define type int(frag[11].y)\n"
+		"	#define lineStyle frag[10].z\n"
+		"	#define texType int(frag[10].w)\n"
+		"	#define type int(frag[11].x)\n"
 		"#endif\n"
 		"\n"
 		"float sdroundrect(vec2 pt, vec2 ext, float rad) {\n"
@@ -633,35 +630,26 @@ static int glnvg__renderCreate(void* uptr)
 		"	sc = vec2(0.5,0.5) - sc * scissorScale;\n"
 		"	return clamp(sc.x,0.0,1.0) * clamp(sc.y,0.0,1.0);\n"
 		"}\n"
-		"float glow(float x, float strokeWidth){\n"
-		"  return smoothstep(0,1,1.0-2.0*abs(uv.x/strokeWidth));\n"
+		"float glow(vec2 uv){\n"
+		"  return smoothstep(0, 1, 1.0 - 2.0 * abs(uv.x));\n"
 		"}\n"
-		"float dashed(float x, float y, float strokeWidth){\n"
-		"	float fy = fract(y / (4.0 * strokeWidth));\n"
-		"	float w = step(fy, 0.5);"
-		"	fy *= 4.0; x/=strokeWidth;\n"
+		"float dashed(vec2 uv){\n"
+		"	float fy = fract(uv.y / 4.0);\n"
+		"	float w = step(fy, 0.5);\n"
+		"	fy *= 4.0;\n"
 		"	if(fy >= 1.5){\n"
 		"		fy -= 1.5;\n"
 		"	} else if(fy <= 0.5) {\n"
 			"	fy = 0.5 - fy;\n"
-			"} else {"
-			"	fy = 0; "
+			"} else {\n"
+			"	fy = 0;\n"
 			"}\n"
-		"	w *= step(x * x + fy * fy, 0.25);\n"
+			"w *= smoothstep(0, 1, 6 * (0.25 - (uv.x * uv.x  + fy * fy)));\n"
 		"	return w;\n"
 		"}\n"
-		"float debugStroke(float x, float y, float strokeWidth){\n"
-		"	float fy = fract(y / (2.0*strokeWidth));\n"
-		"	return (x/strokeWidth+0.5)*fy;\n"
-		"}\n"
-		"float dotted(float x, float y, float strokeWidth){\n"
-		"	float fy = 4.0 * fract(y / (4.0 * strokeWidth));\n"
-		"	if(fy <= 2.0){\n"
-		"		fy -= 1.0;\n"
-		"		x/=strokeWidth;\n"
-		"		return step(x * x  + fy * fy, 0.25);\n"
-		"	}\n"
-		"	return 0.0;\n"
+		"float dotted(vec2 uv){\n"
+		"	float fy = 4.0 * fract(uv.y / (4.0)) - 0.5;\n"
+		"	return smoothstep(0,1, 6*(0.25 - (uv.x * uv.x  + fy * fy)));\n"
 		"}\n"
 		"#ifdef EDGE_AA\n"
 		"// Stroke - from [0..1] to clipped pyramid, where the slope is 1px.\n"
@@ -679,10 +667,9 @@ static int glnvg__renderCreate(void* uptr)
 		"#else\n"
 		"	float strokeAlpha = 1.0;\n"
 		"#endif\n"
-		"	if(lineStyle==0)strokeAlpha*=debugStroke(uv.x, uv.y, strokeWidth);\n"
-		"	if(lineStyle==2)strokeAlpha*=dashed(uv.x, uv.y, strokeWidth);\n"
-		"	if(lineStyle==3)strokeAlpha*=dotted(uv.x, uv.y, strokeWidth);\n"
-		"	if(lineStyle==4)strokeAlpha*=glow(uv.x, strokeWidth);\n"
+		"	if(lineStyle==2) strokeAlpha*=dashed(uv);\n"
+		"	if(lineStyle==3) strokeAlpha*=dotted(uv);\n"
+		"	if(lineStyle==4) strokeAlpha*=glow(uv);\n"
 		"	if (type == 0) {			// Gradient\n"
 		"		// Calculate gradient color using box gradient\n"
 		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
@@ -965,7 +952,6 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 
 	frag->innerCol = glnvg__premulColor(paint->innerColor);
 	frag->outerCol = glnvg__premulColor(paint->outerColor);
-	frag->strokeWidth = width;
 	frag->lineStyle = lineStyle;
 	if (scissor->extent[0] < -0.5f || scissor->extent[1] < -0.5f) {
 		memset(frag->scissorMat, 0, sizeof(frag->scissorMat));
