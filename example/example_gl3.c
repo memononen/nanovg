@@ -157,13 +157,12 @@ int main()
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
 		renderDemo(vg, mx,my, winWidth,winHeight, t, blowup, &data);
-		/*
+
 		renderGraph(vg, 5,5, &fps);
 		renderGraph(vg, 5+200+5,5, &cpuGraph);
-
 		if (gpuTimer.supported)
 			renderGraph(vg, 5+200+5+200+5,5, &gpuGraph);
-*/
+
 		nvgEndFrame(vg);
 
 		// Measure the CPU time taken excluding swap buffers (as the swap may wait for GPU)
