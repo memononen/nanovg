@@ -215,7 +215,6 @@ int main()
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
 
 		// Use the FBO as image pattern.
-		/*
 		if (fb != NULL) {
 			NVGpaint img = nvgImagePattern(vg, 0, 0, 100, 100, 0, fb->image, 1.0f);
 			nvgSave(vg);
@@ -237,13 +236,11 @@ int main()
 
 			nvgRestore(vg);
 		}
-*/
-		/*
+
 		renderGraph(vg, 5,5, &fps);
 		renderGraph(vg, 5+200+5,5, &cpuGraph);
 		if (gpuTimer.supported)
 			renderGraph(vg, 5+200+5+200+5,5, &gpuGraph);
-		 */
 
 		nvgEndFrame(vg);
 
