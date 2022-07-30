@@ -1761,8 +1761,10 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 		u1 = 0.5f;
 	}
 
-	nvg__calculateJoins(ctx, w, lineJoin, miterLimit);
+	// Force round join to minimize distortion
+	if(lineStyle > 1) lineJoin = NVG_ROUND;
 
+	nvg__calculateJoins(ctx, w, lineJoin, miterLimit);
 	// Calculate max vertex usage.
 	cverts = 0;
 	for (i = 0; i < cache->npaths; i++) {
