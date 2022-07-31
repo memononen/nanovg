@@ -925,7 +925,7 @@ void drawParagraph(NVGcontext* vg, float x, float y, float width, float height, 
 	// The "next" variable of the last returned item tells where to continue.
 	start = text;
 	end = text + strlen(text);
-	while ((nrows = nvgTextBreakLines(vg, start, end, width, rows, 3))) {
+	while ((nrows = nvgTextBreakLines(vg, start, end, width, rows, 3, 0))) {
 		for (i = 0; i < nrows; i++) {
 			NVGtextRow* row = &rows[i];
 			int hit = mx > x && mx < (x+width) && my >= y && my < (y+lineh);
