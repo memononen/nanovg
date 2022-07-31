@@ -1775,7 +1775,7 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 		} else {
 			cverts += (path->count + path->nbevel*5 + 1) * 2; // plus one for loop
 		}
-		if(lineStyle > 1) cverts += 2 * (path->count + 1); // extra vertices for spacers
+		if(lineStyle > 1) cverts += 4 * path->count; // extra vertices for spacers
 		if (loop == 0) {
 			// space for caps
 			if (lineCap == NVG_ROUND) {
