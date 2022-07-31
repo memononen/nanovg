@@ -134,6 +134,7 @@ struct NVGcontext {
 	int fillTriCount;
 	int strokeTriCount;
 	int textTriCount;
+	NVGscissorBounds scissor;
 };
 
 static float nvg__sqrtf(float a) { return sqrtf(a); }
@@ -332,7 +333,7 @@ NVGcontext* nvgCreateInternal(NVGparams* params)
 	ctx->fontImages[0] = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, fontParams.width, fontParams.height, 0, NULL);
 	if (ctx->fontImages[0] == 0) goto error;
 	ctx->fontImageIdx = 0;
-
+	ctx->scissor = {0,0,-1,-1};
 	return ctx;
 
 error:
@@ -348,6 +349,10 @@ int nvgGetImageTextureId(NVGcontext* ctx, int handle)
 NVGparams* nvgInternalParams(NVGcontext* ctx)
 {
     return &ctx->params;
+}
+
+NVGscissorBounds nvgCurrentScissor(NVGcontext* ctx) {
+	return ctx->scissor;
 }
 
 void nvgDeleteInternal(NVGcontext* ctx)
@@ -976,7 +981,7 @@ NVGpaint nvgImagePattern(NVGcontext* ctx,
 void nvgScissor(NVGcontext* ctx, float x, float y, float w, float h)
 {
 	NVGstate* state = nvg__getState(ctx);
-
+	ctx->scissor = {x,y,w,h};
 	w = nvg__maxf(0.0f, w);
 	h = nvg__maxf(0.0f, h);
 

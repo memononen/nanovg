@@ -41,6 +41,7 @@ struct NVGcolor {
 	};
 };
 typedef struct NVGcolor NVGcolor;
+typedef struct NVGcolor NVGcolor;
 
 struct NVGpaint {
 	float xform[6];
@@ -52,7 +53,13 @@ struct NVGpaint {
 	int image;
 };
 typedef struct NVGpaint NVGpaint;
-
+struct NVGscissorBounds {
+	float x;
+	float y;
+	float w;
+	float h;
+};
+typedef struct NVGscissorBounds NVGscissorBounds;
 enum NVGwinding {
 	NVG_CCW = 1,			// Winding for solid shapes
 	NVG_CW = 2,				// Winding for holes
@@ -236,6 +243,9 @@ void nvgRestore(NVGcontext* ctx);
 
 // Resets current render state to default values. Does not affect the render state stack.
 void nvgReset(NVGcontext* ctx);
+
+// Gets the current scissor bounds
+NVGscissorBounds nvgCurrentScissor(NVGcontext* ctx);
 
 //
 // Render styles
