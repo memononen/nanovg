@@ -53,13 +53,7 @@ struct NVGpaint {
 	int image;
 };
 typedef struct NVGpaint NVGpaint;
-struct NVGscissorBounds {
-	float x;
-	float y;
-	float w;
-	float h;
-};
-typedef struct NVGscissorBounds NVGscissorBounds;
+
 enum NVGwinding {
 	NVG_CCW = 1,			// Winding for solid shapes
 	NVG_CW = 2,				// Winding for holes
@@ -245,7 +239,7 @@ void nvgRestore(NVGcontext* ctx);
 void nvgReset(NVGcontext* ctx);
 
 // Gets the current scissor bounds
-NVGscissorBounds nvgCurrentScissor(NVGcontext* ctx);
+struct NVGscissorBounds nvgCurrentScissor(NVGcontext* ctx);
 
 //
 // Render styles
@@ -617,6 +611,18 @@ void nvgFontFaceId(NVGcontext* ctx, int font);
 // Sets the font face based on specified name of current text style.
 void nvgFontFace(NVGcontext* ctx, const char* font);
 
+// Gets the font size of current text style.
+int nvgGetFontFaceId(NVGcontext* ctx);
+
+// Get the font size
+float nvgGetFontSize(NVGcontext* ctx);
+
+//Get Stroke width
+float nvgGetStrokeWidth(NVGcontext* ctx);
+
+// Get text alignment
+int nvgGetTextAlign(NVGcontext* ctx);
+
 // Draws text string at specified location. If end is specified only the sub-string up to the end is drawn.
 float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char* end);
 
@@ -662,6 +668,14 @@ struct NVGscissor {
 	float extent[2];
 };
 typedef struct NVGscissor NVGscissor;
+
+struct NVGscissorBounds {
+	float x;
+	float y;
+	float w;
+	float h;
+};
+typedef struct NVGscissorBounds NVGscissorBounds;
 
 struct NVGvertex {
 	float x,y,u,v,s,t;

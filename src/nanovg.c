@@ -134,7 +134,7 @@ struct NVGcontext {
 	int fillTriCount;
 	int strokeTriCount;
 	int textTriCount;
-	NVGscissorBounds scissor;
+	struct NVGscissorBounds scissor;
 };
 
 static float nvg__sqrtf(float a) { return sqrtf(a); }
@@ -333,7 +333,8 @@ NVGcontext* nvgCreateInternal(NVGparams* params)
 	ctx->fontImages[0] = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, fontParams.width, fontParams.height, 0, NULL);
 	if (ctx->fontImages[0] == 0) goto error;
 	ctx->fontImageIdx = 0;
-	ctx->scissor = {0,0,-1,-1};
+	const NVGscissorBounds bounds = {0.0f, 0.0f, -1.0f, -1.0f};
+	ctx->scissor = bounds;
 	return ctx;
 
 error:
@@ -351,7 +352,7 @@ NVGparams* nvgInternalParams(NVGcontext* ctx)
     return &ctx->params;
 }
 
-NVGscissorBounds nvgCurrentScissor(NVGcontext* ctx) {
+struct NVGscissorBounds nvgCurrentScissor(NVGcontext* ctx) {
 	return ctx->scissor;
 }
 
@@ -695,6 +696,25 @@ void nvgStrokeWidth(NVGcontext* ctx, float width)
 	state->strokeWidth = width;
 }
 
+float nvgGetStrokeWidth(NVGcontext* ctx) {
+	NVGstate* state = nvg__getState(ctx);
+	return state->strokeWidth;
+}
+
+int nvgGetTextAlign(NVGcontext* ctx) {
+	NVGstate* state = nvg__getState(ctx);
+	return state->textAlign;
+}
+
+float nvgGetFontSize(NVGcontext* ctx) {
+	NVGstate* state = nvg__getState(ctx);
+	return state->fontSize;
+}
+int nvgGetFontFaceId(NVGcontext* ctx) {
+	NVGstate* state = nvg__getState(ctx);
+	return state->fontId;
+}
+
 void nvgMiterLimit(NVGcontext* ctx, float limit)
 {
 	NVGstate* state = nvg__getState(ctx);
@@ -981,7 +1001,8 @@ NVGpaint nvgImagePattern(NVGcontext* ctx,
 void nvgScissor(NVGcontext* ctx, float x, float y, float w, float h)
 {
 	NVGstate* state = nvg__getState(ctx);
-	ctx->scissor = {x,y,w,h};
+	const NVGscissorBounds bounds = {x, y, w, h};
+	ctx->scissor = bounds;
 	w = nvg__maxf(0.0f, w);
 	h = nvg__maxf(0.0f, h);
 
