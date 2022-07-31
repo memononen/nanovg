@@ -36,6 +36,7 @@ enum FONSalign {
 	FONS_ALIGN_MIDDLE	= 1<<4,
 	FONS_ALIGN_BOTTOM	= 1<<5,
 	FONS_ALIGN_BASELINE	= 1<<6, // Default
+	FONS_ALIGN_MIDDLE_BASELINE = 1<<7,
 };
 
 enum FONSglyphBitmap {
@@ -1450,6 +1451,8 @@ static float fons__getVertAlign(FONScontext* stash, FONSfont* font, int align, s
 			return font->ascender * (float)isize/10.0f;
 		} else if (align & FONS_ALIGN_MIDDLE) {
 			return (font->ascender + font->descender) / 2.0f * (float)isize/10.0f;
+		} else if (align & FONS_ALIGN_MIDDLE_BASELINE) {
+			return (font->ascender) / 2.0f * (float)isize/10.0f;
 		} else if (align & FONS_ALIGN_BASELINE) {
 			return 0.0f;
 		} else if (align & FONS_ALIGN_BOTTOM) {
