@@ -333,8 +333,7 @@ NVGcontext* nvgCreateInternal(NVGparams* params)
 	ctx->fontImages[0] = ctx->params.renderCreateTexture(ctx->params.userPtr, NVG_TEXTURE_ALPHA, fontParams.width, fontParams.height, 0, NULL);
 	if (ctx->fontImages[0] == 0) goto error;
 	ctx->fontImageIdx = 0;
-	const NVGscissorBounds bounds = {0.0f, 0.0f, -1.0f, -1.0f};
-	ctx->scissor = bounds;
+	ctx->scissor = (NVGscissorBounds){0.0f, 0.0f, -1.0f, -1.0f};
 	return ctx;
 
 error:
@@ -1001,8 +1000,7 @@ NVGpaint nvgImagePattern(NVGcontext* ctx,
 void nvgScissor(NVGcontext* ctx, float x, float y, float w, float h)
 {
 	NVGstate* state = nvg__getState(ctx);
-	const NVGscissorBounds bounds = {x, y, w, h};
-	ctx->scissor = bounds;
+	ctx->scissor = (NVGscissorBounds){x, y, w, h};
 	w = nvg__maxf(0.0f, w);
 	h = nvg__maxf(0.0f, h);
 
