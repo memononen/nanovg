@@ -154,6 +154,7 @@ void fonsDrawDebug(FONScontext* s, float x, float y);
 
 struct FONSttFontImpl {
 	FT_Face font;
+	FT_Int32 ftGlyphRenderFlags;
 };
 typedef struct FONSttFontImpl FONSttFontImpl;
 
@@ -324,6 +325,7 @@ int fons__tt_loadFont(FONScontext *context, FONSttFontImpl *font, unsigned char 
 	FONS_NOTUSED(context);
 
 	ftError = FT_New_Memory_Face(context->ftLibrary, (const FT_Byte*)data, dataSize, fontIndex, &font->font);
+	font->ftGlyphRenderFlags = FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT;
 	return ftError == 0;
 }
 
@@ -345,16 +347,21 @@ int fons__tt_getGlyphIndex(FONSttFontImpl *font, int codepoint)
 }
 
 int fons__tt_buildGlyphBitmap(FONSttFontImpl *font, int glyph, float size, float scale,
-							  int *advance, int *lsb, int *x0, int *y0, int *x1, int *y1)
+							  int *advance, int *lsb, int *x0, int *y0, int *x1, int *y1,
+							  int bitmapOption)
 {
 	FT_Error ftError;
 	FT_GlyphSlot ftGlyph;
 	FT_Fixed advFixed;
+	FT_Int32 ftGlyphRenderFlags;
 	FONS_NOTUSED(scale);
 
 	ftError = FT_Set_Pixel_Sizes(font->font, 0, size);
 	if (ftError) return 0;
-	ftError = FT_Load_Glyph(font->font, glyph, FT_LOAD_RENDER | FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_LIGHT);
+	ftGlyphRenderFlags = font->ftGlyphRenderFlags;
+	if( bitmapOption == FONS_GLYPH_BITMAP_REQUIRED)
+		ftGlyphRenderFlags |= FT_LOAD_RENDER;
+	ftError = FT_Load_Glyph(font->font, glyph, ftGlyphRenderFlags);
 	if (ftError) return 0;
 	ftError = FT_Get_Advance(font->font, glyph, FT_LOAD_NO_SCALE, &advFixed);
 	if (ftError) return 0;
@@ -392,6 +399,16 @@ int fons__tt_getGlyphKernAdvance(FONSttFontImpl *font, int glyph1, int glyph2)
 	FT_Vector ftKerning;
 	FT_Get_Kerning(font->font, glyph1, glyph2, FT_KERNING_DEFAULT, &ftKerning);
 	return (int)((ftKerning.x + 32) >> 6);  // Round up and convert to integer
+}
+
+int fons__tt_getGlyphRenderFlags(FONSttFontImpl *font)
+{
+	return font->ftGlyphRenderFlags;
+}
+
+void fons__tt_setGlyphRenderFlags(FONSttFontImpl *font, int flags)
+{
+	font->ftGlyphRenderFlags = flags;
 }
 
 #else
@@ -439,9 +456,11 @@ int fons__tt_getGlyphIndex(FONSttFontImpl *font, int codepoint)
 }
 
 int fons__tt_buildGlyphBitmap(FONSttFontImpl *font, int glyph, float size, float scale,
-							  int *advance, int *lsb, int *x0, int *y0, int *x1, int *y1)
+							  int *advance, int *lsb, int *x0, int *y0, int *x1, int *y1,
+							  int bitmapOption)
 {
 	FONS_NOTUSED(size);
+	FONS_NOTUSED(bitmapOption);	
 	stbtt_GetGlyphHMetrics(&font->font, glyph, advance, lsb);
 	stbtt_GetGlyphBitmapBox(&font->font, glyph, scale, scale, x0, y0, x1, y1);
 	return 1;
@@ -456,6 +475,15 @@ void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *output, int
 int fons__tt_getGlyphKernAdvance(FONSttFontImpl *font, int glyph1, int glyph2)
 {
 	return stbtt_GetGlyphKernAdvance(&font->font, glyph1, glyph2);
+}
+
+int fons__tt_getGlyphRenderFlags(FONSttFontImpl *font)
+{
+	return 0;
+}
+
+void fons__tt_setGlyphRenderFlags(FONSttFontImpl *font, int flags)
+{
 }
 
 #endif
@@ -1125,7 +1153,7 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 		// In that case the glyph index 'g' is 0, and we'll proceed below and cache empty glyph.
 	}
 	scale = fons__tt_getPixelHeightScale(&renderFont->font, size);
-	fons__tt_buildGlyphBitmap(&renderFont->font, g, size, scale, &advance, &lsb, &x0, &y0, &x1, &y1);
+	fons__tt_buildGlyphBitmap(&renderFont->font, g, size, scale, &advance, &lsb, &x0, &y0, &x1, &y1, bitmapOption);
 	gw = x1-x0 + pad*2;
 	gh = y1-y0 + pad*2;
 
