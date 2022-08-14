@@ -88,8 +88,7 @@ enum NVGalign {
 	NVG_ALIGN_TOP 		= 1<<3,	// Align text vertically to top.
 	NVG_ALIGN_MIDDLE	= 1<<4,	// Align text vertically to middle.
 	NVG_ALIGN_BOTTOM	= 1<<5,	// Align text vertically to bottom.
-	NVG_ALIGN_BASELINE	= 1<<6, // Default, align text vertically to baseline.
-	NVG_ALIGN_MIDDLE_BASELINE = 1<<7	// Align text vertically to middle.
+	NVG_ALIGN_BASELINE	= 1<<6	// Default, align text vertically to baseline.
 };
 
 enum NVGblendFactor {
