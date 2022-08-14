@@ -396,10 +396,10 @@ void nvgCancelFrame(NVGcontext* ctx)
 
 void nvgEndFrame(NVGcontext* ctx)
 {
-    if(ctx->textTextureDirty != 0) {
-        nvg__flushTextTexture(ctx);
-        ctx->textTextureDirty=0;
-    }
+	if(ctx->textTextureDirty != 0) {
+		nvg__flushTextTexture(ctx);
+		ctx->textTextureDirty=0;
+	}
 	ctx->params.renderFlush(ctx->params.userPtr);
 	if (ctx->fontImageIdx != 0) {
 		int fontImage = ctx->fontImages[ctx->fontImageIdx];
@@ -2521,7 +2521,6 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 		nvgTransformPoint(&c[2],&c[3], state->xform, q.x1+x, q.y0+y);
 		nvgTransformPoint(&c[4],&c[5], state->xform, q.x1+x, q.y1+y);
 		nvgTransformPoint(&c[6],&c[7], state->xform, q.x0+x, q.y1+y);
-
 		// Create triangles
 		if (nverts+6 <= cverts) {
 			nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
