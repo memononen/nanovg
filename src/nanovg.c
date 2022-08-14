@@ -2493,7 +2493,7 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 	verts = nvg__allocTempVerts(ctx, cverts);
 	if (verts == NULL) return x;
 
-	fonsTextIterInit(ctx->fs, &iter, 0.0f, 0.0f, string, end, FONS_GLYPH_BITMAP_REQUIRED);
+	fonsTextIterInit(ctx->fs, &iter, 0, 0, string, end, FONS_GLYPH_BITMAP_REQUIRED);
 	prevIter = iter;
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
 		float c[4*2];
@@ -2533,7 +2533,7 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 		}
 	}
 
-	// TODO: add back-end bit to do this just once per frame.
+	// Back-end bit to do this just once per frame.
 	ctx->textTextureDirty = 1;
 	nvg__renderText(ctx, verts, nverts);
 	return iter.nextx + x;
@@ -2576,7 +2576,6 @@ int nvgTextGlyphPositions(NVGcontext* ctx, float x, float y, const char* string,
 {
 	NVGstate* state = nvg__getState(ctx);
 	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
-	float invscale = 1.0f / scale;
 	FONStextIter iter, prevIter;
 	FONSquad q;
 	int npos = 0;
@@ -2595,7 +2594,7 @@ int nvgTextGlyphPositions(NVGcontext* ctx, float x, float y, const char* string,
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 
-	fonsTextIterInit(ctx->fs, &iter, x*scale, y*scale, string, end, FONS_GLYPH_BITMAP_OPTIONAL);
+	fonsTextIterInit(ctx->fs, &iter, 0, 0, string, end, FONS_GLYPH_BITMAP_OPTIONAL);
 	prevIter = iter;
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
 		if (iter.prevGlyphIndex < 0 && nvg__allocTextAtlas(ctx)) { // can not retrieve glyph?
@@ -2604,9 +2603,9 @@ int nvgTextGlyphPositions(NVGcontext* ctx, float x, float y, const char* string,
 		}
 		prevIter = iter;
 		positions[npos].str = iter.str;
-		positions[npos].x = iter.x * invscale;
-		positions[npos].minx = nvg__minf(iter.x, q.x0) * invscale;
-		positions[npos].maxx = nvg__maxf(iter.nextx, q.x1) * invscale;
+		positions[npos].x = iter.x + x;
+		positions[npos].minx = nvg__minf(iter.x, q.x0) + x;
+		positions[npos].maxx = nvg__maxf(iter.nextx, q.x1) + x;
 		npos++;
 		if (npos >= maxPositions)
 			break;
@@ -2843,10 +2842,10 @@ float nvgTextBounds(NVGcontext* ctx, float x, float y, const char* string, const
 	fonsSetAlign(ctx->fs, state->textAlign);
 	fonsSetFont(ctx->fs, state->fontId);
 
-	width = fonsTextBounds(ctx->fs, 0.0f, 0.0f, string, end, bounds);
+	width = fonsTextBounds(ctx->fs, 0, 0, string, end, bounds);
 	if (bounds != NULL) {
 		// Use line bounds for height.
-		fonsLineBounds(ctx->fs, 0.0f, &bounds[1], &bounds[3]);
+		fonsLineBounds(ctx->fs, 0, &bounds[1], &bounds[3]);
         bounds[0] += x;
         bounds[1] += y;
         bounds[2] += x;

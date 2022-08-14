@@ -763,7 +763,7 @@ void drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, float t)
 	nvgFontFace(vg, "sans");
 	nvgFillColor(vg, nvgRGB(255,255,255));
 	char str[128];
-	sprintf(str, "%d%%", mini(99, abs((int)floor(hue*100))));
+	sprintf(str, "%d%%", (int)(100.0f * (hue+1)) % 100);
 	nvgBeginPath(vg);
 	nvgText(vg, ax, ay+2.0f, str, 0);
 	nvgFill(vg);
