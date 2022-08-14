@@ -28,15 +28,15 @@ enum FONSflags {
 
 enum FONSalign {
 	// Horizontal align
-	FONS_ALIGN_LEFT 	= 1<<0,	// Default
-	FONS_ALIGN_CENTER 	= 1<<1,
-	FONS_ALIGN_RIGHT 	= 1<<2,
+	FONS_ALIGN_LEFT          = 1<<0, // Default
+	FONS_ALIGN_CENTER        = 1<<1,
+	FONS_ALIGN_RIGHT         = 1<<2,
 	// Vertical align
-	FONS_ALIGN_TOP 		= 1<<3,
-	FONS_ALIGN_MIDDLE	= 1<<4,
-	FONS_ALIGN_BOTTOM	= 1<<5,
-	FONS_ALIGN_BASELINE	= 1<<6, // Default
-	FONS_ALIGN_MIDDLE_BASELINE = 1<<7,
+	FONS_ALIGN_TOP           = 1<<3,
+	FONS_ALIGN_MIDDLE        = 1<<4,
+	FONS_ALIGN_MIDDLE_ASCENT = 1<<5,
+	FONS_ALIGN_BOTTOM        = 1<<6,
+	FONS_ALIGN_BASELINE      = 1<<7, // Default
 };
 
 enum FONSglyphBitmap {
@@ -376,7 +376,7 @@ void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *output, int
 {
 	FT_GlyphSlot ftGlyph = font->font->glyph;
 	int ftGlyphOffset = 0;
-	unsigned int x, y;
+	int x, y;
 	FONS_NOTUSED(outWidth);
 	FONS_NOTUSED(outHeight);
 	FONS_NOTUSED(scaleX);
@@ -1451,7 +1451,7 @@ static float fons__getVertAlign(FONScontext* stash, FONSfont* font, int align, s
 			return font->ascender * (float)isize/10.0f;
 		} else if (align & FONS_ALIGN_MIDDLE) {
 			return (font->ascender + font->descender) / 2.0f * (float)isize/10.0f;
-		} else if (align & FONS_ALIGN_MIDDLE_BASELINE) {
+		} else if (align & FONS_ALIGN_MIDDLE_ASCENT) {
 			return (font->ascender) / 2.0f * (float)isize/10.0f;
 		} else if (align & FONS_ALIGN_BASELINE) {
 			return 0.0f;
@@ -1463,6 +1463,8 @@ static float fons__getVertAlign(FONScontext* stash, FONSfont* font, int align, s
 			return -font->ascender * (float)isize/10.0f;
 		} else if (align & FONS_ALIGN_MIDDLE) {
 			return -(font->ascender + font->descender) / 2.0f * (float)isize/10.0f;
+		} else if (align & FONS_ALIGN_MIDDLE_ASCENT) {
+			return -(font->ascender) / 2.0f * (float)isize/10.0f;
 		} else if (align & FONS_ALIGN_BASELINE) {
 			return 0.0f;
 		} else if (align & FONS_ALIGN_BOTTOM) {

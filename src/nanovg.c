@@ -2622,7 +2622,7 @@ void nvgTextBox(NVGcontext* ctx, float x, float y, float breakRowWidth, const ch
 	int nrows = 0, i;
 	int oldAlign = state->textAlign;
 	int haling = state->textAlign & (NVG_ALIGN_LEFT | NVG_ALIGN_CENTER | NVG_ALIGN_RIGHT);
-	int valign = state->textAlign & (NVG_ALIGN_TOP | NVG_ALIGN_MIDDLE | NVG_ALIGN_BOTTOM | NVG_ALIGN_BASELINE);
+	int valign = state->textAlign & (NVG_ALIGN_TOP | NVG_ALIGN_MIDDLE | NVG_ALIGN_MIDDLE_ASCENT | NVG_ALIGN_BOTTOM | NVG_ALIGN_BASELINE);
 	float lineh = 0;
 
 	if (state->fontId == FONS_INVALID) return;
@@ -2950,7 +2950,7 @@ void nvgTextBoxBounds(NVGcontext* ctx, float x, float y, float breakRowWidth, co
 	int nrows = 0, i;
 	int oldAlign = state->textAlign;
 	int haling = state->textAlign & (NVG_ALIGN_LEFT | NVG_ALIGN_CENTER | NVG_ALIGN_RIGHT);
-	int valign = state->textAlign & (NVG_ALIGN_TOP | NVG_ALIGN_MIDDLE | NVG_ALIGN_BOTTOM | NVG_ALIGN_BASELINE);
+	int valign = state->textAlign & (NVG_ALIGN_TOP | NVG_ALIGN_MIDDLE | NVG_ALIGN_MIDDLE_ASCENT | NVG_ALIGN_BOTTOM | NVG_ALIGN_BASELINE);
 	float lineh = 0, rminy = 0, rmaxy = 0;
 	float minx, miny, maxx, maxy;
 
