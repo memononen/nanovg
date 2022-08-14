@@ -2518,9 +2518,9 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 		}
 		// Transform corners.
 		nvgTransformPoint(&c[0],&c[1], state->xform, q.x0+x, q.y0+y);
-        nvgTransformPoint(&c[2],&c[3], state->xform, q.x1+x, q.y0+y);
-        nvgTransformPoint(&c[4],&c[5], state->xform, q.x1+x, q.y1+y);
-        nvgTransformPoint(&c[6],&c[7], state->xform, q.x0+x, q.y1+y);
+		nvgTransformPoint(&c[2],&c[3], state->xform, q.x1+x, q.y0+y);
+		nvgTransformPoint(&c[4],&c[5], state->xform, q.x1+x, q.y1+y);
+		nvgTransformPoint(&c[6],&c[7], state->xform, q.x0+x, q.y1+y);
 
 		// Create triangles
 		if (nverts+6 <= cverts) {
@@ -2846,10 +2846,10 @@ float nvgTextBounds(NVGcontext* ctx, float x, float y, const char* string, const
 	if (bounds != NULL) {
 		// Use line bounds for height.
 		fonsLineBounds(ctx->fs, 0, &bounds[1], &bounds[3]);
-        bounds[0] += x;
-        bounds[1] += y;
-        bounds[2] += x;
-        bounds[3] += y;
+		bounds[0] += x;
+		bounds[1] += y;
+		bounds[2] += x;
+		bounds[3] += y;
 	}
 	return width * invscale;
 }
