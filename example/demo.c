@@ -24,6 +24,7 @@
 #define ICON_LOGIN 0xE740
 #define ICON_TRASH 0xE729
 
+static int mini(int a, int b) { return a < b ? a : b; }
 //static float minf(float a, float b) { return a < b ? a : b; }
 //static float maxf(float a, float b) { return a > b ? a : b; }
 //static float absf(float a) { return a >= 0.0f ? a : -a; }
@@ -745,6 +746,28 @@ void drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, float t)
 
 	nvgRestore(vg);
 
+	float tw = 50;
+	float th = 25;
+	r1 += 0.5f*sqrt(tw*tw+th*th);
+	nvgBeginPath(vg);
+	nvgFillColor(vg, nvgRGB(32,32,32));
+	ax=cosf(hue*NVG_PI*2);
+	ay=sinf(hue*NVG_PI*2);
+	ax=cx+r1*ax;
+	ay=cy+r1*ay;
+	nvgRoundedRect(vg, ax - tw*0.5f, ay -th*0.5f, tw, th,5.0f);
+	nvgFill(vg);
+
+	nvgTextAlign(vg, NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
+	nvgFontSize(vg, th);
+	nvgFontFace(vg, "sans");
+	nvgFillColor(vg, nvgRGB(255,255,255));
+	char str[128];
+	sprintf(str, "%d%%", mini(99, abs((int)floor(hue*100))));
+	nvgBeginPath(vg);
+	nvgText(vg, ax, ay+2.0f, str, 0);
+	nvgFill(vg);
+
 	nvgRestore(vg);
 }
 
@@ -1124,8 +1147,6 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 
 	nvgRestore(vg);
 }
-
-static int mini(int a, int b) { return a < b ? a : b; }
 
 static void unpremultiplyAlpha(unsigned char* image, int w, int h, int stride)
 {
