@@ -24,7 +24,6 @@
 #define ICON_LOGIN 0xE740
 #define ICON_TRASH 0xE729
 
-static int mini(int a, int b) { return a < b ? a : b; }
 //static float minf(float a, float b) { return a < b ? a : b; }
 //static float maxf(float a, float b) { return a > b ? a : b; }
 //static float absf(float a) { return a >= 0.0f ? a : -a; }
@@ -1147,6 +1146,8 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 
 	nvgRestore(vg);
 }
+
+static int mini(int a, int b) { return a < b ? a : b; }
 
 static void unpremultiplyAlpha(unsigned char* image, int w, int h, int stride)
 {
