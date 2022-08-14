@@ -745,15 +745,14 @@ void drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, float t)
 
 	nvgRestore(vg);
 
-	float tw = 50;
-	float th = 25;
+	// Render hue label
+	const float tw = 50;
+	const float th = 25;
 	r1 += 0.5f*sqrt(tw*tw+th*th);
 	nvgBeginPath(vg);
 	nvgFillColor(vg, nvgRGB(32,32,32));
-	ax=cosf(hue*NVG_PI*2);
-	ay=sinf(hue*NVG_PI*2);
-	ax=cx+r1*ax;
-	ay=cy+r1*ay;
+	ax = cx + r1*cosf(hue*NVG_PI*2);
+	ay = cy + r1*sinf(hue*NVG_PI*2);
 	nvgRoundedRect(vg, ax - tw*0.5f, ay -th*0.5f, tw, th,5.0f);
 	nvgFill(vg);
 
@@ -762,7 +761,7 @@ void drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, float t)
 	nvgFontFace(vg, "sans");
 	nvgFillColor(vg, nvgRGB(255,255,255));
 	char str[128];
-	sprintf(str, "%d%%", (int)(100.0f * (hue+1)) % 100);
+	sprintf(str, "%d%%", (int)(100.0f * (hue + 1.0f)) % 100);
 	nvgBeginPath(vg);
 	nvgText(vg, ax, ay+2.0f, str, 0);
 	nvgFill(vg);
