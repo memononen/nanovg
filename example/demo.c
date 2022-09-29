@@ -802,6 +802,34 @@ void drawLines(NVGcontext* vg, float x, float y, float w, float h, float t)
 	nvgRestore(vg);
 }
 
+static int directRender()
+{
+   // Draw a simple red triangle
+
+   // Color
+   glColor3f(1.0f, 0.0f, 0.0f);
+
+#define TRI_SIZE 0.1
+
+   // Vertices
+   glBegin(GL_TRIANGLES);
+   glVertex2f(0.5f, 0.5f - TRI_SIZE);
+   glVertex2f(0.5f - TRI_SIZE, 0.5f + TRI_SIZE);
+   glVertex2f(0.5f + TRI_SIZE, 0.5f + TRI_SIZE);
+   glEnd();
+}
+
+void drawDirectOpenGL(NVGcontext* vg, float x, float y, float w, float h)
+{
+   nvgSave(vg);
+
+   // TODO: better check/adjust the size and the position
+
+   nvgRenderDirectOpenGL(vg, directRender);
+
+   nvgRestore(vg);
+}
+
 int loadDemoData(NVGcontext* vg, DemoData* data)
 {
 	int i;
@@ -1121,6 +1149,9 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 
 	// Thumbnails box
 	drawThumbnails(vg, 365, popy-30, 160, 300, data->images, 12, t);
+
+    // Simple triangle with direct OpenGL
+    drawDirectOpenGL(vg, 738.0f, 184.0f, 177.0f, 94.0f);
 
 	nvgRestore(vg);
 }
