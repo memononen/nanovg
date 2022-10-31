@@ -113,6 +113,16 @@ enum NVGimageFlagsGL {
 #include <math.h>
 #include "nanovg.h"
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4201)  // nonstandard extension used : nameless struct/union
+#elif defined(__clang__) && defined(__cplusplus)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
+#pragma clang diagnostic ignored "-Wnested-anon-types"
+#pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
+
 enum GLNVGuniformLoc {
 	GLNVG_LOC_VIEWSIZE,
 	GLNVG_LOC_TEX,
@@ -1656,5 +1666,11 @@ GLuint nvglImageHandleGLES3(NVGcontext* ctx, int image)
 	GLNVGtexture* tex = glnvg__findTexture(gl, image);
 	return tex->tex;
 }
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#elif defined(__clang__) && defined(__cplusplus)
+#pragma clang diagnostic pop
+#endif
 
 #endif /* NANOVG_GL_IMPLEMENTATION */
