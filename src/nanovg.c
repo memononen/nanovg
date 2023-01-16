@@ -2331,7 +2331,7 @@ void nvgStroke(NVGcontext* ctx)
 {
 	NVGstate* state = nvg__getState(ctx);
 	const float scale = nvg__getAverageScale(state->xform);
-	const float strokeWidth = nvg__clampf(state->strokeWidth * scale, 0.0f, 1000.0f);
+	float strokeWidth = nvg__clampf(state->strokeWidth * scale, 0.0f, 1000.0f);
 	NVGpaint strokePaint = state->stroke;
 	const NVGpath* path;
 	int i;
