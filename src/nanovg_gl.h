@@ -111,6 +111,7 @@ enum NVGimageFlagsGL {
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 #include "nanovg.h"
 
 enum GLNVGuniformLoc {
@@ -234,6 +235,7 @@ struct GLNVGcontext {
 	float view[2];
 	int ntextures;
 	int ctextures;
+	int utextures;
 	int textureId;
 	GLuint vertBuf;
 #if defined NANOVG_GL3
@@ -350,26 +352,33 @@ static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 	GLNVGtexture* tex = NULL;
 	int i;
 
-	for (i = 0; i < gl->ntextures; i++) {
-		if (gl->textures[i].id == 0) {
-			tex = &gl->textures[i];
-			break;
+	if( gl->utextures < gl->ntextures)
+	{
+		for (i = 0; i < gl->ntextures; i++) {
+			if (gl->textures[i].id == 0) {
+				tex = &gl->textures[i];
+				break;
+			}
 		}
+		assert( i < gl->ntextures && "Hole must be found, this should not happen");
 	}
-	if (tex == NULL) {
-		if (gl->ntextures+1 > gl->ctextures) {
+	else
+	{
+		if (gl->ntextures >= gl->ctextures) {
 			GLNVGtexture* textures;
 			int ctextures = glnvg__maxi(gl->ntextures+1, 4) +  gl->ctextures/2; // 1.5x Overallocate
 			textures = (GLNVGtexture*)realloc(gl->textures, sizeof(GLNVGtexture)*ctextures);
 			if (textures == NULL) return NULL;
-			gl->textures = textures;
+			gl->textures  = textures;
 			gl->ctextures = ctextures;
 		}
-		tex = &gl->textures[gl->ntextures++];
+		i   = gl->ntextures++;
+		tex = &gl->textures[ i];
 	}
 
 	memset(tex, 0, sizeof(*tex));
-	tex->id = ++gl->textureId;
+	tex->id = i + 1;
+	gl->utextures++;
 
 	return tex;
 }
@@ -377,25 +386,29 @@ static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 static GLNVGtexture* glnvg__findTexture(GLNVGcontext* gl, int id)
 {
 	int i;
-	for (i = 0; i < gl->ntextures; i++)
-		if (gl->textures[i].id == id)
+
+	if( ! id || id > gl->ntextures)
+		return NULL;
+	i = id - 1;
+	if( gl->textures[i].id == id)
 			return &gl->textures[i];
 	return NULL;
 }
 
 static int glnvg__deleteTexture(GLNVGcontext* gl, int id)
 {
-	int i;
-	for (i = 0; i < gl->ntextures; i++) {
-		if (gl->textures[i].id == id) {
-			if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVG_IMAGE_NODELETE) == 0)
-				glDeleteTextures(1, &gl->textures[i].tex);
-			memset(&gl->textures[i], 0, sizeof(gl->textures[i]));
-			return 1;
-		}
-	}
-	return 0;
+	GLNVGtexture*  tex;
+
+	tex = glnvg__findTexture( gl, id);
+	if( ! tex)
+		return 0;
+	if( (tex->flags & NVG_IMAGE_NODELETE) == 0)
+		glDeleteTextures(1, &tex->tex);
+	memset( tex, 0, sizeof( *tex));
+	--gl->utextures;
+	return 1;
 }
+
 
 static void glnvg__dumpShaderError(GLuint shader, const char* name, const char* type)
 {
