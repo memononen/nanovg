@@ -237,7 +237,8 @@ struct GLNVGcontext {
 	int textureId;
 	GLuint vertBuf;
 #if defined NANOVG_GL3
-	GLuint vertArr;
+	GLuint* vertArr; // vertex array buffer, on a per gl context basis
+	int vertArrayCount;
 #endif
 #if NANOVG_GL_USE_UNIFORMBUFFER
 	GLuint fragBuf;
@@ -690,9 +691,17 @@ static int glnvg__renderCreate(void* uptr)
 	glnvg__checkError(gl, "uniform locations");
 	glnvg__getUniforms(&gl->shader);
 
-	// Create dynamic vertex array
+	// Begin the array of dynamic vertex arrays (one for each context/opengl window)
 #if defined NANOVG_GL3
-	glGenVertexArrays(1, &gl->vertArr);
+	gl->vertArr = (GLuint*) malloc(sizeof(GLuint));
+	glGenVertexArrays(1, gl->vertArr);
+
+	// due to a call to glIsVertexArray() returning false if the array has not been bound yet, we bind and unbind the vertex array
+	glBindVertexArray(gl->vertArr[0]);
+	glBindVertexArray(0);
+	// dont you love opengl
+
+	gl->vertArrayCount = 1;
 #endif
 	glGenBuffers(1, &gl->vertBuf);
 
@@ -1215,10 +1224,30 @@ static void glnvg__renderFlush(void* uptr)
 		glBindBuffer(GL_UNIFORM_BUFFER, gl->fragBuf);
 		glBufferData(GL_UNIFORM_BUFFER, gl->nuniforms * gl->fragSize, gl->uniforms, GL_STREAM_DRAW);
 #endif
-
+		glnvg__checkError(gl, "uniform buffers");
 		// Upload vertex data
 #if defined NANOVG_GL3
-		glBindVertexArray(gl->vertArr);
+		bool foundVertexArr = false;
+		for (int i = 0; i < gl->vertArrayCount; i++) {
+			if (glIsVertexArray(gl->vertArr[i] == GL_TRUE)) {
+				//puts("Found correct vertex array!");
+				// if the vertex array exists for the current context, bind it
+				glBindVertexArray(gl->vertArr[i]);
+				foundVertexArr = true;
+				break;
+			}
+		}
+
+		if (!foundVertexArr) {
+			// create a new vertex array
+			puts("Creating a new vertex array!");
+			gl->vertArr = (GLuint*) realloc(gl->vertArr, sizeof(GLuint) * (gl->vertArrayCount + 1));
+			glGenVertexArrays(1, &gl->vertArr[gl->vertArrayCount]);
+			glBindVertexArray(gl->vertArr[gl->vertArrayCount]);
+			gl->vertArrayCount += 1;
+		}
+
+		glnvg__checkError(gl, "vertex arrays");
 #endif
 		glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
 		glBufferData(GL_ARRAY_BUFFER, gl->nverts * sizeof(NVGvertex), gl->verts, GL_STREAM_DRAW);
@@ -1539,8 +1568,12 @@ static void glnvg__renderDelete(void* uptr)
 	if (gl->fragBuf != 0)
 		glDeleteBuffers(1, &gl->fragBuf);
 #endif
-	if (gl->vertArr != 0)
-		glDeleteVertexArrays(1, &gl->vertArr);
+	// idk what to do here, because the vertex arrays are dynamically created, one per context
+	// so the context we created them in would have to be deleted in order to delete them
+	// so for now, we will naively assume that the first array has its context present
+	// wow, opengl really sucks
+	if (gl->vertArr[0] != 0)
+		glDeleteVertexArrays(1, &gl->vertArr[0]);
 #endif
 	if (gl->vertBuf != 0)
 		glDeleteBuffers(1, &gl->vertBuf);
