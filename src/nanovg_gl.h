@@ -1186,8 +1186,13 @@ static void glnvg__renderFlush(void* uptr)
 		// Setup require GL state.
 		glUseProgram(gl->shader.prog);
 
+#ifdef NVG_DISABLE_CULL_FACE
+		glDisable(GL_CULL_FACE);
+#else
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
+#endif
+
 		glFrontFace(GL_CCW);
 		glEnable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
