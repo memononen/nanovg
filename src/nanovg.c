@@ -2602,7 +2602,7 @@ int nvgTextGlyphPositions(NVGcontext* ctx, float x, float y, const char* string,
 		}
 		prevIter = iter;
 		positions[npos].str = iter.str;
-		positions[npos].x = iter.x * invscale;
+		positions[npos].x = (iter.x + iter.kern_adjust) * invscale;
 		positions[npos].minx = nvg__minf(iter.x, q.x0) * invscale;
 		positions[npos].maxx = nvg__maxf(iter.nextx, q.x1) * invscale;
 		npos++;
