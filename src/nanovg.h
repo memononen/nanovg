@@ -144,6 +144,11 @@ enum NVGimageFlags {
 	NVG_IMAGE_NEAREST			= 1<<5,		// Image interpolation is Nearest instead Linear
 };
 
+enum NVGtess {
+	NVG_TESS_SUBDIVISION,  // De Casteljau subdivision. Default.
+	NVG_TESS_AFD           // Adaptive forward differencing. Try this algorithm for better tessellation performance.
+};
+
 // Begin drawing a new frame
 // Calls to nanovg drawing API should be wrapped in nvgBeginFrame() & nvgEndFrame()
 // nvgBeginFrame() defines the size of the window to render to in relation currently
@@ -271,6 +276,10 @@ void nvgLineJoin(NVGcontext* ctx, int join);
 // Sets the transparency applied to all rendered shapes.
 // Already transparent paths will get proportionally more transparent as well.
 void nvgGlobalAlpha(NVGcontext* ctx, float alpha);
+
+// Sets the bezier tessellation algorithm.
+// Can be one of: NVG_TESS_SUBDIVISION (default), NVG_TESS_AFD.
+void nvgBezierTessellation(NVGcontext* ctx, int tess);
 
 //
 // Transforms
