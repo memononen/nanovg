@@ -61,6 +61,7 @@ enum NVGcommands {
 	NVG_BEZIERTO = 2,
 	NVG_CLOSE = 3,
 	NVG_WINDING = 4,
+	NVG_CURVETO = 5
 };
 
 enum NVGpointFlags
@@ -89,6 +90,7 @@ struct NVGstate {
 	float fontBlur;
 	int textAlign;
 	int fontId;
+	int curveResolution;
 };
 typedef struct NVGstate NVGstate;
 
@@ -669,6 +671,8 @@ void nvgReset(NVGcontext* ctx)
 	state->fontBlur = 0.0f;
 	state->textAlign = NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE;
 	state->fontId = 0;
+	
+	state->curveResolution = 20;
 }
 
 // State setting
@@ -1109,6 +1113,10 @@ static void nvg__appendCommands(NVGcontext* ctx, float* vals, int nvals)
 			nvgTransformPoint(&vals[i+1],&vals[i+2], state->xform, vals[i+1],vals[i+2]);
 			i += 3;
 			break;
+		case NVG_CURVETO:
+			nvgTransformPoint(&vals[i+1],&vals[i+2], state->xform, vals[i+1],vals[i+2]);
+			i += 3;
+			break;
 		case NVG_BEZIERTO:
 			nvgTransformPoint(&vals[i+1],&vals[i+2], state->xform, vals[i+1],vals[i+2]);
 			nvgTransformPoint(&vals[i+3],&vals[i+4], state->xform, vals[i+3],vals[i+4]);
@@ -1326,6 +1334,36 @@ static void nvg__tesselateBezier(NVGcontext* ctx,
 	nvg__tesselateBezier(ctx, x1234,y1234, x234,y234, x34,y34, x4,y4, level+1, type);
 }
 
+static void nvg__tesselateCurve(NVGcontext* ctx,
+								float x0, float y0,
+								float x1, float y1,
+								float x2, float y2,
+								float x3, float y3,
+								int type)
+{
+	float t,t2,t3;
+	float x,y;
+	NVGstate* state = nvg__getState(ctx);
+	
+	for (int i = 1; i <= state->curveResolution; i++){
+		
+		t 	=  (float)i / (float)(state->curveResolution);
+		t2 	= t * t;
+		t3 	= t2 * t;
+		
+		x = 0.5f * ( ( 2.0f * x1 ) +
+					( -x0 + x2 ) * t +
+					( 2.0f * x0 - 5.0f * x1 + 4 * x2 - x3 ) * t2 +
+					( -x0 + 3.0f * x1 - 3.0f * x2 + x3 ) * t3 );
+		
+		y = 0.5f * ( ( 2.0f * y1 ) +
+					( -y0 + y2 ) * t +
+					( 2.0f * y0 - 5.0f * y1 + 4 * y2 - y3 ) * t2 +
+					( -y0 + 3.0f * y1 - 3.0f * y2 + y3 ) * t3 );
+		
+		nvg__addPoint(ctx, x, y, type);
+	}
+}
 static void nvg__flattenPaths(NVGcontext* ctx)
 {
 	NVGpathCache* cache = ctx->cache;
@@ -1339,7 +1377,10 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 	float* cp1;
 	float* cp2;
 	float* p;
+	float* cp3;
+	float* cp4;
 	float area;
+	static int curveCommands = 0;
 
 	if (cache->npaths > 0)
 		return;
@@ -1348,6 +1389,7 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 	i = 0;
 	while (i < ctx->ncommands) {
 		int cmd = (int)ctx->commands[i];
+		if (cmd != NVG_CURVETO) curveCommands = 0;
 		switch (cmd) {
 		case NVG_MOVETO:
 			nvg__addPath(ctx);
@@ -1360,6 +1402,17 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 			nvg__addPoint(ctx, p[0], p[1], NVG_PT_CORNER);
 			i += 3;
 			break;
+			case NVG_CURVETO:
+				curveCommands++;
+				p = &ctx->commands[i+1];
+				if (curveCommands > 3) {
+					cp1 = &ctx->commands[i - (3*3) + 1];
+					cp2 = &ctx->commands[i - (2*3) + 1];
+					cp3 = &ctx->commands[i - (1*3) + 1];
+					nvg__tesselateCurve(ctx, cp1[0], cp1[1], cp2[0], cp2[1], cp3[0], cp3[1], p[0], p[1], NVG_PT_CORNER);
+				}
+				i += 3;
+				break;
 		case NVG_BEZIERTO:
 			last = nvg__lastPoint(ctx);
 			if (last != NULL) {
@@ -2004,6 +2057,12 @@ void nvgQuadTo(NVGcontext* ctx, float cx, float cy, float x, float y)
         x + 2.0f/3.0f*(cx - x), y + 2.0f/3.0f*(cy - y),
         x, y };
     nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
+}
+
+void nvgCurveTo(NVGcontext* ctx, float x, float y)
+{
+	float vals[] = { NVG_CURVETO, x, y };
+	nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
 }
 
 void nvgArcTo(NVGcontext* ctx, float x1, float y1, float x2, float y2, float radius)
