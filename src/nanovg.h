@@ -577,6 +577,9 @@ void nvgFontSize(NVGcontext* ctx, float size);
 // Sets the blur of current text style.
 void nvgFontBlur(NVGcontext* ctx, float blur);
 
+// Sets the dilation of current text style.
+void nvgFontDilate(NVGcontext* ctx, float dilate);
+
 // Sets the letter spacing of current text style.
 void nvgTextLetterSpacing(NVGcontext* ctx, float spacing);
 

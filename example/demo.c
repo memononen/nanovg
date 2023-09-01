@@ -360,6 +360,35 @@ void drawSlider(NVGcontext* vg, float pos, float x, float y, float w, float h)
 	nvgRestore(vg);
 }
 
+void drawFancyText(NVGcontext* vg, float x, float y){
+	nvgFontSize(vg, 30.0f);
+	nvgFontFace(vg, "sans-bold");
+	nvgTextAlign(vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
+
+	nvgFontBlur(vg, 10);
+	nvgFillColor(vg, nvgRGB(255, 0, 102));
+	nvgText(vg, x, y, "Font Blur", NULL);
+	nvgFontBlur(vg,0);
+	nvgFillColor(vg, nvgRGB(255,255,255));
+	nvgText(vg, x, y, "Font Blur", NULL);
+
+	nvgFontDilate(vg, 2);
+	nvgFillColor(vg, nvgRGB(255, 0, 102));
+	nvgText(vg, x, y+40, "Font Outline", NULL);
+	nvgFontDilate(vg,0);
+	nvgFillColor(vg, nvgRGB(255,255,255));
+	nvgText(vg, x, y+40, "Font Outline", NULL);
+
+	nvgFontDilate(vg, 3); // Dilate will always be applied before blur
+	nvgFontBlur(vg, 2);
+	nvgFillColor(vg, nvgRGB(255, 0, 102));
+	nvgText(vg, x, y+80, "Font Blur Outline", NULL);
+	nvgFontDilate(vg,0);
+	nvgFontBlur(vg,0);
+	nvgFillColor(vg, nvgRGB(255,255,255));
+	nvgText(vg, x, y+80, "Font Blur Outline", NULL);
+}
+
 void drawEyes(NVGcontext* vg, float x, float y, float w, float h, float mx, float my, float t)
 {
 	NVGpaint gloss, bg;
@@ -1068,6 +1097,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	float x,y,popy;
 
 	drawEyes(vg, width - 250, 50, 150, 100, mx, my, t);
+	drawFancyText(vg, width - 175, 190);
 	drawParagraph(vg, width - 450, 50, 150, 100, mx, my);
 	drawGraph(vg, 0, height/2, width, height/2, t);
 	drawColorwheel(vg, width - 300, height - 300, 250.0f, 250.0f, t);
