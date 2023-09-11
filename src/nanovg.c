@@ -215,60 +215,67 @@ static NVGcompositeOperationState nvg__compositeOperationState(int op)
 {
 	int sfactor, dfactor;
 
-	if (op == NVG_SOURCE_OVER)
+	switch (op)
 	{
-		sfactor = NVG_ONE;
-		dfactor = NVG_ONE_MINUS_SRC_ALPHA;
-	}
-	else if (op == NVG_SOURCE_IN)
-	{
-		sfactor = NVG_DST_ALPHA;
-		dfactor = NVG_ZERO;
-	}
-	else if (op == NVG_SOURCE_OUT)
-	{
-		sfactor = NVG_ONE_MINUS_DST_ALPHA;
-		dfactor = NVG_ZERO;
-	}
-	else if (op == NVG_ATOP)
-	{
-		sfactor = NVG_DST_ALPHA;
-		dfactor = NVG_ONE_MINUS_SRC_ALPHA;
-	}
-	else if (op == NVG_DESTINATION_OVER)
-	{
-		sfactor = NVG_ONE_MINUS_DST_ALPHA;
-		dfactor = NVG_ONE;
-	}
-	else if (op == NVG_DESTINATION_IN)
-	{
-		sfactor = NVG_ZERO;
-		dfactor = NVG_SRC_ALPHA;
-	}
-	else if (op == NVG_DESTINATION_OUT)
-	{
-		sfactor = NVG_ZERO;
-		dfactor = NVG_ONE_MINUS_SRC_ALPHA;
-	}
-	else if (op == NVG_DESTINATION_ATOP)
-	{
-		sfactor = NVG_ONE_MINUS_DST_ALPHA;
-		dfactor = NVG_SRC_ALPHA;
-	}
-	else if (op == NVG_LIGHTER)
-	{
-		sfactor = NVG_ONE;
-		dfactor = NVG_ONE;
-	}
-	else if (op == NVG_COPY)
-	{
-		sfactor = NVG_ONE;
-		dfactor = NVG_ZERO;
-	}
-	else if (op == NVG_XOR)
-	{
-		sfactor = NVG_ONE_MINUS_DST_ALPHA;
-		dfactor = NVG_ONE_MINUS_SRC_ALPHA;
+		case NVG_SOURCE_OVER:
+			sfactor = NVG_ONE;
+			dfactor = NVG_ONE_MINUS_SRC_ALPHA;
+			break;
+
+		case NVG_SOURCE_IN:
+			sfactor = NVG_DST_ALPHA;
+			dfactor = NVG_ZERO;
+			break;
+
+		case NVG_SOURCE_OUT:
+			sfactor = NVG_ONE_MINUS_DST_ALPHA;
+			dfactor = NVG_ZERO;
+			break;
+
+		case NVG_ATOP:
+			sfactor = NVG_DST_ALPHA;
+			dfactor = NVG_ONE_MINUS_SRC_ALPHA;
+			break;
+
+		case NVG_DESTINATION_OVER:
+			sfactor = NVG_ONE_MINUS_DST_ALPHA;
+			dfactor = NVG_ONE;
+			break;
+
+		case NVG_DESTINATION_IN:
+			sfactor = NVG_ZERO;
+			dfactor = NVG_SRC_ALPHA;
+			break;
+
+		case NVG_DESTINATION_OUT:
+			sfactor = NVG_ZERO;
+			dfactor = NVG_ONE_MINUS_SRC_ALPHA;
+			break;
+
+		case NVG_DESTINATION_ATOP:
+			sfactor = NVG_ONE_MINUS_DST_ALPHA;
+			dfactor = NVG_SRC_ALPHA;
+			break;
+
+		case NVG_LIGHTER:
+			sfactor = NVG_ONE;
+			dfactor = NVG_ONE;
+			break;
+
+		case NVG_COPY:
+			sfactor = NVG_ONE;
+			dfactor = NVG_ZERO;
+			break;
+
+		case NVG_XOR:
+			sfactor = NVG_ONE_MINUS_DST_ALPHA;
+			dfactor = NVG_ONE_MINUS_SRC_ALPHA;
+			break;
+
+		default:
+			sfactor = 0;
+			dfactor = 0;
+			break;
 	}
 	else
 	{
