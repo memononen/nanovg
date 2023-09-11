@@ -2241,7 +2241,11 @@ void nvgFill(NVGcontext* ctx)
 	fillPaint.innerColor.a *= state->alpha;
 	fillPaint.outerColor.a *= state->alpha;
 
-	ctx->params.renderFill(ctx->params.userPtr, &fillPaint, state->compositeOperation, &state->scissor, ctx->fringeWidth,
+  if (ctx->params.edgeAntiAlias && state->shapeAntiAlias)
+    ctx->params.renderFill(ctx->params.userPtr, &fillPaint, state->compositeOperation, &state->scissor, ctx->fringeWidth,
+               ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
+  else 
+	  ctx->params.renderFill(ctx->params.userPtr, &fillPaint, state->compositeOperation, &state->scissor, 0.0f,
 						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
@@ -2283,8 +2287,12 @@ void nvgStroke(NVGcontext* ctx)
 	else
 		nvg__expandStroke(ctx, strokeWidth*0.5f, 0.0f, state->lineCap, state->lineJoin, state->miterLimit);
 
-	ctx->params.renderStroke(ctx->params.userPtr, &strokePaint, state->compositeOperation, &state->scissor, ctx->fringeWidth,
+  if (ctx->params.edgeAntiAlias && state->shapeAntiAlias)
+	  ctx->params.renderStroke(ctx->params.userPtr, &strokePaint, state->compositeOperation, &state->scissor, ctx->fringeWidth,
 							 strokeWidth, ctx->cache->paths, ctx->cache->npaths);
+  else
+    ctx->params.renderStroke(ctx->params.userPtr, &strokePaint, state->compositeOperation, &state->scissor, 0.0f,
+      strokeWidth, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
 	for (i = 0; i < ctx->cache->npaths; i++) {
