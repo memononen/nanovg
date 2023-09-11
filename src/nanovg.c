@@ -294,7 +294,12 @@ NVGcontext* nvgCreateInternal(NVGparams* params)
 	FONSparams fontParams;
 	NVGcontext* ctx = (NVGcontext*)malloc(sizeof(NVGcontext));
 	int i;
-	if (ctx == NULL) goto error;
+	if (ctx == NULL) {
+		// Call renderer delete explicitly. Context is not initialized yet, so we cannot call nvgDeleteInternal() which usually calls the function.
+		if (params->renderDelete != NULL)
+			params->renderDelete(params->userPtr);
+		return  NULL;
+	}
 	memset(ctx, 0, sizeof(NVGcontext));
 
 	ctx->params = *params;

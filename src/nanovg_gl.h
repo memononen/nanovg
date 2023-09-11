@@ -1600,8 +1600,6 @@ NVGcontext* nvgCreateGLES3(int flags)
 	return ctx;
 
 error:
-	// 'gl' is freed by nvgDeleteInternal.
-	if (ctx != NULL) nvgDeleteInternal(ctx);
 	return NULL;
 }
 
