@@ -321,6 +321,9 @@ void nvgScale(NVGcontext* ctx, float x, float y);
 // There should be space for 6 floats in the return buffer for the values a-f.
 void nvgCurrentTransform(NVGcontext* ctx, float* xform);
 
+// Restore current transformation matrix from specified buffer.
+// See also nvgCurrentTransform()
+void nvgSetTransform(NVGcontext* ctx, const float* xform);
 
 // The following functions can be used to make calculations on 2x3 transformation matrices.
 // A 2x3 matrix is represented as float[6].
