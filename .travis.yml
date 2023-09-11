@@ -1,0 +1,26 @@
+language: c
+os:
+  - linux
+  - osx
+cache:
+  directories:
+    - build/tests/swiftshader
+compiler:
+  - gcc
+addons:
+  apt:
+    packages:  # g++ need build for swiftshader
+    - gcc
+    - g++
+    - cmake3
+    - libx11-dev
+    - libxext-dev
+
+#before_install:
+#  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
+#  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cmake; fi
+
+script:
+  - mkdir -p build
+  - cd build 
+  - cmake ../ && cmake --build . && ctest --output-on-failure

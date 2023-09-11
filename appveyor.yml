@@ -1,0 +1,15 @@
+version: '{branch}/{build}'
+clone_depth: 1
+cache:
+  - build\tests\swiftshader -> appveyor.yml
+build_script:
+- ps: >-
+    New-Item build -itemType Directory -Force
+
+    cd build
+
+    cmake ../ -DCMAKE_BUILD_TYPE=Release
+
+    cmake --build . --config Release
+
+    ctest -C Release --output-on-failure
