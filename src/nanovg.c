@@ -2184,6 +2184,52 @@ void nvgRoundedRectVarying(NVGcontext* ctx, float x, float y, float w, float h, 
 	}
 }
 
+void nvgRoundedRectEllipse(struct NVGcontext* ctx, float x, float y, float w, float h, float rw, float rh)
+{
+	if (rw < 0.1f || rh < 0.1f) {
+		nvgRect(ctx, x, y, w, h);
+		return;
+	}
+	else {
+		float vals[] = {
+			NVG_MOVETO, x + rw, y,
+			NVG_LINETO, x + w - rw, y,
+			NVG_BEZIERTO, x + w - rw*(1 - NVG_KAPPA90), y, x + w, y + rh*(1 - NVG_KAPPA90), x + w, y + rh,
+			NVG_LINETO, x + w, y + h - rh,
+			NVG_BEZIERTO, x + w, y + h - rh*(1 - NVG_KAPPA90), x + w - rw*(1 - NVG_KAPPA90), y + h, x + w - rw, y + h,
+			NVG_LINETO, x + rw, y + h,
+			NVG_BEZIERTO, x + rw*(1 - NVG_KAPPA90), y + h, x, y + h - rh*(1 - NVG_KAPPA90), x, y + h - rh,
+			NVG_LINETO, x, y + rh,
+			NVG_BEZIERTO, x, y + rh*(1 - NVG_KAPPA90), x + rw*(1 - NVG_KAPPA90), y, x + rw, y,
+			NVG_CLOSE
+		};
+		nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
+	}
+}
+
+void nvgRoundedRectComplex(struct NVGcontext* ctx, float x, float y, float w, float h, float tl, float tr, float bl, float br)
+{
+	if (tl < 0.1f && tr < 0.1f && bl < 0.1f && br < 0.1f) {
+		nvgRect(ctx, x, y, w, h);
+		return;
+	}
+	else {
+		float vals[] = {
+			NVG_MOVETO, x + tl, y,
+			NVG_LINETO, x + w - tr, y,
+			NVG_BEZIERTO, x + w - tr*(1 - NVG_KAPPA90), y, x + w, y + tr*(1 - NVG_KAPPA90), x + w, y + tr,
+			NVG_LINETO, x + w, y + h - br,
+			NVG_BEZIERTO, x + w, y + h - br*(1 - NVG_KAPPA90), x + w - br*(1 - NVG_KAPPA90), y + h, x + w - br, y + h,
+			NVG_LINETO, x + bl, y + h,
+			NVG_BEZIERTO, x + bl*(1 - NVG_KAPPA90), y + h, x, y + h - bl*(1 - NVG_KAPPA90), x, y + h - bl,
+			NVG_LINETO, x, y + tl,
+			NVG_BEZIERTO, x, y + tl*(1 - NVG_KAPPA90), x + tl*(1 - NVG_KAPPA90), y, x + tl, y,
+			NVG_CLOSE
+		};
+		nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
+	}
+}
+
 void nvgEllipse(NVGcontext* ctx, float cx, float cy, float rx, float ry)
 {
 	float vals[] = {
