@@ -137,7 +137,6 @@ struct NVGcontext {
 	int fillTriCount;
 	int strokeTriCount;
 	int textTriCount;
-	int textTextureDirty;
 	struct NVGscissorBounds scissor;
 };
 
@@ -170,7 +169,6 @@ static float nvg__normalize(float *x, float* y)
 	return d;
 }
 
-static void nvg__flushTextTexture(NVGcontext* ctx);
 
 static void nvg__deletePathCache(NVGpathCache* c)
 {
@@ -401,7 +399,6 @@ void nvgBeginFrame(NVGcontext* ctx, float windowWidth, float windowHeight, float
 	ctx->fillTriCount = 0;
 	ctx->strokeTriCount = 0;
 	ctx->textTriCount = 0;
-	ctx->textTextureDirty = 0;
 }
 
 void nvgCancelFrame(NVGcontext* ctx)
@@ -411,10 +408,6 @@ void nvgCancelFrame(NVGcontext* ctx)
 
 void nvgEndFrame(NVGcontext* ctx)
 {
-	if(ctx->textTextureDirty != 0) {
-		nvg__flushTextTexture(ctx);
-		ctx->textTextureDirty=0;
-	}
 	ctx->params.renderFlush(ctx->params.userPtr);
 	if (ctx->fontImageIdx != 0) {
 		int fontImage = ctx->fontImages[ctx->fontImageIdx];
@@ -2613,10 +2606,11 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 		}
 	}
 
-	// Back-end bit to do this just once per frame.
-	ctx->textTextureDirty = 1;
+	// TODO: add back-end bit to do this just once per frame.
+	nvg__flushTextTexture(ctx);
+
 	nvg__renderText(ctx, verts, nverts);
-	return iter.nextx + x;
+	return iter.nextx * invscale + x;
 }
 
 void nvgTextBox(NVGcontext* ctx, float x, float y, float breakRowWidth, const char* string, const char* end)
