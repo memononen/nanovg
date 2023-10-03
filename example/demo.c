@@ -785,16 +785,25 @@ void drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, float t)
 	nvgRoundedRect(vg, ax - tw*0.5f, ay -th*0.5f, tw, th,5.0f);
 	nvgFill(vg);
 
-	nvgTextAlign(vg, NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-	nvgFontSize(vg, th);
+	nvgSave(vg);
+	nvgTranslate(vg, ax, ay);
+	nvgScale(vg, 2.0f, 2.0f); // Check that local transforms work with text
+	nvgFontSize(vg, 0.5f * th);
+	nvgTextAlign(vg, NVG_ALIGN_CENTER|NVG_ALIGN_TOP);
 	nvgFontFace(vg, "sans");
 	nvgFillColor(vg, nvgRGB(255,255,255));
 	char str[128];
 	sprintf(str, "%d%%", (int)(100.0f * (hue + 1.0f)) % 100);
 	nvgBeginPath(vg);
-	nvgText(vg, ax, ay+2.0f, str, 0);
+	nvgText(vg, 0.0f, -0.25f * th, str, 0);
 	nvgFill(vg);
-
+	float bounds[4];
+	nvgTextBounds(vg, 0.0f, -0.25f * th, str, 0, bounds);
+	nvgBeginPath(vg);
+	nvgRect(vg, bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]);
+	nvgStrokeColor(vg, nvgRGBA(0,255,255,128));
+	nvgStroke(vg);
+	nvgRestore(vg);
 	nvgRestore(vg);
 }
 
