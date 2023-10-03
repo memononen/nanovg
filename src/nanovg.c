@@ -2477,6 +2477,7 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 	FONSquad q;
 	NVGvertex* verts;
 	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+	float invscale = 1.0f / scale;
 	int cverts = 0;
 	int nverts = 0;
 	int isFlipped = nvg__isTransformFlipped(state->xform);
@@ -2520,10 +2521,10 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 			tmp = q.t0; q.t0 = q.t1; q.t1 = tmp;
 		}
 		// Transform corners.
-		nvgTransformPoint(&c[0],&c[1], state->xform, q.x0+x, q.y0+y);
-		nvgTransformPoint(&c[2],&c[3], state->xform, q.x1+x, q.y0+y);
-		nvgTransformPoint(&c[4],&c[5], state->xform, q.x1+x, q.y1+y);
-		nvgTransformPoint(&c[6],&c[7], state->xform, q.x0+x, q.y1+y);
+		nvgTransformPoint(&c[0],&c[1], state->xform, q.x0*invscale + x, q.y0*invscale + y);
+		nvgTransformPoint(&c[2],&c[3], state->xform, q.x1*invscale + x, q.y0*invscale + y);
+		nvgTransformPoint(&c[4],&c[5], state->xform, q.x1*invscale + x, q.y1*invscale + y);
+		nvgTransformPoint(&c[6],&c[7], state->xform, q.x0*invscale + x, q.y1*invscale + y);
 		// Create triangles
 		if (nverts+6 <= cverts) {
 			nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
@@ -2578,6 +2579,7 @@ int nvgTextGlyphPositions(NVGcontext* ctx, float x, float y, const char* string,
 {
 	NVGstate* state = nvg__getState(ctx);
 	float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+	float invscale = 1.0f / scale;
 	FONStextIter iter, prevIter;
 	FONSquad q;
 	int npos = 0;
@@ -2605,9 +2607,9 @@ int nvgTextGlyphPositions(NVGcontext* ctx, float x, float y, const char* string,
 		}
 		prevIter = iter;
 		positions[npos].str = iter.str;
-		positions[npos].x = iter.x + x;
-		positions[npos].minx = nvg__minf(iter.x, q.x0) + x;
-		positions[npos].maxx = nvg__maxf(iter.nextx, q.x1) + x;
+		positions[npos].x = iter.x * invscale + x;
+		positions[npos].minx = nvg__minf(iter.x, q.x0) * invscale + x;
+		positions[npos].maxx = nvg__maxf(iter.nextx, q.x1) * invscale + x;
 		npos++;
 		if (npos >= maxPositions)
 			break;
@@ -2848,10 +2850,10 @@ float nvgTextBounds(NVGcontext* ctx, float x, float y, const char* string, const
 	if (bounds != NULL) {
 		// Use line bounds for height.
 		fonsLineBounds(ctx->fs, 0, &bounds[1], &bounds[3]);
-		bounds[0] += x;
-		bounds[1] += y;
-		bounds[2] += x;
-		bounds[3] += y;
+		bounds[0] = bounds[0] * invscale + x;
+		bounds[1] = bounds[1] * invscale + y;
+		bounds[2] = bounds[2] * invscale + x;
+		bounds[3] = bounds[3] * invscale + y;
 	}
 	return width * invscale;
 }
