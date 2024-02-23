@@ -1131,6 +1131,24 @@ void drawScissor(NVGcontext* vg, float x, float y, float t)
 	nvgRestore(vg);
 }
 
+void drawBezierCurve(NVGcontext* vg, float x0, float y0, float x1, float y1){
+	nvgBeginPath(vg);
+	nvgMoveTo(vg, x0, y0);
+	// original
+	// nvgBezierTo(vg, x0, ((y1 - y0) * 0.25f) + y0, x1, ((y1 - y0) * 0.75f) + y0, x1, y1);
+	// new
+	nvgBezierTo(vg, x0, ((y1 - y0) * 0.25f) + y0, x1, ((y1 - y0) * 0.25f) + y0, x1, y1);
+	nvgLineCap(vg, NVG_ROUND);
+	nvgStrokeWidth(vg,5);
+	nvgLineStyle(vg, NVG_LINE_SOLID);
+	nvgStrokeColor(vg, nvgRGBA(40, 53, 147,255));
+	nvgStroke(vg);
+	nvgLineStyle(vg, NVG_LINE_DASHED);
+	nvgStrokeColor(vg, nvgRGBA(255, 195, 0,255));
+	nvgStroke(vg);
+	nvgLineStyle(vg, NVG_LINE_SOLID);
+}
+
 void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, DemoData* data)
 {
@@ -1208,6 +1226,8 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	drawThumbnails(vg, 365, popy-30, 160, 300, data->images, 12, t);
 
 	nvgRestore(vg);
+
+	drawBezierCurve(vg, width/2, height/2, mx, my);
 }
 
 static int mini(int a, int b) { return a < b ? a : b; }
