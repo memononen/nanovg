@@ -1265,7 +1265,10 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 
 	nvgRestore(vg);
 	*/
-	drawBezierCurve(vg, width/2, height/2, mx, my);
+	const float radius = 300;
+	float xc = width/2+radius*cos(2*NVG_PI*t/5);
+	float yc = height/2+radius*sin(2*NVG_PI*t/5);
+	drawBezierCurve(vg, width/2, height/2, xc, yc);
 }
 
 static int mini(int a, int b) { return a < b ? a : b; }
