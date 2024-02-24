@@ -1369,7 +1369,7 @@ static void nvg__tesselateBezier(NVGcontext* ctx,
 static void nvg__flattenPaths(NVGcontext* ctx)
 {
 	NVGpathCache* cache = ctx->cache;
-//	NVGstate* state = nvg__getState(ctx);
+	NVGstate* state = nvg__getState(ctx);
 	NVGpoint* last;
 	NVGpoint* p0;
 	NVGpoint* p1;
@@ -1406,6 +1406,7 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 				cp1 = &ctx->commands[i+1];
 				cp2 = &ctx->commands[i+3];
 				p = &ctx->commands[i+5];
+				//printf("Construct bezier (%f, %f) (%f, %f) (%f, %f) (%f, %f)\n",last->x,last->y, cp1[0],cp1[1], cp2[0],cp2[1], p[0],p[1]);
 				nvg__tesselateBezier(ctx, last->x,last->y, cp1[0],cp1[1], cp2[0],cp2[1], p[0],p[1], 0, NVG_PT_CORNER);
 			}
 			i += 7;
@@ -1441,7 +1442,8 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 		}
 
 		// Enforce winding.
-		if (path->count > 2) {
+		
+		if (state->lineStyle > 1 && path->count > 2) {
 			area = nvg__polyArea(pts, path->count);
 			if (path->winding == NVG_CCW && area < 0.0f)
 				nvg__polyReverse(pts, path->count);
