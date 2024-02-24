@@ -1441,7 +1441,7 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 		}
 
 		// Enforce winding.
-		if (state->lineStyle > 1 && path->count > 2) {
+		if (state->lineStyle == NVG_LINE_SOLID && path->count > 2) {
 			area = nvg__polyArea(pts, path->count);
 			if (path->winding == NVG_CCW && area < 0.0f)
 				nvg__polyReverse(pts, path->count);
