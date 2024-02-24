@@ -1131,29 +1131,13 @@ void drawScissor(NVGcontext* vg, float x, float y, float t)
 	nvgRestore(vg);
 }
 
-void swap(float* a, float* b){
-	float tmp=*a;
-	*a=*b;
-	*b=tmp;
-}
-
 void drawBezierCurve(NVGcontext* vg, float x0, float y0, float x1, float y1){
-	// original
-	// nvgBezierTo(vg, x0, ((y1 - y0) * 0.25f) + y0, x1, ((y1 - y0) * 0.75f) + y0, x1, y1);
-	// new
-	float cx0 = x0+0.0*(x1-x0);
+
+	float cx0 = x0;
 	float cy0 = y0 + ((y1 - y0) * 0.25f);
-	float cx1 = x1-0.0*(x1-x0);
+	float cx1 = x1;
 	float cy1 = y0 + ((y1 - y0) * 0.75f);
-	/*
-	if((y1-y0)<0){
-		swap(&cx0,&cx1);
-		swap(&cy0,&cy1);
-		swap(&x0,&x1);
-		swap(&y0,&y1);
-	}
-	*/
-	// printf("Call bezier (%f, %f) (%f, %f) (%f, %f) (%f, %f)\n",x0, y0, cx0, cy0, cx1, cy1, x1, y1);
+
 	nvgBeginPath(vg);
 	nvgMoveTo(vg, x0, y0);
 	nvgLineTo(vg, cx0, cy0);

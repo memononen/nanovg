@@ -1406,7 +1406,6 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 				cp1 = &ctx->commands[i+1];
 				cp2 = &ctx->commands[i+3];
 				p = &ctx->commands[i+5];
-				//printf("Construct bezier (%f, %f) (%f, %f) (%f, %f) (%f, %f)\n",last->x,last->y, cp1[0],cp1[1], cp2[0],cp2[1], p[0],p[1]);
 				nvg__tesselateBezier(ctx, last->x,last->y, cp1[0],cp1[1], cp2[0],cp2[1], p[0],p[1], 0, NVG_PT_CORNER);
 			}
 			i += 7;
