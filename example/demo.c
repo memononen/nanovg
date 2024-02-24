@@ -1108,14 +1108,13 @@ void drawBezierCurve(NVGcontext* vg, float x0, float y0, float radius, float t){
 	nvgLineStyle(vg, NVG_LINE_DASHED);
 	nvgStrokeColor(vg, nvgRGBA(255, 195, 0,255));
 	nvgStroke(vg);
-	nvgPathWinding(vg, NVG_CCW);
-	nvgLineStyle(vg, NVG_LINE_SOLID);
 
 	nvgBeginPath(vg);
 	nvgCircle(vg,x0,y0,5.0f);
 	nvgCircle(vg,cx0,cy0,5.0f);
 	nvgCircle(vg,cx1,cy1,5.0f);
 	nvgCircle(vg,x1,y1,5.0f);
+	nvgLineStyle(vg, NVG_LINE_SOLID);
 	nvgFillColor(vg,nvgRGBA(64,192,64,255));
 	nvgFill(vg);
 }
