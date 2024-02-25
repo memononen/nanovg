@@ -1158,9 +1158,6 @@ void drawBezierCurve(NVGcontext* vg, float x0, float y0, float x1, float y1){
 	nvgStrokeColor(vg, nvgRGBA(40, 53, 147,255));
 	nvgStroke(vg);
 	
-	nvgBeginPath(vg);
-	nvgMoveTo(vg, x0, y0);
-	nvgBezierTo(vg, cx0, cy0, cx1, cy1, x1, y1);
 	nvgLineStyle(vg, NVG_LINE_DASHED);
 	nvgStrokeColor(vg, nvgRGBA(255, 195, 0,255));
 	nvgStroke(vg);

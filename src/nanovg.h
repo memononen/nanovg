@@ -688,6 +688,7 @@ typedef struct NVGvertex NVGvertex;
 struct NVGpath {
 	int first;
 	int count;
+	int reversed;
 	unsigned char closed;
 	int nbevel;
 	NVGvertex* fill;

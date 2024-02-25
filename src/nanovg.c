@@ -1369,7 +1369,7 @@ static void nvg__tesselateBezier(NVGcontext* ctx,
 static void nvg__flattenPaths(NVGcontext* ctx)
 {
 	NVGpathCache* cache = ctx->cache;
-	NVGstate* state = nvg__getState(ctx);
+	// NVGstate* state = nvg__getState(ctx);
 	NVGpoint* last;
 	NVGpoint* p0;
 	NVGpoint* p1;
@@ -1441,12 +1441,17 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 		}
 
 		// Enforce winding.
-		if (state->lineStyle == NVG_LINE_SOLID && path->count > 2) {
+		path->reversed = 0;
+		if (path->count > 2) {
 			area = nvg__polyArea(pts, path->count);
-			if (path->winding == NVG_CCW && area < 0.0f)
+			if (path->winding == NVG_CCW && area < 0.0f) {
 				nvg__polyReverse(pts, path->count);
-			if (path->winding == NVG_CW && area > 0.0f)
+				path->reversed = 1;
+			}
+			if (path->winding == NVG_CW && area > 0.0f) {
 				nvg__polyReverse(pts, path->count);
+				path->reversed = 1;
+			}
 		}
 
 		for(i = 0; i < path->count; i++) {
@@ -1780,6 +1785,7 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 {
 	NVGpathCache* cache = ctx->cache;
 	NVGvertex* verts;
+	NVGvertex* firstVert;
 	NVGvertex* dst;
 	int cverts, i, j;
 	float t;
@@ -1837,7 +1843,7 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 		
 		// Calculate fringe or stroke
 		loop = (path->closed == 0) ? 0 : 1;
-		dst = verts;
+		firstVert = dst = verts;
 		path->stroke = dst;
 
 		if (loop) {
@@ -1912,8 +1918,19 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 		}
 
 		path->nstroke = (int)(dst - verts);
-
 		verts = dst;
+		if(path->reversed) {
+			while(dst>=firstVert) {
+				float s=firstVert->s;
+				float t=firstVert->t;
+				--dst;
+				firstVert->s=dst->s;
+				firstVert->t=dst->t;
+				dst->s=s;
+				dst->t=t;
+				++firstVert;
+			}
+		}
 	}
 
 	return 1;
