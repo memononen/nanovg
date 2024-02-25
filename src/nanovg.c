@@ -1785,7 +1785,7 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 {
 	NVGpathCache* cache = ctx->cache;
 	NVGvertex* verts;
-	NVGvertex* firstVert;
+	NVGvertex* startVert;
 	NVGvertex* dst;
 	int cverts, i, j;
 	float t;
@@ -1843,7 +1843,7 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 		
 		// Calculate fringe or stroke
 		loop = (path->closed == 0) ? 0 : 1;
-		firstVert = dst = verts;
+		startVert = dst = verts;
 		path->stroke = dst;
 
 		if (loop) {
@@ -1920,15 +1920,15 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 		path->nstroke = (int)(dst - verts);
 		verts = dst;
 		if(path->reversed) {
-			while(dst>=firstVert) {
-				float s=firstVert->s;
-				float t=firstVert->t;
+			while(dst>=startVert) {
+				float s=startVert->s;
+				float t=startVert->t;
 				--dst;
-				firstVert->s=dst->s;
-				firstVert->t=dst->t;
+				startVert->s=dst->s;
+				startVert->t=dst->t;
 				dst->s=s;
 				dst->t=t;
-				++firstVert;
+				++startVert;
 			}
 		}
 	}
