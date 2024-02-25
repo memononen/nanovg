@@ -1920,7 +1920,7 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 		path->nstroke = (int)(dst - verts);
 		verts = dst;
 		if(path->reversed) {
-			while(dst>=startVert) {
+			while(dst > startVert) {
 				float s=startVert->s;
 				float t=startVert->t;
 				--dst;
