@@ -1604,22 +1604,22 @@ static NVGvertex* nvg_insertSpacer(NVGvertex* dst, NVGpoint* p, float dx, float 
 
 static NVGvertex* nvg__buttCapStart(NVGvertex* dst, NVGpoint* p,
 									float dx, float dy, float w, float d,
-									float aa, float u0, float u1)
+									float aa, float u0, float u1, float t, int dir)
 {
 	float px = p->x - dx*d;
 	float py = p->y - dy*d;
 	float dlx = dy;
 	float dly = -dx;
-	nvg__vset(dst, px + dlx*w - dx*aa, py + dly*w - dy*aa, u0,0, -1, -aa); dst++;
-	nvg__vset(dst, px - dlx*w - dx*aa, py - dly*w - dy*aa, u1,0, 1, -aa); dst++;
-	nvg__vset(dst, px + dlx*w, py + dly*w, u0,1, -1, 0); dst++;
-	nvg__vset(dst, px - dlx*w, py - dly*w, u1,1, 1, 0); dst++;
+	nvg__vset(dst, px + dlx*w - dx*aa, py + dly*w - dy*aa, u0,0, -1, t - dir * aa / w); dst++;
+	nvg__vset(dst, px - dlx*w - dx*aa, py - dly*w - dy*aa, u1,0, 1, t - dir * aa / w); dst++;
+	nvg__vset(dst, px + dlx*w, py + dly*w, u0,1, -1, t); dst++;
+	nvg__vset(dst, px - dlx*w, py - dly*w, u1,1, 1, t); dst++;
 	return dst;
 }
 
 static NVGvertex* nvg__buttCapEnd(NVGvertex* dst, NVGpoint* p,
 								  float dx, float dy, float w, float d,
-								  float aa, float u0, float u1, float t)
+								  float aa, float u0, float u1, float t, int dir)
 {
 	float px = p->x + dx*d;
 	float py = p->y + dy*d;
@@ -1627,15 +1627,15 @@ static NVGvertex* nvg__buttCapEnd(NVGvertex* dst, NVGpoint* p,
 	float dly = -dx;
 	nvg__vset(dst, px + dlx*w, py + dly*w, u0, 1 , -1, t); dst++;
 	nvg__vset(dst, px - dlx*w, py - dly*w, u1, 1 , 1, t); dst++;
-	nvg__vset(dst, px + dlx*w + dx*aa, py + dly*w + dy*aa, u0, 0, -1, t + aa / w); dst++;
-	nvg__vset(dst, px - dlx*w + dx*aa, py - dly*w + dy*aa, u1, 0, 1, t + aa / w); dst++;
+	nvg__vset(dst, px + dlx*w + dx*aa, py + dly*w + dy*aa, u0, 0, -1, t + dir * aa / w); dst++;
+	nvg__vset(dst, px - dlx*w + dx*aa, py - dly*w + dy*aa, u1, 0, 1, t + dir * aa / w); dst++;
 	return dst;
 }
 
 
 static NVGvertex* nvg__roundCapStart(NVGvertex* dst, NVGpoint* p,
 									 float dx, float dy, float w, int ncap,
-									 float aa, float u0, float u1)
+									 float aa, float u0, float u1, float t, int dir)
 {
 	int i;
 	float px = p->x;
@@ -1646,17 +1646,17 @@ static NVGvertex* nvg__roundCapStart(NVGvertex* dst, NVGpoint* p,
 	for (i = 0; i < ncap; i++) {
 		const float a = i/(float)(ncap-1)*NVG_PI;
 		float ax = cosf(a) * w, ay = sinf(a) * w;
-		nvg__vset(dst, px - dlx*ax - dx*ay, py - dly*ax - dy*ay, u0, 1, ax / w, -ay / w); dst++;
-		nvg__vset(dst, px, py, 0.5f, 1 , 0, 0);  dst++;
+		nvg__vset(dst, px - dlx*ax - dx*ay, py - dly*ax - dy*ay, u0, 1, ax / w, t - dir * ay / w); dst++;
+		nvg__vset(dst, px, py, 0.5f, 1 , 0, t);  dst++;
 	}
-	nvg__vset(dst, px + dlx*w, py + dly*w, u0, 1, 1, 0); dst++;
-	nvg__vset(dst, px - dlx*w, py - dly*w, u1, 1, -1, 0); dst++;
+	nvg__vset(dst, px + dlx*w, py + dly*w, u0, 1, 1, t); dst++;
+	nvg__vset(dst, px - dlx*w, py - dly*w, u1, 1, -1, t); dst++;
 	return dst;
 }
 
 static NVGvertex* nvg__roundCapEnd(NVGvertex* dst, NVGpoint* p,
 								   float dx, float dy, float w, int ncap,
-								   float aa, float u0, float u1, float t)
+								   float aa, float u0, float u1, float t, int dir)
 {
 	int i;
 	float px = p->x;
@@ -1670,7 +1670,7 @@ static NVGvertex* nvg__roundCapEnd(NVGvertex* dst, NVGpoint* p,
 		float a = i/(float)(ncap-1)*NVG_PI;
 		float ax = cosf(a) * w, ay = sinf(a) * w;
 		nvg__vset(dst, px, py, 0.5f, 1, 0, t); dst++;
-		nvg__vset(dst, px - dlx*ax + dx*ay, py - dly*ax + dy*ay, u0, 1, ax / w, t + ay / w); dst++;
+		nvg__vset(dst, px - dlx*ax + dx*ay, py - dly*ax + dy*ay, u0, 1, ax / w, t + dir * ay / w); dst++;
 	}
 	return dst;
 }
@@ -1826,11 +1826,13 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 
 		t = 0;
 		
+		int dir = 1;
 		if(lineStyle > 1 && path->reversed) {
+			dir = -1;
 			for (j = s; j < path->count; ++j) {
 				dx = p1->x - p0->x;
 				dy = p1->y - p0->y;
-				t+=nvg__normalize(&dx, &dy)*invStrokeWidth;
+				t+=nvg__normalize(&dx, &dy) * invStrokeWidth;
 				p0 = p1++;
 			}
 			if (loop) {
@@ -1850,11 +1852,11 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 			dy = p1->y - p0->y;
 			nvg__normalize(&dx, &dy);
 			if (lineCap == NVG_BUTT)
-				dst = nvg__buttCapStart(dst, p0, dx, dy, w, -aa*0.5f, aa, u0, u1);
+				dst = nvg__buttCapStart(dst, p0, dx, dy, w, -aa*0.5f, aa, u0, u1, t, dir);
 			else if (lineCap == NVG_BUTT || lineCap == NVG_SQUARE)
-				dst = nvg__buttCapStart(dst, p0, dx, dy, w, w-aa, aa, u0, u1);
+				dst = nvg__buttCapStart(dst, p0, dx, dy, w, w-aa, aa, u0, u1, t, dir);
 			else if (lineCap == NVG_ROUND)
-				dst = nvg__roundCapStart(dst, p0, dx, dy, w, ncap, aa, u0, u1);
+				dst = nvg__roundCapStart(dst, p0, dx, dy, w, ncap, aa, u0, u1, t, dir);
 		}
 		for (j = s; j < e; ++j) {
 			if(lineStyle > 1){
@@ -1862,11 +1864,7 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 				dy = p1->y - p0->y;
 				float dt=nvg__normalize(&dx, &dy);
 				dst = nvg_insertSpacer(dst, p0, dx, dy, w, u0, u1, t);
-				if(path->reversed) {
-					t-=dt*invStrokeWidth;
-				} else{
-					t+=dt*invStrokeWidth;
-				}
+				t+=dir*dt*invStrokeWidth;
 				dst = nvg_insertSpacer(dst, p1, dx, dy, w, u0, u1, t);
 			}
 			if ((p1->flags & (NVG_PT_BEVEL | NVG_PR_INNERBEVEL)) != 0) {
@@ -1892,20 +1890,16 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 			float dt = nvg__normalize(&dx, &dy);
 			if(lineStyle > 1){
 				dst = nvg_insertSpacer(dst, p0, dx, dy, w, u0, u1, t);
-				if(path->reversed) {
-					t-=dt*invStrokeWidth;
-				} else{
-					t+=dt*invStrokeWidth;
-				}
+				t+=dir*dt*invStrokeWidth;
 				dst = nvg_insertSpacer(dst, p1, dx, dy, w, u0, u1, t);
 			}
 			// Add cap
 			if (lineCap == NVG_BUTT)
-				dst = nvg__buttCapEnd(dst, p1, dx, dy, w, -aa*0.5f, aa, u0, u1, t);
+				dst = nvg__buttCapEnd(dst, p1, dx, dy, w, -aa*0.5f, aa, u0, u1, t, dir);
 			else if (lineCap == NVG_BUTT || lineCap == NVG_SQUARE)
-				dst = nvg__buttCapEnd(dst, p1, dx, dy, w, w-aa, aa, u0, u1, t);
+				dst = nvg__buttCapEnd(dst, p1, dx, dy, w, w-aa, aa, u0, u1, t, dir);
 			else if (lineCap == NVG_ROUND)
-				dst = nvg__roundCapEnd(dst, p1, dx, dy, w, ncap, aa, u0, u1, t);
+				dst = nvg__roundCapEnd(dst, p1, dx, dy, w, ncap, aa, u0, u1, t, dir);
 		}
 		path->nstroke = (int)(dst - verts);
 		verts = dst;
