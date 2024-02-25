@@ -108,7 +108,7 @@ See the header file [nanovg.h](/src/nanovg.h) for API reference.
 
 ## Projects using NanoVG
 
-- [Processing API simulation by vinjn](https://github.com/vinjn/island/blob/master/examples/01-processing/sketch2d.h)
+- [Processing API simulation by vinjn](https://github.com/island-org/island/blob/master/include/sketch2d.h)
 - [NanoVG for .NET, C# P/Invoke binding](https://github.com/sbarisic/nanovg_dotnet)
 
 ## License
