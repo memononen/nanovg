@@ -1176,7 +1176,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, DemoData* data)
 {
 	float x,y,popy;
-	/*
+	
 	drawEyes(vg, width - 230, 30, 150, 100, mx, my, t);
 	drawStylizedLines(vg, width - 245, 15, 180 ,130, t);
 	drawFancyText(vg, width - 160, 170);
@@ -1249,7 +1249,7 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	drawThumbnails(vg, 365, popy-30, 160, 300, data->images, 12, t);
 
 	nvgRestore(vg);
-	*/
+	
 	const float radius = 300;
 	float xc = width/2+radius*cos(2*NVG_PI*t/5);
 	float yc = height/2+radius*sin(2*NVG_PI*t/5);
