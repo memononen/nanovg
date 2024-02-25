@@ -1785,7 +1785,6 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 {
 	NVGpathCache* cache = ctx->cache;
 	NVGvertex* verts;
-	NVGvertex* startVert;
 	NVGvertex* dst;
 	int cverts, i, j;
 	float t;
@@ -1839,11 +1838,10 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 
 		path->fill = 0;
 		path->nfill = 0;
-		t = 0;
-		
+
 		// Calculate fringe or stroke
 		loop = (path->closed == 0) ? 0 : 1;
-		startVert = dst = verts;
+		dst = verts;
 		path->stroke = dst;
 
 		if (loop) {
@@ -1860,6 +1858,26 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 			e = path->count-1;
 		}
 
+		t = 0;
+		
+		if(lineStyle > 1 && path->reversed) {
+			for (j = s; j < path->count; ++j) {
+				dx = p1->x - p0->x;
+				dy = p1->y - p0->y;
+				t+=nvg__normalize(&dx, &dy)*invStrokeWidth;
+				p0 = p1++;
+			}
+			if (loop) {
+				// Looping
+				p0 = &pts[path->count-1];
+				p1 = &pts[0];
+			} else {
+				// Add cap
+				p0 = &pts[0];
+				p1 = &pts[1];
+			}
+		}
+
 		if (loop == 0) {
 			// Add cap
 			dx = p1->x - p0->x;
@@ -1872,14 +1890,17 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 			else if (lineCap == NVG_ROUND)
 				dst = nvg__roundCapStart(dst, p0, dx, dy, w, ncap, aa, u0, u1);
 		}
-
 		for (j = s; j < e; ++j) {
 			if(lineStyle > 1){
 				dx = p1->x - p0->x;
 				dy = p1->y - p0->y;
 				float dt=nvg__normalize(&dx, &dy);
 				dst = nvg_insertSpacer(dst, p0, dx, dy, w, u0, u1, t);
-				t+=dt*invStrokeWidth;
+				if(path->reversed) {
+					t-=dt*invStrokeWidth;
+				} else{
+					t+=dt*invStrokeWidth;
+				}
 				dst = nvg_insertSpacer(dst, p1, dx, dy, w, u0, u1, t);
 			}
 			if ((p1->flags & (NVG_PT_BEVEL | NVG_PR_INNERBEVEL)) != 0) {
@@ -1905,7 +1926,11 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 			float dt = nvg__normalize(&dx, &dy);
 			if(lineStyle > 1){
 				dst = nvg_insertSpacer(dst, p0, dx, dy, w, u0, u1, t);
-				t+=dt*invStrokeWidth;
+				if(path->reversed) {
+					t-=dt*invStrokeWidth;
+				} else{
+					t+=dt*invStrokeWidth;
+				}
 				dst = nvg_insertSpacer(dst, p1, dx, dy, w, u0, u1, t);
 			}
 			// Add cap
@@ -1916,22 +1941,8 @@ static int nvg__expandStroke(NVGcontext* ctx, float w, float fringe, int lineCap
 			else if (lineCap == NVG_ROUND)
 				dst = nvg__roundCapEnd(dst, p1, dx, dy, w, ncap, aa, u0, u1, t);
 		}
-
 		path->nstroke = (int)(dst - verts);
 		verts = dst;
-		if(path->reversed) {
-			--dst;
-			while(dst > startVert) {
-				float s=startVert->s;
-				float t=startVert->t;
-				startVert->s=dst->s;
-				startVert->t=dst->t;
-				dst->s=s;
-				dst->t=t;
-				++startVert;
-				--dst;
-			}
-		}
 	}
 
 	return 1;
