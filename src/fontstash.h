@@ -75,6 +75,7 @@ typedef struct FONSquad FONSquad;
 
 struct FONStextIter {
 	float x, y, nextx, nexty, scale, spacing;
+	int kern_adjust;
 	unsigned int codepoint;
 	short isize, iblur;
 	struct FONSfont* font;
@@ -1210,16 +1211,20 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	return glyph;
 }
 
-static void fons__getQuad(FONScontext* stash, FONSfont* font,
+static int fons__getQuad(FONScontext* stash, FONSfont* font,
 						   int prevGlyphIndex, FONSglyph* glyph,
 						   float scale, float spacing, float* x, float* y, FONSquad* q)
 {
+	int kern_adjust;
 	float rx,ry,xoff,yoff,x0,y0,x1,y1;
 
 	if (prevGlyphIndex != -1) {
 		float adv = fons__tt_getGlyphKernAdvance(&font->font, prevGlyphIndex, glyph->index) * scale;
-		*x += (int)(adv + spacing + 0.5f);
+		kern_adjust = (int)(adv + spacing + 0.5f);
+		*x += kern_adjust;
 	}
+	else
+		kern_adjust = 0;
 
 	// Each glyph has 2px border to allow good interpolation,
 	// one pixel to prevent leaking, and one to allow good interpolation for rendering.
@@ -1260,6 +1265,7 @@ static void fons__getQuad(FONScontext* stash, FONSfont* font,
 	}
 
 	*x += (int)(glyph->xadv / 10.0f + 0.5f);
+	return kern_adjust;
 }
 
 static void fons__flush(FONScontext* stash)
@@ -1416,6 +1422,7 @@ int fonsTextIterInit(FONScontext* stash, FONStextIter* iter,
 	if (end == NULL)
 		end = str + strlen(str);
 
+	iter->kern_adjust = 0;
 	iter->x = iter->nextx = x;
 	iter->y = iter->nexty = y;
 	iter->spacing = state->spacing;
@@ -1448,7 +1455,10 @@ int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, FONSquad* quad)
 		glyph = fons__getGlyph(stash, iter->font, iter->codepoint, iter->isize, iter->iblur, iter->bitmapOption);
 		// If the iterator was initialized with FONS_GLYPH_BITMAP_OPTIONAL, then the UV coordinates of the quad will be invalid.
 		if (glyph != NULL)
-			fons__getQuad(stash, iter->font, iter->prevGlyphIndex, glyph, iter->scale, iter->spacing, &iter->nextx, &iter->nexty, quad);
+			iter->kern_adjust = fons__getQuad(stash, iter->font, iter->prevGlyphIndex, glyph, iter->scale, iter->spacing, &iter->nextx, &iter->nexty, quad);
+		else
+			iter->kern_adjust = 0;
+
 		iter->prevGlyphIndex = glyph != NULL ? glyph->index : -1;
 		break;
 	}
