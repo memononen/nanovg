@@ -745,6 +745,36 @@ void drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, float t)
 
 	nvgRestore(vg);
 
+	// Render hue label
+	const float tw = 50;
+	const float th = 25;
+	r1 += 0.5f*sqrt(tw*tw+th*th);
+	nvgBeginPath(vg);
+	nvgFillColor(vg, nvgRGB(32,32,32));
+	ax = cx + r1*cosf(hue*NVG_PI*2);
+	ay = cy + r1*sinf(hue*NVG_PI*2);
+	nvgRoundedRect(vg, ax - tw*0.5f, ay -th*0.5f, tw, th,5.0f);
+	nvgFill(vg);
+
+	nvgSave(vg);
+	nvgTranslate(vg, ax, ay);
+	nvgScale(vg, 2.0f, 2.0f); // Check that local transforms work with text
+	nvgFontSize(vg, 0.5f * th);
+	nvgTextAlign(vg, NVG_ALIGN_CENTER|NVG_ALIGN_TOP);
+	nvgFontFace(vg, "sans");
+	nvgFillColor(vg, nvgRGB(255,255,255));
+	char str[128];
+	sprintf(str, "%d%%", (int)(100.0f * (hue + 1.0f)) % 100);
+	nvgBeginPath(vg);
+	nvgText(vg, 0.0f, -0.25f * th, str, 0);
+	nvgFill(vg);
+	float bounds[4];
+	nvgTextBounds(vg, 0.0f, -0.25f * th, str, 0, bounds);
+	nvgBeginPath(vg);
+	nvgRect(vg, bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]);
+	nvgStrokeColor(vg, nvgRGBA(0,255,255,128));
+	nvgStroke(vg);
+	nvgRestore(vg);
 	nvgRestore(vg);
 }
 
