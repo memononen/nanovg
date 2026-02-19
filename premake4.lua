@@ -41,7 +41,7 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
+			links { "glfw" }
 			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "-framework Carbon" }
 
 		configuration "Debug"
@@ -70,7 +70,7 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
+			links { "glfw" }
 			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "-framework Carbon" }
 
 		configuration "Debug"
@@ -100,7 +100,7 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
+			links { "glfw" }
 			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "-framework Carbon" }
 
 		configuration "Debug"
@@ -130,7 +130,7 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
+			links { "glfw" }
 			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "-framework Carbon" }
 
 		configuration "Debug"
@@ -158,7 +158,7 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
+			links { "glfw" }
 			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "-framework Carbon" }
 
 		configuration "Debug"
@@ -186,7 +186,7 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
+			links { "glfw" }
 			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "-framework Carbon" }
 
 		configuration "Debug"
@@ -214,7 +214,7 @@ solution "nanovg"
 			 defines { "NANOVG_GLEW", "_CRT_SECURE_NO_WARNINGS" }
 
 		configuration { "macosx" }
-			links { "glfw3" }
+			links { "glfw" }
 			linkoptions { "-framework OpenGL", "-framework Cocoa", "-framework IOKit", "-framework CoreVideo", "-framework Carbon" }
 
 		configuration "Debug"

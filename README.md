@@ -95,6 +95,16 @@ The data for the whole frame is buffered and flushed in `nvgEndFrame()`. The fol
 	glBindTexture(GL_TEXTURE_2D, tex);
 	glUniformBlockBinding(... , GLNVG_FRAG_BINDING);
 ```
+## Building the Examples
+
+### macOS
+
+1. Install [Homebrew](https://brew.sh)
+1. `brew install premake4`
+1. `brew install glfw`
+1. `cd nanovg`
+1. `premake4 gmake`
+1. `make`
 
 ## API Reference
 
