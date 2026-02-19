@@ -30,6 +30,8 @@
 #include "nanovg_gl_utils.h"
 #include "perf.h"
 
+#include "save_screenshot_implementation.h"
+
 void renderPattern(NVGcontext* vg, NVGLUframebuffer* fb, float t, float pxRatio)
 {
 	int winWidth, winHeight;

@@ -28,6 +28,7 @@
 #include "demo.h"
 #include "perf.h"
 
+#include "save_screenshot_implementation.h"
 
 void errorcb(int error, const char* desc)
 {
