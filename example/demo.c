@@ -748,7 +748,18 @@ void drawColorwheel(NVGcontext* vg, float x, float y, float w, float h, float t)
 	nvgRestore(vg);
 }
 
-void drawLines(NVGcontext* vg, float x, float y, float w, float h, float t)
+void drawStylizedLines(NVGcontext* vg, float x, float y, float w, float h, float t){
+	nvgLineJoin(vg, NVG_ROUND);
+	nvgLineStyle(vg, NVG_LINE_DASHED);
+	nvgStrokeColor(vg,nvgRGBAf(0.6f,0.6f,1.0f,1.0f));
+	nvgStrokeWidth(vg, 5.0f);
+	nvgBeginPath(vg);
+	nvgRect(vg, x, y, w, h);
+	nvgStroke(vg);
+	nvgLineStyle(vg, NVG_LINE_SOLID);
+}
+
+void drawLines(NVGcontext* vg, float x, float y, float w, float h, float strokeWidth, NVGcolor color, float t)
 {
 	int i, j;
 	float pad = 5.0f, s = w/9.0f - pad*2;
@@ -766,7 +777,6 @@ void drawLines(NVGcontext* vg, float x, float y, float w, float h, float t)
 	pts[5] = 0;
 	pts[6] = s*0.25f + cosf(-t*0.3f) * s*0.5f;
 	pts[7] = sinf(-t*0.3f) * s*0.5f;
-
 	for (i = 0; i < 3; i++) {
 		for (j = 0; j < 3; j++) {
 			fx = x + s*0.5f + (i*3+j)/9.0f*w + pad;
@@ -775,8 +785,8 @@ void drawLines(NVGcontext* vg, float x, float y, float w, float h, float t)
 			nvgLineCap(vg, caps[i]);
 			nvgLineJoin(vg, joins[j]);
 
-			nvgStrokeWidth(vg, s*0.3f);
-			nvgStrokeColor(vg, nvgRGBA(0,0,0,160));
+			nvgStrokeWidth(vg, strokeWidth);
+			nvgStrokeColor(vg, color);
 			nvgBeginPath(vg);
 			nvgMoveTo(vg, fx+pts[0], fy+pts[1]);
 			nvgLineTo(vg, fx+pts[2], fy+pts[3]);
@@ -1062,18 +1072,77 @@ void drawScissor(NVGcontext* vg, float x, float y, float t)
 	nvgRestore(vg);
 }
 
+void drawBezierCurve(NVGcontext* vg, float x0, float y0, float radius, float t){
+
+	float x1 = x0 + radius*cos(2*NVG_PI*t/5);
+	float y1 = y0 + radius*sin(2*NVG_PI*t/5);
+
+	float cx0 = x0;
+	float cy0 = y0 + ((y1 - y0) * 0.75f);
+	float cx1 = x1;
+	float cy1 = y0 + ((y1 - y0) * 0.75f);
+
+	nvgBeginPath(vg);
+	nvgMoveTo(vg, x0, y0);
+	nvgLineTo(vg, cx0, cy0);
+	nvgLineTo(vg, cx1, cy1);
+	nvgLineTo(vg, x1, y1);
+	nvgStrokeColor(vg,nvgRGBA(200,200,200,255));
+	nvgStrokeWidth(vg,2.0f);
+	nvgStroke(vg);
+
+	nvgLineCap(vg, NVG_ROUND);
+	nvgStrokeWidth(vg,5);
+	nvgLineJoin(vg, NVG_ROUND);
+
+	nvgBeginPath(vg);
+	nvgMoveTo(vg, x0, y0);
+	nvgBezierTo(vg, cx0, cy0, cx1, cy1, x1, y1);
+	nvgLineStyle(vg, NVG_LINE_SOLID);
+	nvgStrokeColor(vg, nvgRGBA(40, 53, 147,255));
+	nvgStroke(vg);
+
+	nvgLineStyle(vg, NVG_LINE_DASHED);
+	nvgStrokeColor(vg, nvgRGBA(255, 195, 0,255));
+	nvgStroke(vg);
+
+	nvgBeginPath(vg);
+	nvgCircle(vg,x0,y0,5.0f);
+	nvgCircle(vg,cx0,cy0,5.0f);
+	nvgCircle(vg,cx1,cy1,5.0f);
+	nvgCircle(vg,x1,y1,5.0f);
+	nvgLineStyle(vg, NVG_LINE_SOLID);
+	nvgFillColor(vg,nvgRGBA(64,192,64,255));
+	nvgFill(vg);
+}
+
 void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 				float t, int blowup, DemoData* data)
 {
 	float x,y,popy;
 
-	drawEyes(vg, width - 250, 50, 150, 100, mx, my, t);
+	drawEyes(vg, width - 230, 30, 150, 100, mx, my, t);
+	drawStylizedLines(vg, width - 245, 15, 180 ,130, t);
 	drawParagraph(vg, width - 450, 50, 150, 100, mx, my);
 	drawGraph(vg, 0, height/2, width, height/2, t);
-	drawColorwheel(vg, width - 300, height - 300, 250.0f, 250.0f, t);
+	drawColorwheel(vg, width - 280, height - 320, 250.0f, 250.0f, t);
 
 	// Line joints
-	drawLines(vg, 120, height-50, 600, 50, t);
+
+	switch((int)(t/5.0)%3){
+		case 0:
+			nvgLineStyle(vg, NVG_LINE_DASHED);break;
+		case 1:
+			nvgLineStyle(vg, NVG_LINE_DOTTED);break;
+		case 2:
+			nvgLineStyle(vg, NVG_LINE_GLOW);break;
+		default:
+			nvgLineStyle(vg, NVG_LINE_SOLID);
+	}
+	drawLines(vg, 100, height-5, 800, 100, 10.0f, nvgRGBA(255, 153, 0, 255), t*3);
+
+	nvgLineStyle(vg, NVG_LINE_SOLID);
+	drawLines(vg, 120, height-75, 600, 50, 17.0f, nvgRGBA(0,0,0,160), t);
 
 	// Line caps
 	drawWidths(vg, 10, 50, 30);
@@ -1123,6 +1192,8 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height,
 	drawThumbnails(vg, 365, popy-30, 160, 300, data->images, 12, t);
 
 	nvgRestore(vg);
+
+	drawBezierCurve(vg, width - 380, height - 220, 100, t);
 }
 
 static int mini(int a, int b) { return a < b ? a : b; }
