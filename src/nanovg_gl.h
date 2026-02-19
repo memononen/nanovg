@@ -648,7 +648,7 @@ static int glnvg__renderCreate(void* uptr)
 		"#ifdef NANOVG_GL3\n"
 		"		vec4 color = texture(tex, pt);\n"
 		"#else\n"
-		"		vec4 color = texture2D(tex, pt);\n"
+		"		vec4 color = texture2D(tex, fract(pt));\n"
 		"#endif\n"
 		"		if (texType == 1) color = vec4(color.xyz*color.w,color.w);"
 		"		if (texType == 2) color = vec4(color.x);"
